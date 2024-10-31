@@ -1,0 +1,158 @@
+import React, { useState } from 'react';
+import { FiMousePointer, FiClock, FiPlay, FiSquare, FiActivity } from 'react-icons/fi';
+import { BsKeyboard } from 'react-icons/bs';
+import { X } from 'lucide-react';
+
+function Dashboard({ 
+  user, onLogout, stats, startLogging, stopLogging, isLogging 
+}) {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogout = () => {
+    onLogout();
+    setShowLogoutModal(false);
+  };
+ 
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Activity Logger</h1>
+            <FiActivity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
+          </div>
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer transition-transform hover:scale-105"
+            style={{ backgroundColor: user.color }}
+            onClick={() => setShowLogoutModal(true)}
+          >
+            {user.name[0]}
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <FiMousePointer className="text-blue-600 text-xl sm:text-2xl" />
+              <p className="text-2xl sm:text-3xl font-bold text-blue-800">{stats.clickCount}</p>
+            </div>
+            <p className="text-sm text-blue-600 font-medium">Mouse Clicks</p>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
+              <p className="text-2xl sm:text-3xl font-bold text-green-800">{stats.keyCount}</p>
+            </div>
+            <p className="text-sm text-green-600 font-medium">Keystrokes</p>
+          </div>
+          <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <FiClock className="text-red-600 text-xl sm:text-2xl" />
+              <p className="text-2xl sm:text-3xl font-bold text-red-800">{stats.idleTime}</p>
+            </div>
+            <p className="text-sm text-red-600 font-medium">Idle Time (min)</p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mb-6 sm:mb-8 lg:space-x-0 lg:grid lg:grid-cols-2 lg:gap-4">
+          <button
+            onClick={startLogging}
+            disabled={isLogging}
+            id="start-logging"
+            className={`w-full py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center space-x-2 transition-all ${
+              isLogging ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 hover:shadow-md'
+            }`}
+          >
+            <FiPlay className="text-xl" />
+            <span>Start Logging</span>
+          </button>
+          
+          <button
+            onClick={stopLogging}
+            disabled={!isLogging}
+            id="stop-logging"
+            className={`w-full py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center space-x-2 transition-all ${
+              !isLogging ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 hover:shadow-md'
+            }`}
+          >
+            <FiSquare className="text-xl" />
+            <span>Stop Logging</span>
+          </button>
+        </div>
+
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+              <div className="flex items-center">
+                <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
+                <p className="text-base sm:text-lg font-medium text-gray-700">Last Active</p>
+              </div>
+              <p className="text-base sm:text-lg font-bold text-indigo-600">
+                {stats.lastActive || "--"} 
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+              <div className="flex items-center">
+                <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
+                <p className="text-base sm:text-lg font-medium text-gray-700">Capture Interval</p>
+              </div>
+              <p className="text-base sm:text-lg font-bold text-indigo-600">2 minutes</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Keys Pressed Section */}
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
+          <div className="flex items-center mb-3">
+            <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
+            <h2 className="font-semibold text-gray-700 text-base sm:text-lg">Keys pressed:</h2>
+          </div>
+          <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">{stats.accumulatedText}</p>
+        </div>
+      </div>
+
+      {/* Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-800">Confirm Logout</h2>
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-600 mb-4">Are you sure you want to logout?</p>
+              <div className="flex justify-end space-x-3">
+                <button 
+                  onClick={() => setShowLogoutModal(false)} 
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleLogout} 
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Dashboard;
