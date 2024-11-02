@@ -4,7 +4,7 @@ import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
 
 function Dashboard({ 
-  user, onLogout, stats, startLogging, stopLogging, isLogging 
+  user, onLogout, stats, startLogging, stopLogging, isLogging , captureInterval
 }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -103,7 +103,7 @@ function Dashboard({
                 <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
                 <p className="text-base sm:text-lg font-medium text-gray-700">Capture Interval</p>
               </div>
-              <p className="text-base sm:text-lg font-bold text-indigo-600">2 minutes</p>
+              <p className="text-base sm:text-lg font-bold text-indigo-600">{captureInterval} {captureInterval<=1 ? "minute" : "minutes"}</p>
             </div>
           </div>
         </div>

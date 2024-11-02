@@ -15,6 +15,7 @@ function ActivityLogger() {
   const [user, setUser] = useState(null);
 
   const [isLogging, setIsLogging] = useState(false);
+  const [captureInterval, setCaptureInterval] = useState(1);
 
   const initialStats = { 
     clickCount: 0, 
@@ -34,6 +35,12 @@ function ActivityLogger() {
         setIsLoggedIn(true);
         setUser(foundUser);
       }
+    }
+
+    if (typeof window !== 'undefined' && window?.electronAPI) {
+      window.electronAPI.getCaptureInterval((interval) => {
+        setCaptureInterval(interval);
+      });
     }
   }, []);
 
@@ -96,6 +103,7 @@ function ActivityLogger() {
           startLogging={startLogging}
           stopLogging={stopLogging}
           isLogging={isLogging}
+          captureInterval={captureInterval}
         />
       )}
     </>
