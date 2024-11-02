@@ -47,7 +47,7 @@ export default function LoginForm({ onLogin, VALID_USERS }) {
         <div className="p-6 sm:p-8">
           <div className="text-center">
             <img
-              src="/assets/images/icon.png"
+              src="assets/images/icon.png"
               alt="Activity Logger Logo"
               width={20}
               height={20}

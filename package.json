@@ -2,12 +2,39 @@
   "name": "logger",
   "version": "1.0.0",
   "description": "This app basically logs the activity of logged in user and also display its idle times. Moreover it also takes entire desktop screenshot after every n interval of time which would be decided by the admin.",
-  "main": "main.js",
+  "main": "main/main.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && electron-builder",
     "start": "next start && electron .",
     "electron-dev": "electron ."
+  },
+  "build": {
+    "appId": "com.infoware-logger.123",
+    "productName": "System Tracker",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false,
+      "sign": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "System Tracker"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "keywords": [],
   "author": "",
