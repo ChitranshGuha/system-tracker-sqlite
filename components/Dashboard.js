@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { FiMousePointer, FiClock, FiPlay, FiSquare, FiActivity } from 'react-icons/fi';
+import { FiMousePointer, FiClock, FiActivity } from 'react-icons/fi';
 import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
+import Task from './Task';
 
 function Dashboard({ 
   user, onLogout, stats, startLogging, stopLogging, isLogging , captureInterval
 }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [activeSession, setActiveSession] = useState(null);
 
   const handleLogout = () => {
     onLogout();
@@ -31,6 +33,14 @@ function Dashboard({
           </div>
         </div>
 
+        <Task 
+          startLogging={startLogging} 
+          stopLogging={stopLogging}
+          isLogging={isLogging} 
+          activeSession={activeSession}
+          setActiveSession={setActiveSession}
+        />
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
@@ -54,33 +64,6 @@ function Dashboard({
             </div>
             <p className="text-sm text-red-600 font-medium">Idle Time (min)</p>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mb-6 sm:mb-8 lg:space-x-0 lg:grid lg:grid-cols-2 lg:gap-4">
-          <button
-            onClick={startLogging}
-            disabled={isLogging}
-            id="start-logging"
-            className={`w-full py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center space-x-2 transition-all ${
-              isLogging ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 hover:shadow-md'
-            }`}
-          >
-            <FiPlay className="text-xl" />
-            <span>Start Logging</span>
-          </button>
-          
-          <button
-            onClick={stopLogging}
-            disabled={!isLogging}
-            id="stop-logging"
-            className={`w-full py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center space-x-2 transition-all ${
-              !isLogging ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 hover:shadow-md'
-            }`}
-          >
-            <FiSquare className="text-xl" />
-            <span>Stop Logging</span>
-          </button>
         </div>
 
         {/* Status Cards */}

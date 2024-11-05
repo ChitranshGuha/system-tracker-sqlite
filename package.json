@@ -15,25 +15,8 @@
     "directories": {
       "output": "dist"
     },
-    "win": {
-      "target": "nsis",
-      "signAndEditExecutable": false,
-      "sign": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": true,
-      "allowToChangeInstallationDirectory": true,
-      "deleteAppDataOnUninstall": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "System Tracker"
-    },
     "mac": {
       "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
     }
   },
   "keywords": [],
