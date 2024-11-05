@@ -130,7 +130,7 @@ function startIdleTracking() {
 // Set up global keyboard listener
 const keyboardListener = new GlobalKeyboardListener();
 keyboardListener.addListener((e) => {
-  if(isLogging){
+  if(isLogging && !mainWindow.isFocused()){
     if(e.name === "MOUSE LEFT" || e.name === "MOUSE RIGHT"){
       if(e.state === "UP"){
         clickCount++;
