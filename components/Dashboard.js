@@ -10,6 +10,7 @@ function ActivityLogger({
 }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
+  const [activeSession,setActiveSession] = useState(null)
 
   const handleLogout = () => {
     onLogout();
@@ -60,6 +61,8 @@ function ActivityLogger({
               startLogging={startLogging} 
               stopLogging={stopLogging}
               isLogging={isLogging}
+              activeSession={activeSession}
+              setActiveSession={setActiveSession}
             />
 
             {/* Stats Grid */}
