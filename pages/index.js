@@ -4,10 +4,10 @@ import Dashboard from '../components/Dashboard';
 import moment from 'moment';
 
 const VALID_USERS = [
-  { mobile: '9999999999', password: '123456', name: 'John', color: '#4f46e5' },
-  { mobile: '8888888888', password: '123456', name: 'Alice', color: '#059669' },
-  { mobile: '7777777777', password: '123456', name: 'Bob', color: '#dc2626' },
-  { mobile: '6666666666', password: '123456', name: 'Emma', color: '#7c3aed' }
+  { email: 'john@example.com', password: '123456', name: 'John', color: '#4f46e5' },
+  { email: 'alice@example.com', password: '123456', name: 'Alice', color: '#059669' },
+  { email: 'bob@example.com', password: '123456', name: 'Bob', color: '#dc2626' },
+  { email: 'emma@example.com', password: '123456', name: 'Emma', color: '#7c3aed' }
 ];
 
 function ActivityLogger() {

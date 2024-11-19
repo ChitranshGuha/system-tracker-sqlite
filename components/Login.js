@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginForm({ onLogin, VALID_USERS }) {
-  const [mobile, setMobile] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
@@ -10,10 +10,10 @@ export default function LoginForm({ onLogin, VALID_USERS }) {
   const validateForm = () => {
     const newErrors = {}
 
-    if (!mobile) {
-      newErrors.mobile = "Mobile number can't be empty"
-    } else if (mobile.length !== 10) {
-      newErrors.mobile = "Mobile number should be 10 digits"
+    if (!email) {
+      newErrors.email = "Email can't be empty"
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Email is not valid"
     }
 
     if (!password) {
@@ -27,14 +27,14 @@ export default function LoginForm({ onLogin, VALID_USERS }) {
   const handleLogin = (e) => {
     e.preventDefault()
     if (validateForm()) {
-      const user = VALID_USERS.find(u => u.mobile === mobile && u.password === password)
+      const user = VALID_USERS.find(u => u.email === email && u.password === password)
       if (user) {
-        localStorage.setItem('userMobile', user.mobile)
+        localStorage.setItem('userEmail', user.email)
         onLogin(user)
       } else {
         setErrors({ 
           form: "Invalid credentials",
-          mobile: 'Please enter a valid mobile number', 
+          email: 'Please enter a valid email', 
           password: 'Please enter a valid password'
         })
       }
@@ -57,25 +57,24 @@ export default function LoginForm({ onLogin, VALID_USERS }) {
           </div>
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
-              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-1">
-                Mobile Number
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
               </label>
               <input
-                id="mobile"
-                type="tel"
-                value={mobile}
+                id="email"
+                type="text"
+                value={email}
                 onChange={(e) => {
-                  setMobile(e.target.value)
-                  setErrors({...errors, form: "", mobile: ""})
+                  setEmail(e.target.value)
+                  setErrors({...errors, form: "", email: ""})
                 }}
                 className={`w-full px-3 py-2 border rounded-md ${
-                  errors.mobile ? 'border-red-500' : 'border-gray-300'
+                  errors.email ? 'border-red-500' : 'border-gray-300'
                 } focus:outline-none focus:ring-2 focus:ring-black`}
-                placeholder="Enter 10 digit mobile number"
-                maxLength={10}
+                placeholder="Enter your email address"
               />
-              <p className={`${errors.mobile ? "text-red-500" : "text-gray-400"} text-xs mt-1`}>
-                {errors.mobile || "Please enter a valid 10 digit mobile number"}
+              <p className={`${errors.email ? "text-red-500" : "text-gray-400"} text-xs mt-1`}>
+                {errors.email || "Please enter a valid email address"}
               </p>
             </div>
 
