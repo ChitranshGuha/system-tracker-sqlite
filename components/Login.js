@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { Eye, EyeOff } from 'lucide-react'
+import { loginOrRegisterEmployee } from '../redux/auth/authActions'
 
-export default function LoginForm({ onLogin, VALID_USERS }) {
+export default function LoginForm({ onLogin}) {
+  const dispatch = useDispatch();
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -27,17 +31,19 @@ export default function LoginForm({ onLogin, VALID_USERS }) {
   const handleLogin = (e) => {
     e.preventDefault()
     if (validateForm()) {
-      const user = VALID_USERS.find(u => u.email === email && u.password === password)
-      if (user) {
-        localStorage.setItem('userEmail', user.email)
-        onLogin(user)
-      } else {
-        setErrors({ 
-          form: "Invalid credentials",
-          email: 'Please enter a valid email', 
-          password: 'Please enter a valid password'
-        })
-      }
+      dispatch(loginOrRegisterEmployee({ email,password }))
+      .then(status => {
+        if(status.success){
+          onLogin()
+        }
+        else {
+          setErrors({ 
+            form: status?.message,
+            email: 'Please enter a valid email', 
+            password: 'Please enter a valid password'
+          })
+        }
+      })
     }
   }
 

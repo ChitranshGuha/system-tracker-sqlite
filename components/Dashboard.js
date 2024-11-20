@@ -4,13 +4,15 @@ import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
 import Task from './Task';
 import PastActivities from './PastActivities';
+import { useSelector } from 'react-redux';
 
 function ActivityLogger({ 
-  user, onLogout, stats, startLogging, stopLogging, isLogging, captureInterval
+  onLogout, stats, startLogging, stopLogging, isLogging, captureInterval
 }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
-  const [activeSession,setActiveSession] = useState(null)
+  const [activeSession,setActiveSession] = useState(null);
+  const user = useSelector(state => state?.employee?.employeeDetails);
 
   const handleLogout = () => {
     onLogout();
@@ -28,10 +30,10 @@ function ActivityLogger({
           </div>
           <div 
             className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer transition-transform hover:scale-105"
-            style={{ backgroundColor: user.color }}
+            style={{ backgroundColor: "#059669" }}
             onClick={() => setShowLogoutModal(true)}
           >
-            {user.name[0]}
+            {user?.firstName?.[0]?.toUpperCase()}
           </div>
         </div>
 

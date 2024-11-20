@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Login from '../components/Login';
 import Dashboard from '../components/Dashboard';
 import moment from 'moment';
+import { useSelector,useDispatch } from 'react-redux';
+import { getAuthDetails,logOutEmployee } from '../redux/auth/authActions';
 
 const VALID_USERS = [
   { email: 'john@example.com', password: '123456', name: 'John', color: '#4f46e5' },
@@ -11,11 +13,26 @@ const VALID_USERS = [
 ];
 
 function ActivityLogger() {
+  const dispatch = useDispatch();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
 
   const [isLogging, setIsLogging] = useState(false);
   const [captureInterval, setCaptureInterval] = useState(1);
+  const authToken = useSelector(state => state?.employee?.authToken);
+  const testConsole = useSelector(state => state);
+  
+  useEffect(() => {
+    dispatch(getAuthDetails());
+  },[])
+  
+  useEffect(() => {
+    if(authToken!==null){
+      setIsLoggedIn(true);
+    }
+    else{
+      setIsLoggedIn(false);
+    }
+  },[authToken])
 
   const initialStats = { 
     clickCount: 0, 
@@ -28,33 +45,21 @@ function ActivityLogger() {
   const [stats, setStats] = useState(initialStats);
 
   useEffect(() => {
-    const storedMobile = localStorage.getItem('userMobile');
-    if (storedMobile) {
-      const foundUser = VALID_USERS.find(u => u.mobile === storedMobile);
-      if (foundUser) {
-        setIsLoggedIn(true);
-        setUser(foundUser);
-      }
-    }
-
     if (typeof window !== 'undefined' && window?.electronAPI) {
       window.electronAPI.getCaptureInterval((interval) => {
         setCaptureInterval(interval);
       });
     }
-  }, []);
+  }, [authToken]);
 
-  const handleLogin = (loggedInUser) => {
+  const handleLogin = () => {
     setIsLoggedIn(true);
-    setUser(loggedInUser);
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
     stopLogging();
     setStats(initialStats);
-    localStorage.removeItem('userMobile');
+    dispatch(logOutEmployee());
   };
 
   useEffect(() => {
@@ -93,11 +98,9 @@ function ActivityLogger() {
       {!isLoggedIn ? (
         <Login 
           onLogin={handleLogin} 
-          VALID_USERS={VALID_USERS}
         />
       ) : (
-        <Dashboard 
-          user={user} 
+        <Dashboard
           onLogout={handleLogout}
           stats={stats}
           startLogging={startLogging}
