@@ -95,6 +95,7 @@ function ActivityLogger({
                   setActiveSession={setActiveSession}
                   ownerId={ownerId}
                   authToken={authToken}
+                  stats={stats}
                 />
 
                 {/* Stats Grid */}

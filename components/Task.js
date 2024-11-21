@@ -2,9 +2,10 @@ import React,{useState,useEffect} from 'react';
 import { useSelector,useDispatch } from 'react-redux';
 import { FiPlay, FiSquare, FiFolder, FiList, FiFileText } from 'react-icons/fi';
 import { gettingMastersList } from '../redux/masters/mastersActions';
+import { activityActions } from '../redux/activity/activityActions';
 
 const Task = ({
-    startLogging,stopLogging,isLogging,activeSession,setActiveSession,ownerId,authToken
+    startLogging,stopLogging,isLogging,activeSession,setActiveSession,ownerId,authToken,stats
 }) => {
     const dispatch = useDispatch();
 
@@ -12,6 +13,7 @@ const Task = ({
     const [projectTaskId, setProjectTaskId] = useState('');
     const [description, setDescription] = useState('');
     const [errors, setErrors] = useState({ projectId: '', projectTaskId: '', description: '' });
+    const [projectTaskActivityId,setProjectTaskActivityId] = useState(null);
 
     const projects = useSelector(state => state?.masters?.projects?.list);
     const tasks = useSelector(state => state?.masters?.tasks?.list);
@@ -44,17 +46,46 @@ const Task = ({
         setErrors(newErrors);
     
         if (Object.values(newErrors).every(error => !error)) {
-          setActiveSession({ projectId, projectTaskId, description });
-          startLogging();
+            const payload = { ownerId, projectTaskId, description };
+
+            setActiveSession({ projectId, projectTaskId, description });
+            dispatch(activityActions(authToken,"start",payload))
+            .then(status => {
+                if(status?.success){
+                    setProjectTaskActivityId(status?.id)
+                    startLogging();
+                }
+                else{
+                    console.log(status?.error);
+                }
+            })
         }
-    };    
+    };
 
     function stopLoggingHandler(){
-        setProjectId("");
-        setProjectTaskId("");
-        setDescription("");
-        setActiveSession(null);
-        stopLogging();
+        const payload = { 
+            ownerId, 
+            projectTaskActivityId,
+            mouseClick: stats?.clickCount,
+            keystroke: stats?.keyCount,
+            // keyPressed: stats?.accumulatedText,
+            idleTime: stats?.idleTime * 60,
+        };
+
+        dispatch(activityActions(authToken,"end",payload))
+        .then(status => {
+            if(status?.success){
+                setProjectId("");
+                setProjectTaskId("");
+                setDescription("");
+                setActiveSession(null);
+                setProjectTaskActivityId(null);
+                stopLogging();
+            }
+            else{
+                console.log(status?.error);
+            }
+        })
     }
 
     const handleKeyDown = (e) => {
@@ -157,8 +188,12 @@ const Task = ({
             </button>
             
             <button
-                onClick={stopLoggingHandler}
+                onClick={e => {
+                    e.preventDefault();
+                    stopLoggingHandler();
+                }}
                 disabled={!isLogging}
+                type="button"
                 id="stop-logging"
                 className={`w-full py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center space-x-2 transition-all ${
                 !isLogging ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 hover:shadow-md'

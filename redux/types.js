@@ -11,3 +11,4 @@ export const GET_PROJECTS_LIST = "GET_PROJECTS_LIST";
 export const GET_TASKS_LIST = "GET_TASKS_LIST";
 
 // Employee Activities
+export const GET_ACTIVITIES_LIST = "GET_ACTIVITIES_LIST";
