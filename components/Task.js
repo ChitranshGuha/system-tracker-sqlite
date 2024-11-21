@@ -1,44 +1,57 @@
-import React,{useState} from 'react';
+import React,{useState,useEffect} from 'react';
+import { useSelector,useDispatch } from 'react-redux';
 import { FiPlay, FiSquare, FiFolder, FiList, FiFileText } from 'react-icons/fi';
+import { gettingMastersList } from '../redux/masters/mastersActions';
 
 const Task = ({
-    startLogging,stopLogging,isLogging,activeSession,setActiveSession
+    startLogging,stopLogging,isLogging,activeSession,setActiveSession,ownerId,authToken
 }) => {
-    const [project, setProject] = useState('');
-    const [task, setTask] = useState('');
-    const [description, setDescription] = useState('');
-    const [errors, setErrors] = useState({ project: '', task: '', description: '' });
+    const dispatch = useDispatch();
 
-    const projects = [
-        { id: '1', name: 'Project A' },
-        { id: '2', name: 'Project B' },
-        { id: '3', name: 'Project C' },
-    ];
-    
-    const tasks = {
-        '1': [{ id: '1', name: 'Task 1' }, { id: '2', name: 'Task 2' }],
-        '2': [{ id: '3', name: 'Task 3' }, { id: '4', name: 'Task 4' }],
-        '3': [{ id: '5', name: 'Task 5' }, { id: '6', name: 'Task 6' }],
-    };
+    const [projectId, setProjectId] = useState('');
+    const [projectTaskId, setProjectTaskId] = useState('');
+    const [description, setDescription] = useState('');
+    const [errors, setErrors] = useState({ projectId: '', projectTaskId: '', description: '' });
+
+    const projects = useSelector(state => state?.masters?.projects?.list);
+    const tasks = useSelector(state => state?.masters?.tasks?.list);
+
+    useEffect(() => {
+        setProjectId('');
+        setProjectTaskId('');
+        dispatch(gettingMastersList(authToken,"employee/project/project/list","projects",{
+            ownerId
+        }));
+    },[ownerId])
+
+    useEffect(() => {
+        setProjectTaskId('');
+        if(projectId){
+            dispatch(gettingMastersList(authToken,"employee/project/project/task/list","tasks",{
+                ownerId,
+                projectId,
+            }))
+        }
+    },[projectId])
 
     const handleFormSubmit = (e) => {
         e.preventDefault();
         const newErrors = {
-          project: project ? '' : 'Project is required',
-          task: task ? '' : 'Task is required',
+          projectId: projectId ? '' : 'Project is required',
+          projectTaskId: projectTaskId ? '' : 'Task is required',
           description: description ? '' : 'Task Description is required',
         };
         setErrors(newErrors);
     
         if (Object.values(newErrors).every(error => !error)) {
-          setActiveSession({ project, task, description });
+          setActiveSession({ projectId, projectTaskId, description });
           startLogging();
         }
     };    
 
     function stopLoggingHandler(){
-        setProject("");
-        setTask("");
+        setProjectId("");
+        setProjectTaskId("");
         setDescription("");
         setActiveSession(null);
         stopLogging();
@@ -59,11 +72,11 @@ const Task = ({
                  <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label htmlFor="project" className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                        <label htmlFor="projectId" className="block text-sm font-medium text-gray-700 mb-1">Project</label>
                         <select
-                        id="project"
-                        value={project}
-                        onChange={(e) => setProject(e.target.value)}
+                        id="projectId"
+                        value={projectId}
+                        onChange={(e) => setProjectId(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                         >
                         <option value="">Select a project</option>
@@ -71,24 +84,24 @@ const Task = ({
                             <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                         </select>
-                        {errors.project && <p className="mt-1 text-sm text-red-600">{errors.project}</p>}
+                        {errors.projectId && <p className="mt-1 text-sm text-red-600">{errors.projectId}</p>}
                     </div>
     
                     <div>
-                        <label htmlFor="task" className="block text-sm font-medium text-gray-700 mb-1">Task</label>
+                        <label htmlFor="projectTaskId" className="block text-sm font-medium text-gray-700 mb-1">Task</label>
                         <select
-                        id="task"
-                        value={task}
-                        onChange={(e) => setTask(e.target.value)}
-                        disabled={!project}
+                        id="projectTaskId"
+                        value={projectTaskId}
+                        onChange={(e) => setProjectTaskId(e.target.value)}
+                        disabled={!projectId}
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                         >
                         <option value="">Select a task</option>
-                        {project && tasks[project].map(t => (
+                        {tasks.map(t => (
                             <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
                         </select>
-                        {errors.task && <p className="mt-1 text-sm text-red-600">{errors.task}</p>}
+                        {errors.projectTaskId && <p className="mt-1 text-sm text-red-600">{errors.projectTaskId}</p>}
                     </div>
     
                     </div>
@@ -100,7 +113,7 @@ const Task = ({
                             onChange={(e) => setDescription(e.target.value)}
                             onKeyDown={handleKeyDown}
                             maxLength={100}
-                            disabled={!task}
+                            disabled={!projectTaskId}
                             rows={3}
                             className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                             placeholder="What task(s) are you doing? (max 100 characters)"
@@ -114,12 +127,12 @@ const Task = ({
                     <div className="flex items-center space-x-2">
                         <FiFolder className="text-indigo-500" />
                         <span className="font-medium">Project:</span>
-                        <span>{projects.find(p => p.id === activeSession.project)?.name}</span>
+                        <span>{projects.find(p => p.id === activeSession.projectId)?.name}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <FiList className="text-indigo-500" />
                         <span className="font-medium">Task:</span>
-                        <span>{tasks[activeSession.project]?.find(t => t.id === activeSession.task)?.name}</span>
+                        <span>{tasks?.find(t => t.id === activeSession.projectTaskId)?.name}</span>
                     </div>
                     <div className="flex items-start space-x-2">
                         <FiFileText className="text-indigo-500 mt-1" />

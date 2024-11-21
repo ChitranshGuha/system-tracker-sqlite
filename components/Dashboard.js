@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSelector,useDispatch } from 'react-redux';
 import { FiMousePointer, FiClock, FiActivity } from 'react-icons/fi';
 import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
 import Task from './Task';
 import PastActivities from './PastActivities';
-import { useSelector } from 'react-redux';
+import { gettingMastersList } from '../redux/masters/mastersActions';
 
 function ActivityLogger({ 
-  onLogout, stats, startLogging, stopLogging, isLogging, captureInterval
+  onLogout, stats, startLogging, stopLogging, isLogging, captureInterval,authToken
 }) {
+  const dispatch = useDispatch();
+
+  const [ownerId,setOwnerId] = useState(null);
+  useEffect(() => {
+    dispatch(gettingMastersList(authToken,"employee/auth/workspace/list","workspaces"))
+  },[])
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
   const [activeSession,setActiveSession] = useState(null);
   const user = useSelector(state => state?.employee?.employeeDetails);
+  
+  const workspaces = useSelector(state => state?.masters?.workspaces?.list);
 
   const handleLogout = () => {
     onLogout();
@@ -28,105 +38,141 @@ function ActivityLogger({
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Activity Logger</h1>
             <FiActivity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
           </div>
-          <div 
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer transition-transform hover:scale-105"
-            style={{ backgroundColor: "#059669" }}
-            onClick={() => setShowLogoutModal(true)}
-          >
-            {user?.firstName?.[0]?.toUpperCase()}
+
+          <div className="flex items-center space-x-4">
+            {ownerId ? (
+              <select
+                value={ownerId}
+                onChange={(e) => setOwnerId(e.target.value)}
+                className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+              >
+                {workspaces.map((workspace) => (
+                  <option key={workspace.ownerId} value={workspace.ownerId}>
+                    {workspace.workspaceName}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer transition-transform hover:scale-105"
+              style={{ backgroundColor: "#059669" }}
+              onClick={() => setShowLogoutModal(true)}
+            >
+              {user?.firstName?.[0]?.toUpperCase()}
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex mb-6">
-          <button
-            className={`px-4 py-2 font-medium text-sm ${
-              activeTab === 'current' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setActiveTab('current')}
-          >
-            Active Tab Session
-          </button>
-          <button
-            className={`px-4 py-2 font-medium text-sm ${
-              activeTab === 'past' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-            onClick={() => setActiveTab('past')}
-          >
-            Past Activities
-          </button>
-        </div>
-
-        {activeTab === 'current' ? (
+        {ownerId ? (
           <>
-            <Task 
-              startLogging={startLogging} 
-              stopLogging={stopLogging}
-              isLogging={isLogging}
-              activeSession={activeSession}
-              setActiveSession={setActiveSession}
-            />
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-2">
-                  <FiMousePointer className="text-blue-600 text-xl sm:text-2xl" />
-                  <p className="text-2xl sm:text-3xl font-bold text-blue-800">{stats.clickCount}</p>
-                </div>
-                <p className="text-sm text-blue-600 font-medium">Mouse Clicks</p>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-2">
-                  <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
-                  <p className="text-2xl sm:text-3xl font-bold text-green-800">{stats.keyCount}</p>
-                </div>
-                <p className="text-sm text-green-600 font-medium">Keystrokes</p>
-              </div>
-              <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-2">
-                  <FiClock className="text-red-600 text-xl sm:text-2xl" />
-                  <p className="text-2xl sm:text-3xl font-bold text-red-800">{stats.idleTime}</p>
-                </div>
-                <p className="text-sm text-red-600 font-medium">Idle Time (min)</p>
-              </div>
+            {/* Tabs */}
+            <div className="flex mb-6">
+              <button
+                className={`px-4 py-2 font-medium text-sm ${
+                  activeTab === 'current' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+                onClick={() => setActiveTab('current')}
+              >
+                Active Tab Session
+              </button>
+              <button
+                className={`px-4 py-2 font-medium text-sm ${
+                  activeTab === 'past' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+                onClick={() => setActiveTab('past')}
+              >
+                Past Activities
+              </button>
             </div>
 
-            {/* Status Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                  <div className="flex items-center">
-                    <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
-                    <p className="text-base sm:text-lg font-medium text-gray-700">Last Active</p>
+            {activeTab === 'current' ? (
+              <>
+                <Task 
+                  startLogging={startLogging} 
+                  stopLogging={stopLogging}
+                  isLogging={isLogging}
+                  activeSession={activeSession}
+                  setActiveSession={setActiveSession}
+                  ownerId={ownerId}
+                  authToken={authToken}
+                />
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <FiMousePointer className="text-blue-600 text-xl sm:text-2xl" />
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-800">{stats.clickCount}</p>
+                    </div>
+                    <p className="text-sm text-blue-600 font-medium">Mouse Clicks</p>
                   </div>
-                  <p className="text-base sm:text-lg font-bold text-indigo-600">
-                    {stats.lastActive || "--"} 
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                  <div className="flex items-center">
-                    <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
-                    <p className="text-base sm:text-lg font-medium text-gray-700">Capture Interval</p>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
+                      <p className="text-2xl sm:text-3xl font-bold text-green-800">{stats.keyCount}</p>
+                    </div>
+                    <p className="text-sm text-green-600 font-medium">Keystrokes</p>
                   </div>
-                  <p className="text-base sm:text-lg font-bold text-indigo-600">{captureInterval} {captureInterval<=1 ? "minute" : "minutes"}</p>
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <FiClock className="text-red-600 text-xl sm:text-2xl" />
+                      <p className="text-2xl sm:text-3xl font-bold text-red-800">{stats.idleTime}</p>
+                    </div>
+                    <p className="text-sm text-red-600 font-medium">Idle Time (min)</p>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Keys Pressed Section */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
-              <div className="flex items-center mb-3">
-                <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
-                <h2 className="font-semibold text-gray-700 text-base sm:text-lg">Keys pressed:</h2>
-              </div>
-              <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">{stats.accumulatedText}</p>
-            </div>
+                {/* Status Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+                      <div className="flex items-center">
+                        <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
+                        <p className="text-base sm:text-lg font-medium text-gray-700">Last Active</p>
+                      </div>
+                      <p className="text-base sm:text-lg font-bold text-indigo-600">
+                        {stats.lastActive || "--"} 
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+                      <div className="flex items-center">
+                        <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
+                        <p className="text-base sm:text-lg font-medium text-gray-700">Capture Interval</p>
+                      </div>
+                      <p className="text-base sm:text-lg font-bold text-indigo-600">{captureInterval} {captureInterval<=1 ? "minute" : "minutes"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keys Pressed Section */}
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
+                  <div className="flex items-center mb-3">
+                    <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
+                    <h2 className="font-semibold text-gray-700 text-base sm:text-lg">Keys pressed:</h2>
+                  </div>
+                  <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">{stats.accumulatedText}</p>
+                </div>
+              </>
+            ) : <PastActivities />}
           </>
-        ) : <PastActivities />}
+        ) : (
+          <div className="flex justify-center items-center h-64">
+            <select
+              onChange={(e) => setOwnerId(e.target.value)}
+              className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+            >
+              <option value="">Select a workspace</option>
+              {workspaces.map((workspace) => (
+                <option key={workspace.ownerId} value={workspace.ownerId}>
+                  {workspace.workspaceName}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Logout Modal */}

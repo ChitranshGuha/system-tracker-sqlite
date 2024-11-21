@@ -107,6 +107,7 @@ function ActivityLogger() {
           stopLogging={stopLogging}
           isLogging={isLogging}
           captureInterval={captureInterval}
+          authToken={authToken}
         />
       )}
     </>
