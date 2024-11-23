@@ -5,7 +5,7 @@ import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
 import Task from './Task';
 import PastActivities from './PastActivities';
-import { gettingMastersList } from '../redux/masters/mastersActions';
+import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 
 function ActivityLogger({ 
   onLogout, stats, startLogging, stopLogging, isLogging, captureInterval,authToken
@@ -14,15 +14,15 @@ function ActivityLogger({
 
   const [ownerId,setOwnerId] = useState(null);
   useEffect(() => {
-    dispatch(gettingMastersList(authToken,"employee/auth/workspace/list","workspaces"))
+    dispatch(gettingEmployeeActionsList(authToken,"employee/auth/workspace/list","workspaces"))
   },[])
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
   const [activeSession,setActiveSession] = useState(null);
-  const user = useSelector(state => state?.employee?.employeeDetails);
+  const user = useSelector(state => state?.auth?.employeeDetails);
   
-  const workspaces = useSelector(state => state?.masters?.workspaces?.list);
+  const workspaces = useSelector(state => state?.employee?.workspaces?.list);
 
   const handleLogout = () => {
     onLogout();
@@ -157,7 +157,7 @@ function ActivityLogger({
                   <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">{stats.accumulatedText}</p>
                 </div>
               </>
-            ) : <PastActivities />}
+            ) : <PastActivities authToken={authToken} ownerId={ownerId} />}
           </>
         ) : (
           <div className="flex justify-center items-center h-64">

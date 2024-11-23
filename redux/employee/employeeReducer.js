@@ -8,10 +8,11 @@ const initObj = {
 const initialState = { 
     workspaces : initObj,
     projects : initObj,
-    tasks : initObj
+    tasks : initObj,
+    activities : initObj,
 };
 
-export default function mastersReducer(state = initialState, action) {
+export default function employeeReducer(state = initialState, action) {
     switch (action.type) {
         case type.GET_WORKSPACES_LIST:
             return {
@@ -40,6 +41,15 @@ export default function mastersReducer(state = initialState, action) {
                 },
             };
             
+        case type.GET_ACTIVITIES_LIST:
+            return {
+                ...state, 
+                activities : {
+                    list : action.activities,
+                    count : action.count,
+                },
+            };
+
         default:
             return state;
     }

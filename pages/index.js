@@ -18,7 +18,7 @@ function ActivityLogger() {
 
   const [isLogging, setIsLogging] = useState(false);
   const [captureInterval, setCaptureInterval] = useState(1);
-  const authToken = useSelector(state => state?.employee?.authToken);
+  const authToken = useSelector(state => state?.auth?.authToken);
   const testConsole = useSelector(state => state);
   
   useEffect(() => {

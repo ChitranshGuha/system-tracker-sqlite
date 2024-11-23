@@ -1,7 +1,7 @@
 import React,{useState,useEffect} from 'react';
 import { useSelector,useDispatch } from 'react-redux';
 import { FiPlay, FiSquare, FiFolder, FiList, FiFileText } from 'react-icons/fi';
-import { gettingMastersList } from '../redux/masters/mastersActions';
+import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 import { activityActions } from '../redux/activity/activityActions';
 
 const Task = ({
@@ -15,13 +15,13 @@ const Task = ({
     const [errors, setErrors] = useState({ projectId: '', projectTaskId: '', description: '' });
     const [projectTaskActivityId,setProjectTaskActivityId] = useState(null);
 
-    const projects = useSelector(state => state?.masters?.projects?.list);
-    const tasks = useSelector(state => state?.masters?.tasks?.list);
+    const projects = useSelector(state => state?.employee?.projects?.list);
+    const tasks = useSelector(state => state?.employee?.tasks?.list);
 
     useEffect(() => {
         setProjectId('');
         setProjectTaskId('');
-        dispatch(gettingMastersList(authToken,"employee/project/project/list","projects",{
+        dispatch(gettingEmployeeActionsList(authToken,"employee/project/project/list","projects",{
             ownerId
         }));
     },[ownerId])
@@ -29,7 +29,7 @@ const Task = ({
     useEffect(() => {
         setProjectTaskId('');
         if(projectId){
-            dispatch(gettingMastersList(authToken,"employee/project/project/task/list","tasks",{
+            dispatch(gettingEmployeeActionsList(authToken,"employee/project/project/task/list","tasks",{
                 ownerId,
                 projectId,
             }))
@@ -68,7 +68,7 @@ const Task = ({
             projectTaskActivityId,
             mouseClick: stats?.clickCount,
             keystroke: stats?.keyCount,
-            // keyPressed: stats?.accumulatedText,
+            keyPressed: stats?.accumulatedText,
             idleTime: stats?.idleTime * 60,
         };
 
