@@ -3,6 +3,9 @@ const path = require('path');
 const fs = require('fs');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
 const moment = require('moment');
+const { default: axios } = require('axios');
+
+const API_BASE_URL = "https://webtracker.infoware.xyz/api"
 
 let mainWindow;
 let isLogging = false;
@@ -20,6 +23,16 @@ let lastIdleCheckTime = Date.now();
 let accumulatedIdleTime = 0;
 let idleInterval;
 
+let ownerId = null;
+let authToken = null;
+let projectTaskActivityId = null;
+
+ipcMain.on('set-user-data', (event, data) => {
+  ownerId = data.ownerId;
+  authToken = data.authToken;
+  projectTaskActivityId = data.projectTaskActivityId;
+});
+
 // Function to fetch capture interval from API
 ipcMain.on('fetch-capture-interval', async (event) => {
   event.sender.send('capture-interval', captureIntervalMinutes);
@@ -31,7 +44,7 @@ async function fetchCaptureInterval() {
     // captureIntervalMinutes = response.data.interval;
 
     await new Promise(resolve => setTimeout(resolve, 1000));
-    captureIntervalMinutes = 5; // Simulated API response
+    captureIntervalMinutes = 5;
 
     if(mainWindow){
       mainWindow.webContents.send('capture-interval', captureIntervalMinutes)
@@ -150,24 +163,53 @@ keyboardListener.addListener((e) => {
 // Function to capture and save screenshot
 async function captureAndSaveScreenshot() {
   try {
-    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1920, height: 1080 } });
-    const primaryDisplay = sources[0]; // Assuming the first source is the primary display
+    const sources = await desktopCapturer.getSources({ 
+      types: ['screen'], 
+      thumbnailSize: { width: 1920, height: 1080 } 
+    });
+    const primaryDisplay = sources[0];
 
     if (primaryDisplay) {
-      const screenshot = primaryDisplay.thumbnail.toPNG();
+      const screenshotBuffer = primaryDisplay.thumbnail.toPNG();
       const fileName = `Screenshot_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
-      const filePath = path.join(app.getPath('pictures'), fileName);
-      
-      fs.writeFile(filePath, screenshot, (err) => {
-        if (err) console.error('Failed to save screenshot:', err);
-        else console.log('Screenshot saved:', filePath);
+
+      const screenshotBlob = new Blob([screenshotBuffer], { type: 'image/png' });
+
+      const file = new File([screenshotBlob], fileName, { type: 'image/png' });
+
+      const formData = new FormData();
+      formData.append('files', file);
+
+      if (!ownerId || !authToken) {
+        throw new Error('ownerId or authToken not set');
+      }
+      formData.append('ownerId', ownerId);
+
+      const response = await axios.post(`${API_BASE_URL}/employee/media/add`, formData, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
+
+      const mediaId = await response?.data?.data?.[0]?.id
+
+      const payload = {
+        ownerId,
+        projectTaskActivityId,
+        mediaId
+      }
+
+     await axios.post(`${API_BASE_URL}/employee/project/project/task/activity/screenshot/add`,payload,{
+        headers : {
+          "Authorization" : `Bearer ${authToken}`
+        }
+      })
     }
   } catch (error) {
-    console.error('Error capturing screenshot:', error);
+    console.error('Error capturing or uploading screenshot:', error);
   }
 }
-
 // Function to start screenshot capture
 function startScreenshotCapture() {
   screenshotInterval = setInterval(captureAndSaveScreenshot, captureIntervalMinutes * 60 * 1000);
@@ -177,7 +219,6 @@ function startScreenshotCapture() {
 function stopScreenshotCapture() {
   clearInterval(screenshotInterval);
 }
-
 
 // IPC handlers
 ipcMain.on('start-logging', () => {

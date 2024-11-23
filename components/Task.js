@@ -52,7 +52,14 @@ const Task = ({
             dispatch(activityActions(authToken,"start",payload))
             .then(status => {
                 if(status?.success){
-                    setProjectTaskActivityId(status?.id)
+                    setProjectTaskActivityId(status?.id);
+                    const userData = {
+                        authToken,
+                        ownerId,
+                        projectTaskActivityId: status?.id
+                    };
+                    console.log('Sending user data to main process:', userData);
+                    window.electronAPI.sendUserData(userData);
                     startLogging();
                 }
                 else{
