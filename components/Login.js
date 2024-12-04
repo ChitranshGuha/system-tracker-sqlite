@@ -34,6 +34,7 @@ export default function LoginForm({ onLogin}) {
       dispatch(loginOrRegisterEmployee({ email,password }))
       .then(status => {
         if(status.success){
+          window.electronAPI.sendUserData({authToken : status?.authToken});
           onLogin()
         }
         else {

@@ -1,8 +1,11 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
+const store = require('electron-settings');
 const path = require('path');
 const fs = require('fs');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
 const moment = require('moment');
+
+// API
 const { default: axios } = require('axios');
 
 const API_BASE_URL = "https://webtracker.infoware.xyz/api"
@@ -11,6 +14,7 @@ let mainWindow;
 let isLogging = false;
 let screenshotInterval;
 let captureIntervalMinutes;
+let activityIntervalMinutes;
 
 // Activities
 let clickCount = 0;
@@ -27,9 +31,16 @@ let ownerId = null;
 let authToken = null;
 let projectTaskActivityId = null;
 
-ipcMain.on('set-user-data', (event, data) => {
-  ownerId = data.ownerId;
+ipcMain.on('set-user-data', async (event, data) => {
   authToken = data.authToken;
+  if(authToken){
+    store.set('authToken', authToken);
+    await fetchCaptureInterval();
+  }
+});
+
+ipcMain.on('set-activity-data', (event, data) => {
+  ownerId = data.ownerId;
   projectTaskActivityId = data.projectTaskActivityId;
 });
 
@@ -38,16 +49,27 @@ ipcMain.on('fetch-capture-interval', async (event) => {
   event.sender.send('capture-interval', captureIntervalMinutes);
 });
 
-async function fetchCaptureInterval() {
-  try {
-    // const response = await axios.get('https://api.example.com/capture-interval');
-    // captureIntervalMinutes = response.data.interval;
+// Function to fetch activity interval from API
+ipcMain.on('fetch-activity-interval', async (event) => {
+  event.sender.send('activity-interval', activityIntervalMinutes);
+});
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    captureIntervalMinutes = 5;
+async function fetchCaptureInterval(auth) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/employee/auth/configuration/get`,{},
+      {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    captureIntervalMinutes = Math.ceil((response?.data?.data?.screenshotIntervalInSeconds)/60);
+    activityIntervalMinutes = 0.1; 
 
     if(mainWindow){
-      mainWindow.webContents.send('capture-interval', captureIntervalMinutes)
+      mainWindow.webContents.send('capture-interval', captureIntervalMinutes || 5);
+      mainWindow.webContents.send('acitivity-interval', activityIntervalMinutes || 1);
     }
 
     return captureIntervalMinutes;
@@ -78,15 +100,20 @@ async function createWindow() {
       : `file://${path.join(__dirname, '../out/index.html')}`
   );
 
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
-
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  await fetchCaptureInterval();
+  const storeToken = await store.get('authToken');
+  
+  if(storeToken){
+    authToken = storeToken;
+    await fetchCaptureInterval();
+  }
+
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 }
 
 app.on('ready', createWindow);
@@ -237,8 +264,4 @@ ipcMain.on('stop-logging', () => {
   isLogging = false;
   clearInterval(idleInterval);
   stopScreenshotCapture();
-});
-
-ipcMain.on('fetch-capture-interval', async (event) => {
-  event.sender.send('capture-interval', captureIntervalMinutes);
 });

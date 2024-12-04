@@ -1,22 +1,27 @@
-import React,{useState,useEffect} from 'react';
+import React,{useState,useEffect,useRef} from 'react';
 import { useSelector,useDispatch } from 'react-redux';
 import { FiPlay, FiSquare, FiFolder, FiList, FiFileText } from 'react-icons/fi';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 import { activityActions } from '../redux/activity/activityActions';
+import { TRACKER_VERSION } from '../utils/constants';
 
 const Task = ({
-    startLogging,stopLogging,isLogging,activeSession,setActiveSession,ownerId,authToken,stats
+    startLogging,stopLogging,isLogging,activeSession,setActiveSession,ownerId,authToken,stats,
+    activityInterval
 }) => {
     const dispatch = useDispatch();
+    const activityIntervalRef = useRef(null);
 
     const [projectId, setProjectId] = useState('');
     const [projectTaskId, setProjectTaskId] = useState('');
     const [description, setDescription] = useState('');
     const [errors, setErrors] = useState({ projectId: '', projectTaskId: '', description: '' });
     const [projectTaskActivityId,setProjectTaskActivityId] = useState(null);
+    const [projectTaskActivityDetailId,setProjectTaskActivityDetailId] = useState(null);
 
     const projects = useSelector(state => state?.employee?.projects?.list);
     const tasks = useSelector(state => state?.employee?.tasks?.list);
+    console.log(stats,projectTaskActivityDetailId)
 
     useEffect(() => {
         setProjectId('');
@@ -36,6 +41,51 @@ const Task = ({
         }
     },[projectId])
 
+    async function projectDetailActions(activityId){
+        const ipAddress = await getIpAddress();
+
+        const startUserData = {
+            ownerId,
+            projectTaskActivityId: activityId || projectTaskActivityId
+        };
+
+        dispatch(activityActions(authToken, "start", startUserData, true))
+        .then(status => {
+            if(status?.success){
+                setProjectTaskActivityDetailId(status?.id);
+            }
+            else{
+                console.log(status?.error);
+            }
+        });
+
+        const dispatchStartStop = () => { 
+            const stopUserData = {
+                ownerId,
+                projectTaskActivityDetailId,
+                mouseClick: stats?.clickCount,
+                keystroke: stats?.keyCount,
+                ...(stats?.accumulatedText  ? {keyPressed: stats?.accumulatedText} : {}),
+                idleTime: stats?.idleTime * 60,
+                trackerVersion : TRACKER_VERSION,
+                ipAddress
+            }
+        
+            dispatch(activityActions(authToken, "end", stopUserData, true))
+            .then(status => {
+                if(status?.success){
+                    setProjectTaskActivityDetailId(null);
+                    dispatch(activityActions(authToken, "start", startUserData, true));
+                }
+                else{
+                    console.log(status?.error)
+                }
+            });
+        }
+
+        activityIntervalRef.current = setInterval(dispatchStartStop, activityInterval * 1000 * 60);
+    }
+
     const handleFormSubmit = (e) => {
         e.preventDefault();
         const newErrors = {
@@ -54,13 +104,12 @@ const Task = ({
                 if(status?.success){
                     setProjectTaskActivityId(status?.id);
                     const userData = {
-                        authToken,
                         ownerId,
                         projectTaskActivityId: status?.id
                     };
-                    console.log('Sending user data to main process:', userData);
-                    window.electronAPI.sendUserData(userData);
+                    window.electronAPI.sendActivityData(userData);
                     startLogging();
+                    projectDetailActions(status?.id);
                 }
                 else{
                     console.log(status?.error);
@@ -69,30 +118,61 @@ const Task = ({
         }
     };
 
-    function stopLoggingHandler(){
+    const getIpAddress = async () => {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');  // External service to get public IP
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            console.error("Failed to get IP address", error);
+            return "unknown";
+        }
+    };
+
+    async function stopLoggingHandler(){
+        const ipAddress = await getIpAddress();
+
         const payload = { 
-            ownerId, 
-            projectTaskActivityId,
+            ownerId,
             mouseClick: stats?.clickCount,
             keystroke: stats?.keyCount,
-            keyPressed: stats?.accumulatedText,
+            ...(stats?.accumulatedText ? {keyPressed: stats?.accumulatedText} : {}),
             idleTime: stats?.idleTime * 60,
+            trackerVersion : TRACKER_VERSION,
+            ipAddress
         };
 
-        dispatch(activityActions(authToken,"end",payload))
+        dispatch(activityActions(authToken, "end", {...payload,projectTaskActivityDetailId}, true))
         .then(status => {
             if(status?.success){
-                setProjectId("");
-                setProjectTaskId("");
-                setDescription("");
-                setActiveSession(null);
-                setProjectTaskActivityId(null);
-                stopLogging();
+                setProjectTaskActivityDetailId(null);
+                dispatch(activityActions(authToken,"end",{...payload,projectTaskActivityId}))
+                .then(status => {
+                    if(status?.success){
+                        clearInterval(activityIntervalRef.current);
+                        activityIntervalRef.current = null;
+        
+                        setProjectId("");
+                        setProjectTaskId("");
+                        setDescription("");
+                        setActiveSession(null);
+                        setProjectTaskActivityId(null);
+                        stopLogging();
+                        const userData = {
+                            ownerId : null,
+                            projectTaskActivityId: null,
+                        };
+                        window.electronAPI.sendActivityData(userData);
+                    }
+                    else{
+                        console.log(status?.error);
+                    }
+                })
             }
             else{
-                console.log(status?.error);
+                console.log(status?.error)
             }
-        })
+        });
     }
 
     const handleKeyDown = (e) => {

@@ -18,6 +18,7 @@ function ActivityLogger() {
 
   const [isLogging, setIsLogging] = useState(false);
   const [captureInterval, setCaptureInterval] = useState(1);
+  const [activityInterval, setActivityInterval] = useState(1);
   const authToken = useSelector(state => state?.auth?.authToken);
   
   useEffect(() => {
@@ -49,6 +50,10 @@ function ActivityLogger() {
       window.electronAPI.getCaptureInterval((interval) => {
         setCaptureInterval(interval);
       });
+
+      window.electronAPI.getActivityInterval((interval) => {
+        setActivityInterval(interval);
+      });
     }
   }, [authToken]);
 
@@ -58,6 +63,7 @@ function ActivityLogger() {
 
   const handleLogout = () => {
     stopLogging();
+    window.electronAPI.sendUserData({authToken : null});
     setStats(initialStats);
     dispatch(logOutEmployee());
   };
@@ -107,6 +113,7 @@ function ActivityLogger() {
           stopLogging={stopLogging}
           isLogging={isLogging}
           captureInterval={captureInterval}
+          activityInterval={activityInterval}
           authToken={authToken}
         />
       )}

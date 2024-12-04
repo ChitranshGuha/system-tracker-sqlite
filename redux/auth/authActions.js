@@ -11,6 +11,7 @@ export function loginOrRegisterEmployee(payload){
         return {
             success : true,
             message : data?.data?.message,
+            authToken,
         };
     })
     .catch(error => {

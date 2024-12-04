@@ -8,7 +8,7 @@ import PastActivities from './PastActivities';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 
 function ActivityLogger({ 
-  onLogout, stats, startLogging, stopLogging, isLogging, captureInterval,authToken
+  onLogout, stats, startLogging, stopLogging, isLogging, captureInterval,authToken,activityInterval
 }) {
   const dispatch = useDispatch();
 
@@ -96,6 +96,7 @@ function ActivityLogger({
                   ownerId={ownerId}
                   authToken={authToken}
                   stats={stats}
+                  activityInterval={activityInterval}
                 />
 
                 {/* Stats Grid */}
