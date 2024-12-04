@@ -11,6 +11,8 @@ const Task = ({
 }) => {
     const dispatch = useDispatch();
     const activityIntervalRef = useRef(null);
+    const statsRef = useRef(stats);
+    const projectTaskActivityDetailIdRef = useRef(stats);
 
     const [projectId, setProjectId] = useState('');
     const [projectTaskId, setProjectTaskId] = useState('');
@@ -21,7 +23,6 @@ const Task = ({
 
     const projects = useSelector(state => state?.employee?.projects?.list);
     const tasks = useSelector(state => state?.employee?.tasks?.list);
-    console.log(stats,projectTaskActivityDetailId)
 
     useEffect(() => {
         setProjectId('');
@@ -41,48 +42,64 @@ const Task = ({
         }
     },[projectId])
 
-    async function projectDetailActions(activityId){
-        const ipAddress = await getIpAddress();
+    useEffect(() => {
+        statsRef.current = stats;
+    }, [stats]);
 
+    useEffect(() => {
+        if(projectTaskActivityDetailId) projectTaskActivityDetailIdRef.current = projectTaskActivityDetailId
+        else projectTaskActivityDetailIdRef.current = null
+    },[projectTaskActivityDetailId])
+
+    async function projectDetailActions(activityId) {
+        const ipAddress = await getIpAddress();
+    
         const startUserData = {
             ownerId,
-            projectTaskActivityId: activityId || projectTaskActivityId
+            projectTaskActivityId: activityId || projectTaskActivityId,
         };
-
+    
         dispatch(activityActions(authToken, "start", startUserData, true))
-        .then(status => {
-            if(status?.success){
+        .then((status) => {
+            if (status?.success) {
                 setProjectTaskActivityDetailId(status?.id);
-            }
-            else{
+            } else {
                 console.log(status?.error);
             }
         });
-
-        const dispatchStartStop = () => { 
+    
+        const dispatchStartStop = () => {
+            const updatedStats = statsRef.current;
+            
             const stopUserData = {
                 ownerId,
-                projectTaskActivityDetailId,
-                mouseClick: stats?.clickCount,
-                keystroke: stats?.keyCount,
-                ...(stats?.accumulatedText  ? {keyPressed: stats?.accumulatedText} : {}),
-                idleTime: stats?.idleTime * 60,
-                trackerVersion : TRACKER_VERSION,
-                ipAddress
-            }
-        
+                projectTaskActivityDetailId : projectTaskActivityDetailIdRef.current,
+                mouseClick: updatedStats?.clickCount,
+                keystroke: updatedStats?.keyCount,
+                ...(updatedStats?.accumulatedText ? { keyPressed: updatedStats?.accumulatedText } : {}),
+                idleTime: updatedStats?.idleTime * 60,
+                trackerVersion: TRACKER_VERSION,
+                ipAddress,
+            };
+    
             dispatch(activityActions(authToken, "end", stopUserData, true))
-            .then(status => {
-                if(status?.success){
-                    setProjectTaskActivityDetailId(null);
-                    dispatch(activityActions(authToken, "start", startUserData, true));
-                }
-                else{
-                    console.log(status?.error)
-                }
-            });
-        }
-
+                .then((status) => {
+                    if (status?.success) {
+                        setProjectTaskActivityDetailId(null);
+                        dispatch(activityActions(authToken, "start", startUserData, true))
+                        .then((status) => {
+                            if (status?.success) {
+                                setProjectTaskActivityDetailId(status?.id);
+                            } else {
+                                console.log(status?.error);
+                            }
+                        });;
+                    } else {
+                        console.log(status?.error);
+                    }
+                });
+        };
+    
         activityIntervalRef.current = setInterval(dispatchStartStop, activityInterval * 1000 * 60);
     }
 
