@@ -7,7 +7,7 @@ import { TRACKER_VERSION } from '../utils/constants';
 
 const Task = ({
     startLogging,stopLogging,isLogging,activeSession,setActiveSession,ownerId,authToken,stats,
-    activityInterval
+    activityInterval,socket
 }) => {
     const dispatch = useDispatch();
     const activityIntervalRef = useRef(null);
@@ -20,6 +20,8 @@ const Task = ({
     const [errors, setErrors] = useState({ projectId: '', projectTaskId: '', description: '' });
     const [projectTaskActivityId,setProjectTaskActivityId] = useState(null);
     const [projectTaskActivityDetailId,setProjectTaskActivityDetailId] = useState(null);
+
+    const [employeeRealtimeProjectTaskActivityId,setEmployeeRealtimeProjectTaskActivityId] = useState(null);
 
     const projects = useSelector(state => state?.employee?.projects?.list);
     const tasks = useSelector(state => state?.employee?.tasks?.list);
@@ -80,6 +82,8 @@ const Task = ({
                 idleTime: updatedStats?.idleTime * 60,
                 trackerVersion: TRACKER_VERSION,
                 ipAddress,
+                appWebsites : updatedStats?.appWebsites,
+                urls : updatedStats?.urls
             };
     
             dispatch(activityActions(authToken, "end", stopUserData, true))
@@ -126,6 +130,14 @@ const Task = ({
                     };
                     window.electronAPI.sendActivityData(userData);
                     startLogging();
+
+                    if(socket){
+                        socket.emit("/project/task/activity/start",{ projectTaskId });
+                        socket.on("/project/task/activity/start",response => setEmployeeRealtimeProjectTaskActivityId(response?.data?.id));
+                    } else {
+                        console.error("Socket is not connected!");
+                    }
+
                     projectDetailActions(status?.id);
                 }
                 else{
@@ -137,7 +149,7 @@ const Task = ({
 
     const getIpAddress = async () => {
         try {
-            const response = await fetch('https://api.ipify.org?format=json');  // External service to get public IP
+            const response = await fetch('https://api.ipify.org?format=json');
             const data = await response.json();
             return data.ip;
         } catch (error) {
@@ -156,7 +168,9 @@ const Task = ({
             ...(stats?.accumulatedText ? {keyPressed: stats?.accumulatedText} : {}),
             idleTime: stats?.idleTime * 60,
             trackerVersion : TRACKER_VERSION,
-            ipAddress
+            ipAddress,
+            appWebsites : stats?.appWebsites,
+            urls : stats?.urls
         };
 
         dispatch(activityActions(authToken, "end", {...payload,projectTaskActivityDetailId}, true))
@@ -166,6 +180,13 @@ const Task = ({
                 dispatch(activityActions(authToken,"end",{...payload,projectTaskActivityId}))
                 .then(status => {
                     if(status?.success){
+                        if(socket){
+                            socket.emit("/project/task/activity/end", { employeeRealtimeProjectTaskActivityId });
+                            socket.on("/project/task/activity/end", response => setEmployeeRealtimeProjectTaskActivityId(null));
+                        } else {
+                            console.error("Socket is not connected!");
+                        }
+
                         clearInterval(activityIntervalRef.current);
                         activityIntervalRef.current = null;
         

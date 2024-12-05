@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import Task from './Task';
 import PastActivities from './PastActivities';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
+import io from 'socket.io-client'
 
 function ActivityLogger({ 
   onLogout, stats, startLogging, stopLogging, isLogging, captureInterval,authToken,activityInterval
@@ -13,9 +14,30 @@ function ActivityLogger({
   const dispatch = useDispatch();
 
   const [ownerId,setOwnerId] = useState(null);
+  const [socket, setSocket] = useState(null);
+
   useEffect(() => {
     dispatch(gettingEmployeeActionsList(authToken,"employee/auth/workspace/list","workspaces"))
   },[])
+
+  useEffect(() => {
+    if(ownerId && authToken){
+      const socketInstance = io(`https://webtracker.infoware.xyz/employee?token=${authToken}&ownerId=${ownerId}`);
+      setSocket(socketInstance);
+  
+      socketInstance.on('connect', () => {
+        console.log('Socket connection successful!')
+      })
+
+      socketInstance.on('connect_error', (error) => {
+        console.error('Socket connection error:', error,socketInstance);
+      });
+  
+      return () => {
+        socketInstance.disconnect();
+      };
+    }
+  },[ownerId,authToken])
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
@@ -97,6 +119,7 @@ function ActivityLogger({
                   authToken={authToken}
                   stats={stats}
                   activityInterval={activityInterval}
+                  socket={socket}
                 />
 
                 {/* Stats Grid */}

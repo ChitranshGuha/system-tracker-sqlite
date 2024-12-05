@@ -31,6 +31,12 @@ let ownerId = null;
 let authToken = null;
 let projectTaskActivityId = null;
 
+// Active window tracking
+let lastActiveWindow = null;
+let appWebsites = [];
+let urls = [];
+
+
 ipcMain.on('set-user-data', async (event, data) => {
   authToken = data.authToken;
   if(authToken){
@@ -65,7 +71,7 @@ async function fetchCaptureInterval(auth) {
       }
     );
     captureIntervalMinutes = Math.ceil((response?.data?.data?.screenshotIntervalInSeconds)/60);
-    activityIntervalMinutes = 0.1; 
+    activityIntervalMinutes = Math.ceil((response?.data?.data?.activityDetailIntervalInSeconds)/60); 
 
     if(mainWindow){
       mainWindow.webContents.send('capture-interval', captureIntervalMinutes || 5);
@@ -130,8 +136,26 @@ app.on('activate', () => {
   }
 });
 
+async function getActiveWindowInfo() {
+  try {
+    const { activeWindow } = await import('get-windows');
+    const window = await activeWindow();
+    if (window) {
+      return {
+        platform : window?.platform,
+        name: window.owner.name,
+        title: window.title,
+        memoryUsage : window?.memoryUsage,
+      };
+    }
+  } catch (error) {
+    console.error('Error getting active window info:', error);
+  }
+  return null;
+}
+
 // Function to update and send stats
-function updateStats(isActivity = false) {
+async function updateStats(isActivity = false) {
   const currentTime = Date.now();
   
   if (!isActivity) {
@@ -145,12 +169,28 @@ function updateStats(isActivity = false) {
     lastActivityTime = currentTime;
   }
 
+  const activeWindow = await getActiveWindowInfo();
+
+  if (activeWindow && activeWindow.name?.toLowerCase().trim() !== "electron" && (
+    lastActiveWindow === null || 
+    activeWindow.name !== lastActiveWindow.name || activeWindow.title !== lastActiveWindow.title
+  )) {
+    if(lastActiveWindow === null || !(appWebsites?.includes(activeWindow?.name))){
+      appWebsites?.push(activeWindow?.name);
+    }
+    urls?.push(activeWindow);
+    
+    lastActiveWindow = activeWindow;
+  }
+
   mainWindow.webContents.send('update-stats', { 
     clickCount, 
     keyCount, 
     idleTime: accumulatedIdleTime, 
     accumulatedText,
-    lastActive: moment(lastActivityTime).format('hh:mm:ss A') 
+    lastActive: moment(lastActivityTime).format('hh:mm:ss A'),
+    appWebsites,
+    urls,
   });
 
   // Clear existing interval and start a new one
@@ -256,6 +296,9 @@ ipcMain.on('start-logging', () => {
   accumulatedIdleTime = 0;
   lastActivityTime = Date.now();
   lastIdleCheckTime = Date.now();
+  lastActiveWindow = null;
+  appWebsites = [],
+  urls = [],
   startIdleTracking();
   startScreenshotCapture();
 });

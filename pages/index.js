@@ -5,13 +5,6 @@ import moment from 'moment';
 import { useSelector,useDispatch } from 'react-redux';
 import { getAuthDetails,logOutEmployee } from '../redux/auth/authActions';
 
-const VALID_USERS = [
-  { email: 'john@example.com', password: '123456', name: 'John', color: '#4f46e5' },
-  { email: 'alice@example.com', password: '123456', name: 'Alice', color: '#059669' },
-  { email: 'bob@example.com', password: '123456', name: 'Bob', color: '#dc2626' },
-  { email: 'emma@example.com', password: '123456', name: 'Emma', color: '#7c3aed' }
-];
-
 function ActivityLogger() {
   const dispatch = useDispatch();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
