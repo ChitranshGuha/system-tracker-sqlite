@@ -53,6 +53,15 @@ const Task = ({
         else projectTaskActivityDetailIdRef.current = null
     },[projectTaskActivityDetailId])
 
+    useEffect(() => {
+        if(socket){
+            socket.emit("/project/task/activity/update",{ employeeRealtimeProjectTaskActivityId,appWebsites : stats?.appWebsites });
+            socket.on("/project/task/activity/update",response => console.log("Activity socket updated ::",response));
+        } else {
+            console.error("Socket is not connected!");
+        }
+    },[stats?.urls])
+
     async function projectDetailActions(activityId) {
         const ipAddress = await getIpAddress();
     
