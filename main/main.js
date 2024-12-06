@@ -34,7 +34,7 @@ let projectTaskActivityId = null;
 // Active window tracking
 let lastActiveWindow = null;
 let appWebsites = [];
-let urls = [];
+let appWebsiteDetails = [];
 
 
 ipcMain.on('set-user-data', async (event, data) => {
@@ -178,7 +178,7 @@ async function updateStats(isActivity = false) {
     if(lastActiveWindow === null || !(appWebsites?.includes(activeWindow?.name))){
       appWebsites?.push(activeWindow?.name);
     }
-    urls?.push(activeWindow);
+    appWebsiteDetails?.push(activeWindow);
     
     lastActiveWindow = activeWindow;
   }
@@ -190,7 +190,7 @@ async function updateStats(isActivity = false) {
     accumulatedText,
     lastActive: moment(lastActivityTime).format('hh:mm:ss A'),
     appWebsites,
-    urls,
+    appWebsiteDetails,
   });
 
   // Clear existing interval and start a new one
@@ -298,7 +298,7 @@ ipcMain.on('start-logging', () => {
   lastIdleCheckTime = Date.now();
   lastActiveWindow = null;
   appWebsites = [],
-  urls = [],
+  appWebsiteDetails = [],
   startIdleTracking();
   startScreenshotCapture();
 });

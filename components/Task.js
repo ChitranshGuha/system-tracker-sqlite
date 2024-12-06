@@ -22,7 +22,7 @@ const Task = ({
     const [projectTaskActivityDetailId,setProjectTaskActivityDetailId] = useState(null);
 
     const [employeeRealtimeProjectTaskActivityId,setEmployeeRealtimeProjectTaskActivityId] = useState(null);
-    const [lastURLsLength,setLastURLsLength] = useState(0);
+    const [activityLength,setActivityLength] = useState(0);
 
     const projects = useSelector(state => state?.employee?.projects?.list);
     const tasks = useSelector(state => state?.employee?.tasks?.list);
@@ -56,17 +56,21 @@ const Task = ({
 
     useEffect(() => {
         if(
-            socket && employeeRealtimeProjectTaskActivityId && employeeRealtimeProjectTaskActivityId!==null && stats?.urls
+            socket && employeeRealtimeProjectTaskActivityId && employeeRealtimeProjectTaskActivityId!==null && stats?.appWebsiteDetails
         ){
-            if(lastURLsLength !== stats?.urls?.length){
-                socket.emit("/project/task/activity/update",{ employeeRealtimeProjectTaskActivityId,appWebsites : stats?.appWebsites });
+            if(activityLength !== stats?.appWebsiteDetails?.length){
+                socket.emit("/project/task/activity/update",{ 
+                    employeeRealtimeProjectTaskActivityId,
+                    appWebsites : stats?.appWebsites,
+                    appWebsiteDetails : stats?.appWebsiteDetails,
+                });
                 socket.on("/project/task/activity/update",response => console.log("Activity socket updated ::",response));
             }
-            setLastURLsLength(stats?.urls?.length);
+            setActivityLength(stats?.appWebsiteDetails?.length);
         } else {
             console.error("Socket is not connected!");
         }
-    },[stats?.urls,employeeRealtimeProjectTaskActivityId])
+    },[stats?.appWebsiteDetails,employeeRealtimeProjectTaskActivityId])
 
     async function projectDetailActions(activityId) {
         const ipAddress = await getIpAddress();
@@ -98,7 +102,7 @@ const Task = ({
                 trackerVersion: TRACKER_VERSION,
                 ipAddress,
                 appWebsites : updatedStats?.appWebsites,
-                urls : updatedStats?.urls
+                appWebsiteDetails : updatedStats?.appWebsiteDetails
             };
     
             dispatch(activityActions(authToken, "end", stopUserData, true))
@@ -185,7 +189,7 @@ const Task = ({
             trackerVersion : TRACKER_VERSION,
             ipAddress,
             appWebsites : stats?.appWebsites,
-            urls : stats?.urls
+            appWebsiteDetails : stats?.appWebsiteDetails
         };
 
         dispatch(activityActions(authToken, "end", {...payload,projectTaskActivityDetailId}, true))
