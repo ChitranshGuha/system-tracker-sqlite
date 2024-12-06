@@ -22,6 +22,7 @@ const Task = ({
     const [projectTaskActivityDetailId,setProjectTaskActivityDetailId] = useState(null);
 
     const [employeeRealtimeProjectTaskActivityId,setEmployeeRealtimeProjectTaskActivityId] = useState(null);
+    const [lastURLsLength,setLastURLsLength] = useState(0);
 
     const projects = useSelector(state => state?.employee?.projects?.list);
     const tasks = useSelector(state => state?.employee?.tasks?.list);
@@ -54,13 +55,18 @@ const Task = ({
     },[projectTaskActivityDetailId])
 
     useEffect(() => {
-        if(socket){
-            socket.emit("/project/task/activity/update",{ employeeRealtimeProjectTaskActivityId,appWebsites : stats?.appWebsites });
-            socket.on("/project/task/activity/update",response => console.log("Activity socket updated ::",response));
+        if(
+            socket && employeeRealtimeProjectTaskActivityId && employeeRealtimeProjectTaskActivityId!==null && stats?.urls
+        ){
+            if(lastURLsLength !== stats?.urls?.length){
+                socket.emit("/project/task/activity/update",{ employeeRealtimeProjectTaskActivityId,appWebsites : stats?.appWebsites });
+                socket.on("/project/task/activity/update",response => console.log("Activity socket updated ::",response));
+            }
+            setLastURLsLength(stats?.urls?.length);
         } else {
             console.error("Socket is not connected!");
         }
-    },[stats?.urls])
+    },[stats?.urls,employeeRealtimeProjectTaskActivityId])
 
     async function projectDetailActions(activityId) {
         const ipAddress = await getIpAddress();
