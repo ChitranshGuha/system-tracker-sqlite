@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { Eye, EyeOff } from 'lucide-react'
 import { loginOrRegisterEmployee } from '../redux/auth/authActions'
+import { API_BASE_URL } from '../utils/constants'
 
 export default function LoginForm({ onLogin}) {
   const dispatch = useDispatch();
@@ -10,6 +11,22 @@ export default function LoginForm({ onLogin}) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
+
+  const [domainId,setDomainId] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/employee/auth/domain/get`,
+      {
+        method : "POST",
+        body : JSON.stringify({domainName : "test"}),
+        headers : {
+          "Content-type" : "Application/json"
+        }
+      }
+    )
+    .then(res => res.json())
+    .then(data => setDomainId(data?.data?.id))
+  },[])
 
   const validateForm = () => {
     const newErrors = {}
@@ -31,7 +48,7 @@ export default function LoginForm({ onLogin}) {
   const handleLogin = (e) => {
     e.preventDefault()
     if (validateForm()) {
-      dispatch(loginOrRegisterEmployee({ email,password }))
+      dispatch(loginOrRegisterEmployee({ email,password,domainId }))
       .then(status => {
         if(status.success){
           window.electronAPI.sendUserData({authToken : status?.authToken});
