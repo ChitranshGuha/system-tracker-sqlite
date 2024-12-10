@@ -119,6 +119,7 @@ export default function PastActivities({authToken,ownerId}) {
       data: lineChartData
     }
   ]
+  console.log(pastActivities)
 
   return (
     <div className="space-y-6">
@@ -184,7 +185,7 @@ export default function PastActivities({authToken,ownerId}) {
                       : "-"
                     }
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-center">{Number(activity.totalTime / 60).toFixed(1)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-center">{Number(activity.totalTime / 60).toFixed(2)}</td>
                   <td className={`px-4 py-3 whitespace-nowrap text-center ${TEXT_COLORS[0]}`}>{activity.mouseClick}</td>
                   <td className={`px-4 py-3 whitespace-nowrap text-center ${TEXT_COLORS[1]}`}>{activity.keystroke}</td>
                   <td className={`px-4 py-3 whitespace-nowrap text-center ${TEXT_COLORS[2]}`}>{Number(activity.idleTime / 60).toFixed(2)}</td>
