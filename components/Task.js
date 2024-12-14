@@ -14,6 +14,15 @@ const Task = ({
     const statsRef = useRef(stats);
     const projectTaskActivityDetailIdRef = useRef(stats);
 
+    const initialLastStats =  {
+        clickCount: 0,
+        keyCount: 0,
+        idleTime: 0,
+        accumulatedText : [],
+        appWebsiteDetails : [],
+    }
+    const lastStatsRef = useRef(initialLastStats);
+
     const [projectId, setProjectId] = useState('');
     const [projectTaskId, setProjectTaskId] = useState('');
     const [description, setDescription] = useState('');
@@ -91,19 +100,33 @@ const Task = ({
     
         const dispatchStartStop = () => {
             const updatedStats = statsRef.current;
+            const lastStats = lastStatsRef.current;
+            const activityDifference = {
+                mouseClick: +updatedStats?.clickCount - (+lastStats.clickCount),
+                keystroke: +updatedStats?.keyCount - (+lastStats.keyCount),
+                idleTime: (+updatedStats?.idleTime - (+lastStats.idleTime)) * 60,
+                keyPressed: updatedStats?.accumulatedText.slice(lastStats?.accumulatedText?.length),
+                appWebsiteDetails: updatedStats?.appWebsiteDetails.slice(0,updatedStats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length),
+            }
+
+            lastStatsRef.current = {
+                clickCount: +updatedStats?.clickCount,
+                keyCount: +updatedStats?.keyCount,
+                idleTime: +updatedStats?.idleTime,
+                accumulatedText: updatedStats?.accumulatedText,
+                appWebsiteDetails : updatedStats?.appWebsiteDetails,
+            }
             
             const stopUserData = {
                 ownerId,
                 projectTaskActivityDetailId : projectTaskActivityDetailIdRef.current,
-                mouseClick: updatedStats?.clickCount,
-                keystroke: updatedStats?.keyCount,
-                ...(updatedStats?.accumulatedText ? { keyPressed: updatedStats?.accumulatedText } : {}),
-                idleTime: updatedStats?.idleTime * 60,
                 trackerVersion: TRACKER_VERSION,
                 ipAddress,
                 appWebsites : updatedStats?.appWebsites,
-                appWebsiteDetails : updatedStats?.appWebsiteDetails
+                ...activityDifference
             };
+
+            console.log("activityDifference",activityDifference);
     
             dispatch(activityActions(authToken, "end", stopUserData, true))
                 .then((status) => {
@@ -180,11 +203,21 @@ const Task = ({
     async function stopLoggingHandler(){
         const ipAddress = await getIpAddress();
 
+        const lastStats = lastStatsRef.current;
+    
+        const activityDifference = {
+            mouseClick: +stats?.clickCount - (+lastStats.clickCount),
+            keystroke: +stats?.keyCount - (+lastStats.keyCount),
+            idleTime: (+stats?.idleTime - (+lastStats.idleTime)) * 60,
+            keyPressed: stats?.accumulatedText.slice(lastStats?.accumulatedText?.length),
+            appWebsiteDetails: stats?.appWebsiteDetails.slice(0,stats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length),
+        }
+
         const payload = { 
             ownerId,
             mouseClick: stats?.clickCount,
             keystroke: stats?.keyCount,
-            ...(stats?.accumulatedText ? {keyPressed: stats?.accumulatedText} : {}),
+            keyPressed: stats?.accumulatedText,
             idleTime: stats?.idleTime * 60,
             trackerVersion : TRACKER_VERSION,
             ipAddress,
@@ -192,10 +225,15 @@ const Task = ({
             appWebsiteDetails : stats?.appWebsiteDetails
         };
 
-        dispatch(activityActions(authToken, "end", {...payload,projectTaskActivityDetailId}, true))
+        dispatch(activityActions(authToken, "end", {
+            ...payload,
+            projectTaskActivityDetailId,
+            ...activityDifference
+        }, true))
         .then(status => {
             if(status?.success){
                 setProjectTaskActivityDetailId(null);
+                lastStatsRef.current = initialLastStats;
                 dispatch(activityActions(authToken,"end",{...payload,projectTaskActivityId}))
                 .then(status => {
                     if(status?.success){

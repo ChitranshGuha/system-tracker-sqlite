@@ -71,7 +71,7 @@ async function fetchCaptureInterval(auth) {
       }
     );
     captureIntervalMinutes = Math.ceil((response?.data?.data?.screenshotIntervalInSeconds)/60);
-    activityIntervalMinutes = Math.ceil((response?.data?.data?.activityDetailIntervalInSeconds)/60); 
+    activityIntervalMinutes = (response?.data?.data?.activityDetailIntervalInSeconds)/60;
 
     if(mainWindow){
       mainWindow.webContents.send('capture-interval', captureIntervalMinutes || 5);
@@ -146,6 +146,7 @@ async function getActiveWindowInfo() {
         name: window.owner.name,
         title: window.title,
         memoryUsage : window?.memoryUsage,
+        time: new Date().toISOString()
       };
     }
   } catch (error) {
@@ -176,9 +177,9 @@ async function updateStats(isActivity = false) {
     activeWindow.name !== lastActiveWindow.name || activeWindow.title !== lastActiveWindow.title
   )) {
     if(lastActiveWindow === null || !(appWebsites?.includes(activeWindow?.name))){
-      appWebsites?.push(activeWindow?.name);
+      appWebsites?.unshift(activeWindow?.name);
     }
-    appWebsiteDetails?.push(activeWindow);
+    appWebsiteDetails?.unshift(activeWindow);
     
     lastActiveWindow = activeWindow;
   }
