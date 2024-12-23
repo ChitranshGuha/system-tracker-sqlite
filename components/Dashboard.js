@@ -53,10 +53,23 @@ function ActivityLogger({
 
   useEffect(() => {
     if(workspaces && workspaces?.length!==0){
-      setOwnerId(workspaces?.[workspaces.length-1]?.ownerId)
+      const workspaceOwnerId = workspaces?.[workspaces.length-1]?.ownerId
+      setOwnerId(workspaceOwnerId);
+      localStorage.setItem("ownerId",workspaceOwnerId)
     }
   },[workspaces])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
+      const storedOwnerId = localStorage.getItem("ownerId")
+      const storedActiveSession = localStorage.getItem("activeSession");
+      if(storedIsLogging){
+        setActiveSession(JSON.parse(storedActiveSession));
+        setOwnerId(storedOwnerId);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">

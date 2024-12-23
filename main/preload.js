@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('set-activity-data', data);
   },
   startLogging: () => ipcRenderer.send('start-logging'),
+  restartLogging: () => ipcRenderer.invoke('restart-logging'),
   stopLogging: () => ipcRenderer.send('stop-logging'),
   onUpdateStats: (callback) => ipcRenderer.on('update-stats', (_, value) => callback(value)),
   getCaptureInterval: (callback) => {
@@ -18,4 +19,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('fetch-activity-interval');
     ipcRenderer.on('activity-interval', (_, value) => callback(value));
   },
+  getInitialStats: () => ipcRenderer.invoke('get-initial-stats'),
 });

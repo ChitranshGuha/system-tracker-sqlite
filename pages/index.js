@@ -68,6 +68,7 @@ function ActivityLogger() {
 
     if (typeof window !== 'undefined' && window?.electronAPI) {
       window?.electronAPI?.onUpdateStats(handleStatsUpdate);
+      window.electronAPI.getInitialStats().then(handleStatsUpdate);
     }
 
     return () => {
@@ -82,6 +83,7 @@ function ActivityLogger() {
       window.electronAPI.startLogging();
       setIsLogging(true);
       setStats(initialStats);
+      localStorage.setItem("isLogging",JSON.stringify(true))
     }
   };
 
@@ -89,8 +91,19 @@ function ActivityLogger() {
     if (isLogging && typeof window !== 'undefined' && window.electronAPI) {
       window.electronAPI.stopLogging();
       setIsLogging(false);
+      localStorage.setItem("isLogging",JSON.stringify(false))
     }
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
+      if(storedIsLogging){
+        setIsLogging(storedIsLogging);
+        window.electronAPI.restartLogging();
+      }
+    }
+  }, []);
 
   return (
     <>

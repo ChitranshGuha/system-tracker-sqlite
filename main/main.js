@@ -36,6 +36,19 @@ let lastActiveWindow = null;
 let appWebsites = [];
 let appWebsiteDetails = [];
 
+// Stats
+
+let initialStats = {
+  clickCount: 0,
+  keyCount: 0,
+  idleTime: 0,
+  accumulatedText: '',
+  lastActive: '',
+  appWebsites: [],
+  appWebsiteDetails: []
+}
+
+let stats = initialStats;
 
 ipcMain.on('set-user-data', async (event, data) => {
   authToken = data.authToken;
@@ -116,6 +129,11 @@ async function createWindow() {
     authToken = storeToken;
     await fetchCaptureInterval();
   }
+  
+  await loadStats();
+  setTimeout(() => {
+    mainWindow.webContents.send('update-stats', stats);
+  }, 500);
 
   if (isDev) {
     mainWindow.webContents.openDevTools();
@@ -184,7 +202,7 @@ async function updateStats(isActivity = false) {
     lastActiveWindow = activeWindow;
   }
 
-  mainWindow.webContents.send('update-stats', { 
+  stats = { 
     clickCount, 
     keyCount, 
     idleTime: accumulatedIdleTime, 
@@ -192,7 +210,10 @@ async function updateStats(isActivity = false) {
     lastActive: moment(lastActivityTime).format('hh:mm:ss A'),
     appWebsites,
     appWebsiteDetails,
-  });
+  }
+
+  mainWindow.webContents.send('update-stats',stats);
+  saveStats(stats);
 
   // Clear existing interval and start a new one
   clearInterval(idleInterval);
@@ -304,8 +325,52 @@ ipcMain.on('start-logging', () => {
   startScreenshotCapture();
 });
 
+ipcMain.handle('restart-logging', async () => {
+  const savedStats = await store.get('stats');
+
+  isLogging = true;
+  clickCount = savedStats.clickCount;
+  keyCount = savedStats.keyCount;
+  accumulatedText = savedStats.accumulatedText;
+  accumulatedIdleTime = savedStats.idleTime;
+  lastActivityTime = Date.now();
+  lastIdleCheckTime = Date.now();
+  lastActiveWindow = null;
+  appWebsites = savedStats.appWebsites;
+  appWebsiteDetails = savedStats.appWebsiteDetails;
+  startIdleTracking();
+  startScreenshotCapture();
+});
+
+
 ipcMain.on('stop-logging', () => {
   isLogging = false;
   clearInterval(idleInterval);
   stopScreenshotCapture();
+  stats = initialStats;
 });
+
+ipcMain.handle('get-initial-stats', async () => {
+  return stats;
+});
+
+function saveStats(stats){
+  store.set('stats',stats) 
+}
+
+async function loadStats() {
+  const savedStats = await store.get('stats');
+  if (savedStats) {
+    stats = savedStats;
+    clickCount = stats.clickCount;
+    keyCount = stats.keyCount;
+    accumulatedIdleTime = stats.idleTime;
+    accumulatedText = stats.accumulatedText;
+    lastActivityTime = Date.now();
+    appWebsites = stats.appWebsites;
+    appWebsiteDetails = stats.appWebsiteDetails;
+  }
+  else{
+    stats = initialStats;
+  }
+}

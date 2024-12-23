@@ -81,23 +81,8 @@ const Task = ({
         }
     },[stats?.appWebsiteDetails,employeeRealtimeProjectTaskActivityId])
 
-    async function projectDetailActions(activityId) {
+    async function startStopActivityDetailHandler(startUserData){
         const ipAddress = await getIpAddress();
-    
-        const startUserData = {
-            ownerId,
-            projectTaskActivityId: activityId || projectTaskActivityId,
-        };
-    
-        dispatch(activityActions(authToken, "start", startUserData, true))
-        .then((status) => {
-            if (status?.success) {
-                setProjectTaskActivityDetailId(status?.id);
-            } else {
-                console.log(status?.error);
-            }
-        });
-    
         const dispatchStartStop = () => {
             const updatedStats = statsRef.current;
             const lastStats = lastStatsRef.current;
@@ -125,17 +110,17 @@ const Task = ({
                 appWebsites : updatedStats?.appWebsites,
                 ...activityDifference
             };
-
-            console.log("activityDifference",activityDifference);
     
             dispatch(activityActions(authToken, "end", stopUserData, true))
                 .then((status) => {
                     if (status?.success) {
                         setProjectTaskActivityDetailId(null);
+                        localStorage.setItem("projectTaskActivityDetailId",null);
                         dispatch(activityActions(authToken, "start", startUserData, true))
                         .then((status) => {
                             if (status?.success) {
                                 setProjectTaskActivityDetailId(status?.id);
+                                localStorage.setItem("projectTaskActivityDetailId",status?.id);
                             } else {
                                 console.log(status?.error);
                             }
@@ -147,6 +132,27 @@ const Task = ({
         };
     
         activityIntervalRef.current = setInterval(dispatchStartStop, activityInterval * 1000 * 60);
+    }
+
+    console.log(ownerId)
+
+    async function projectDetailActions(activityId) {
+        const startUserData = {
+            ownerId,
+            projectTaskActivityId: activityId || projectTaskActivityId,
+        };
+    
+        dispatch(activityActions(authToken, "start", startUserData, true))
+        .then((status) => {
+            if (status?.success) {
+                setProjectTaskActivityDetailId(status?.id);
+                localStorage.setItem("projectTaskActivityDetailId",status?.id);
+            } else {
+                console.log(status?.error);
+            }
+        });
+
+       startStopActivityDetailHandler(startUserData);
     }
 
     const handleFormSubmit = (e) => {
@@ -162,10 +168,14 @@ const Task = ({
             const payload = { ownerId, projectTaskId, description };
 
             setActiveSession({ projectId, projectTaskId, description });
+            localStorage.setItem("activeSession",JSON.stringify({ projectId, projectTaskId, description }))
+            
             dispatch(activityActions(authToken,"start",payload))
             .then(status => {
                 if(status?.success){
                     setProjectTaskActivityId(status?.id);
+                    localStorage.setItem("projectTaskActivityId",status?.id)
+
                     const userData = {
                         ownerId,
                         projectTaskActivityId: status?.id
@@ -175,7 +185,11 @@ const Task = ({
 
                     if(socket){
                         socket.emit("/project/task/activity/start",{ projectTaskId });
-                        socket.on("/project/task/activity/start",response => setEmployeeRealtimeProjectTaskActivityId(response?.data?.id));
+                        socket.on("/project/task/activity/start",response => {
+                            const id = response?.data?.id;
+                            setEmployeeRealtimeProjectTaskActivityId(id)
+                            localStorage.setItem("employeeRealtimeProjectTaskActivityId",id)
+                        });
                     } else {
                         console.error("Socket is not connected!");
                     }
@@ -233,13 +247,17 @@ const Task = ({
         .then(status => {
             if(status?.success){
                 setProjectTaskActivityDetailId(null);
+                localStorage.setItem("projectTaskActivityDetailId",null);
                 lastStatsRef.current = initialLastStats;
                 dispatch(activityActions(authToken,"end",{...payload,projectTaskActivityId}))
                 .then(status => {
                     if(status?.success){
                         if(socket){
                             socket.emit("/project/task/activity/end", { employeeRealtimeProjectTaskActivityId });
-                            socket.on("/project/task/activity/end", response => setEmployeeRealtimeProjectTaskActivityId(null));
+                            socket.on("/project/task/activity/end", () => {
+                                setEmployeeRealtimeProjectTaskActivityId(null);
+                                localStorage.setItem("employeeRealtimeProjectTaskActivityId",null)
+                            });
                         } else {
                             console.error("Socket is not connected!");
                         }
@@ -251,7 +269,9 @@ const Task = ({
                         setProjectTaskId("");
                         setDescription("");
                         setActiveSession(null);
+                        localStorage.setItem("activeSession",null);
                         setProjectTaskActivityId(null);
+                        localStorage.setItem("projectTaskActivityId",null);
                         stopLogging();
                         const userData = {
                             ownerId : null,
@@ -276,7 +296,49 @@ const Task = ({
             handleFormSubmit(e);
         }
     }
-  
+
+    useEffect(() => {
+        const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
+        if(storedIsLogging){
+            const fetchData = async () => {
+              if (typeof window !== "undefined") {
+                const storedProjectTaskActivityId = localStorage.getItem("projectTaskActivityId");
+                const storedProjectTaskActivityDetailId = localStorage.getItem("projectTaskActivityDetailId");
+                const storedEmployeeRealtimeProjectTaskActivityId = localStorage.getItem("employeeRealtimeProjectTaskActivityId");
+          
+                setProjectTaskActivityId(storedProjectTaskActivityId);
+                setProjectTaskActivityDetailId(storedProjectTaskActivityDetailId);
+                projectTaskActivityDetailIdRef.current = storedProjectTaskActivityDetailId;
+                setEmployeeRealtimeProjectTaskActivityId(storedEmployeeRealtimeProjectTaskActivityId);
+          
+                const updatedStats = statsRef.current;
+                lastStatsRef.current = {
+                  clickCount: +updatedStats?.clickCount,
+                  keyCount: +updatedStats?.keyCount,
+                  idleTime: +updatedStats?.idleTime,
+                  accumulatedText: updatedStats?.accumulatedText,
+                  appWebsiteDetails: updatedStats?.appWebsiteDetails,
+                };
+          
+                const storedOwnerId = localStorage.getItem("ownerId");
+          
+                const startUserData = {
+                  ownerId: storedOwnerId,
+                  projectTaskActivityId: storedProjectTaskActivityId,
+                };
+    
+                try {
+                  await startStopActivityDetailHandler(startUserData);
+                } catch (error) {
+                  console.error("Error in startStopActivityDetailHandler:", error);
+                }
+              }
+            };
+          
+            fetchData();
+        }
+      }, []);      
+    
   return (
     <div className="mb-6 sm:mb-8">
         <form onSubmit={handleFormSubmit} className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm">
@@ -340,17 +402,17 @@ const Task = ({
                     <div className="flex items-center space-x-2">
                         <FiFolder className="text-indigo-500" />
                         <span className="font-medium">Project:</span>
-                        <span>{projects.find(p => p.id === activeSession.projectId)?.name}</span>
+                        <span>{projects.find(p => p?.id === activeSession?.projectId)?.name}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                         <FiList className="text-indigo-500" />
                         <span className="font-medium">Task:</span>
-                        <span>{tasks?.find(t => t.id === activeSession.projectTaskId)?.name}</span>
+                        <span>{tasks?.find(t => t?.id === activeSession?.projectTaskId)?.name}</span>
                     </div>
                     <div className="flex items-start space-x-2">
                         <FiFileText className="text-indigo-500 mt-1" />
                         <span className="font-medium">Task Description:</span>
-                        <span className="flex-1">{activeSession.description}</span>
+                        <span className="flex-1">{activeSession?.description}</span>
                     </div>
                 </div>
             )}
