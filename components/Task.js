@@ -90,8 +90,8 @@ const Task = ({
                 mouseClick: +updatedStats?.clickCount - (+lastStats.clickCount),
                 keystroke: +updatedStats?.keyCount - (+lastStats.keyCount),
                 idleTime: (+updatedStats?.idleTime - (+lastStats.idleTime)) * 60,
-                keyPressed: updatedStats?.accumulatedText.slice(lastStats?.accumulatedText?.length),
-                appWebsiteDetails: updatedStats?.appWebsiteDetails.slice(0,updatedStats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length),
+                keyPressed: updatedStats?.accumulatedText?.slice(lastStats?.accumulatedText?.length),
+                appWebsiteDetails: updatedStats?.appWebsiteDetails?.slice(0,updatedStats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length),
             }
 
             lastStatsRef.current = {
@@ -133,8 +133,6 @@ const Task = ({
     
         activityIntervalRef.current = setInterval(dispatchStartStop, activityInterval * 1000 * 60);
     }
-
-    console.log(ownerId)
 
     async function projectDetailActions(activityId) {
         const startUserData = {
@@ -223,8 +221,8 @@ const Task = ({
             mouseClick: +stats?.clickCount - (+lastStats.clickCount),
             keystroke: +stats?.keyCount - (+lastStats.keyCount),
             idleTime: (+stats?.idleTime - (+lastStats.idleTime)) * 60,
-            keyPressed: stats?.accumulatedText.slice(lastStats?.accumulatedText?.length),
-            appWebsiteDetails: stats?.appWebsiteDetails.slice(0,stats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length),
+            keyPressed: stats?.accumulatedText?.slice(lastStats?.accumulatedText?.length),
+            appWebsiteDetails: stats?.appWebsiteDetails?.slice(0,stats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length),
         }
 
         const payload = { 
@@ -241,7 +239,7 @@ const Task = ({
 
         dispatch(activityActions(authToken, "end", {
             ...payload,
-            projectTaskActivityDetailId,
+            projectTaskActivityDetailId : projectTaskActivityDetailIdRef.current,
             ...activityDifference
         }, true))
         .then(status => {
