@@ -334,6 +334,13 @@ const Task = ({
             };
           
             fetchData();
+
+            return () => {
+                if (activityIntervalRef.current) {
+                    clearInterval(activityIntervalRef.current);
+                    activityIntervalRef.current = null;
+                }
+            };
         }
       }, []);      
     
