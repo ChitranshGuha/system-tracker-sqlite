@@ -296,53 +296,54 @@ const Task = ({
     }
 
     useEffect(() => {
+      if (typeof window !== "undefined") {
         const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
-        if(storedIsLogging){
-            const fetchData = async () => {
-              if (typeof window !== "undefined") {
-                const storedProjectTaskActivityId = localStorage.getItem("projectTaskActivityId");
-                const storedProjectTaskActivityDetailId = localStorage.getItem("projectTaskActivityDetailId");
-                const storedEmployeeRealtimeProjectTaskActivityId = localStorage.getItem("employeeRealtimeProjectTaskActivityId");
-          
-                setProjectTaskActivityId(storedProjectTaskActivityId);
-                setProjectTaskActivityDetailId(storedProjectTaskActivityDetailId);
-                projectTaskActivityDetailIdRef.current = storedProjectTaskActivityDetailId;
-                setEmployeeRealtimeProjectTaskActivityId(storedEmployeeRealtimeProjectTaskActivityId);
-          
-                const updatedStats = statsRef.current;
-                lastStatsRef.current = {
-                  clickCount: +updatedStats?.clickCount,
-                  keyCount: +updatedStats?.keyCount,
-                  idleTime: +updatedStats?.idleTime,
-                  accumulatedText: updatedStats?.accumulatedText,
-                  appWebsiteDetails: updatedStats?.appWebsiteDetails,
-                };
-          
-                const storedOwnerId = localStorage.getItem("ownerId");
-          
-                const startUserData = {
-                  ownerId: storedOwnerId,
-                  projectTaskActivityId: storedProjectTaskActivityId,
-                };
-    
-                try {
-                  await startStopActivityDetailHandler(startUserData);
-                } catch (error) {
-                  console.error("Error in startStopActivityDetailHandler:", error);
-                }
-              }
-            };
-          
-            fetchData();
+        const storedOwnerId = localStorage.getItem("ownerId");
+        const storedProjectTaskActivityId = localStorage.getItem("projectTaskActivityId");
+        const storedProjectTaskActivityDetailId = localStorage.getItem("projectTaskActivityDetailId");
+        const storedEmployeeRealtimeProjectTaskActivityId = localStorage.getItem("employeeRealtimeProjectTaskActivityId");
 
-            return () => {
-                if (activityIntervalRef.current) {
-                    clearInterval(activityIntervalRef.current);
-                    activityIntervalRef.current = null;
-                }
+        if (
+          storedIsLogging && storedOwnerId && storedProjectTaskActivityId && 
+          storedProjectTaskActivityDetailId && storedEmployeeRealtimeProjectTaskActivityId
+        ) {
+          const fetchData = async () => {
+            setProjectTaskActivityId(storedProjectTaskActivityId);
+            projectTaskActivityDetailIdRef.current = storedProjectTaskActivityDetailId;
+            setEmployeeRealtimeProjectTaskActivityId(storedEmployeeRealtimeProjectTaskActivityId);
+    
+            const updatedStats = statsRef.current;
+            lastStatsRef.current = {
+              clickCount: +updatedStats?.clickCount,
+              keyCount: +updatedStats?.keyCount,
+              idleTime: +updatedStats?.idleTime,
+              accumulatedText: updatedStats?.accumulatedText,
+              appWebsiteDetails: updatedStats?.appWebsiteDetails,
             };
+    
+            const startUserData = {
+              ownerId: storedOwnerId,
+              projectTaskActivityId: storedProjectTaskActivityId,
+            };
+  
+            try {
+              await startStopActivityDetailHandler(startUserData);
+            } catch (error) {
+              console.error("Error in startStopActivityDetailHandler:", error);
+            }
+          };
+  
+          fetchData();
         }
-      }, []);      
+      }
+  
+      return () => {
+        if (activityIntervalRef.current) {
+          clearInterval(activityIntervalRef.current);
+          activityIntervalRef.current = null;
+        }
+      };
+    }, []);      
     
   return (
     <div className="mb-6 sm:mb-8">
@@ -458,3 +459,4 @@ const Task = ({
 }
 
 export default Task
+

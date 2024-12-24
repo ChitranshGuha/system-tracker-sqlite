@@ -135,9 +135,9 @@ async function createWindow() {
     mainWindow.webContents.send('update-stats', stats);
   }, 500);
 
-  if (isDev) {
+  // if (isDev) {
     mainWindow.webContents.openDevTools();
-  }
+  // }
 }
 
 app.on('ready', createWindow);
