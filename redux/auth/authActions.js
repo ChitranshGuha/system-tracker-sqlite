@@ -47,6 +47,7 @@ export function getAuthDetails(){
 export function logOutEmployee(){
     localStorage.removeItem("employeeAuthToken");
     localStorage.removeItem("employeeDetails");
+    localStorage.clear();
     
     return {
         type : type.EMPLOYEE_LOGOUT,
