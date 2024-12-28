@@ -359,7 +359,7 @@ const useTaskLogic = (
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && authToken !== null) {
       const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
       const storedOwnerId = localStorage.getItem("ownerId");
       const storedProjectTaskActivityId = localStorage.getItem(
@@ -372,43 +372,44 @@ const useTaskLogic = (
         "employeeRealtimeProjectTaskActivityId"
       );
 
-      if (
-        storedIsLogging &&
-        storedOwnerId &&
-        storedProjectTaskActivityId &&
-        storedProjectTaskActivityDetailId &&
-        storedEmployeeRealtimeProjectTaskActivityId
-      ) {
-        const fetchData = async () => {
-          setProjectTaskActivityId(storedProjectTaskActivityId);
-          projectTaskActivityDetailIdRef.current =
-            storedProjectTaskActivityDetailId;
-          setEmployeeRealtimeProjectTaskActivityId(
-            storedEmployeeRealtimeProjectTaskActivityId
-          );
+      if (storedIsLogging) {
+        if (
+          storedOwnerId &&
+          storedProjectTaskActivityId &&
+          storedProjectTaskActivityDetailId &&
+          storedEmployeeRealtimeProjectTaskActivityId
+        ) {
+          const fetchData = async () => {
+            setProjectTaskActivityId(storedProjectTaskActivityId);
+            projectTaskActivityDetailIdRef.current =
+              storedProjectTaskActivityDetailId;
+            setEmployeeRealtimeProjectTaskActivityId(
+              storedEmployeeRealtimeProjectTaskActivityId
+            );
 
-          const updatedStats = statsRef.current;
-          lastStatsRef.current = {
-            clickCount: +updatedStats?.clickCount,
-            keyCount: +updatedStats?.keyCount,
-            idleTime: +updatedStats?.idleTime,
-            accumulatedText: updatedStats?.accumulatedText,
-            appWebsiteDetails: updatedStats?.appWebsiteDetails,
+            const updatedStats = statsRef.current;
+            lastStatsRef.current = {
+              clickCount: +updatedStats?.clickCount,
+              keyCount: +updatedStats?.keyCount,
+              idleTime: +updatedStats?.idleTime,
+              accumulatedText: updatedStats?.accumulatedText,
+              appWebsiteDetails: updatedStats?.appWebsiteDetails,
+            };
+
+            const startUserData = {
+              ownerId: storedOwnerId,
+              projectTaskActivityId: storedProjectTaskActivityId,
+            };
+
+            try {
+              await startStopActivityDetailHandler(startUserData);
+            } catch (error) {
+              console.error("Error in startStopActivityDetailHandler:", error);
+            }
           };
 
-          const startUserData = {
-            ownerId: storedOwnerId,
-            projectTaskActivityId: storedProjectTaskActivityId,
-          };
-
-          try {
-            await startStopActivityDetailHandler(startUserData);
-          } catch (error) {
-            console.error("Error in startStopActivityDetailHandler:", error);
-          }
-        };
-
-        fetchData();
+          fetchData();
+        }
       }
     }
 
@@ -418,7 +419,7 @@ const useTaskLogic = (
         activityIntervalRef.current = null;
       }
     };
-  }, []);
+  }, [authToken]);
 
   return {
     projectId,
