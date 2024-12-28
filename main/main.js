@@ -357,7 +357,9 @@ ipcMain.on("start-logging", () => {
   lastActivityTime = Date.now();
   lastIdleCheckTime = Date.now();
   lastActiveWindow = null;
-  (appWebsites = []), (appWebsiteDetails = []), startIdleTracking();
+  appWebsites = [];
+  appWebsiteDetails = [];
+  startIdleTracking();
   startScreenshotCapture();
 });
 
