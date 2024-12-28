@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import Login from '../components/Login';
-import Dashboard from '../components/Dashboard';
-import moment from 'moment';
-import { useSelector,useDispatch } from 'react-redux';
-import { getAuthDetails,logOutEmployee } from '../redux/auth/authActions';
+import React, { useState, useEffect } from "react";
+import Login from "../components/Login";
+import Dashboard from "../components/Dashboard";
+import moment from "moment";
+import { useSelector, useDispatch } from "react-redux";
+import { getAuthDetails, logOutEmployee } from "../redux/auth/authActions";
 
 function ActivityLogger() {
   const dispatch = useDispatch();
@@ -12,34 +12,33 @@ function ActivityLogger() {
   const [isLogging, setIsLogging] = useState(false);
   const [captureInterval, setCaptureInterval] = useState(1);
   const [activityInterval, setActivityInterval] = useState(1);
-  const authToken = useSelector(state => state?.auth?.authToken);
-  
+  const authToken = useSelector((state) => state?.auth?.authToken);
+
   useEffect(() => {
     dispatch(getAuthDetails());
-  },[])
-  
+  }, []);
+
   useEffect(() => {
-
-    if(authToken!==null){
+    if (authToken !== null) {
       setIsLoggedIn(true);
-    }
-    else{
+    } else {
       setIsLoggedIn(false);
+      localStorage.clear();
     }
-  },[authToken])
+  }, [authToken]);
 
-  const initialStats = { 
-    clickCount: 0, 
-    keyCount: 0, 
-    idleTime: 0, 
-    accumulatedText: '', 
-    lastActive: moment(Date.now()).format('hh:mm:ss A'),  
+  const initialStats = {
+    clickCount: 0,
+    keyCount: 0,
+    idleTime: 0,
+    accumulatedText: "",
+    lastActive: moment(Date.now()).format("hh:mm:ss A"),
   };
 
   const [stats, setStats] = useState(initialStats);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window?.electronAPI) {
+    if (typeof window !== "undefined" && window?.electronAPI) {
       window.electronAPI.getCaptureInterval((interval) => {
         setCaptureInterval(interval);
       });
@@ -56,7 +55,7 @@ function ActivityLogger() {
 
   const handleLogout = () => {
     stopLogging();
-    window.electronAPI.sendUserData({authToken : null});
+    window.electronAPI.sendUserData({ authToken: null });
     setStats(initialStats);
     dispatch(logOutEmployee());
   };
@@ -66,39 +65,39 @@ function ActivityLogger() {
       setStats(stats);
     };
 
-    if (typeof window !== 'undefined' && window?.electronAPI) {
+    if (typeof window !== "undefined" && window?.electronAPI) {
       window?.electronAPI?.onUpdateStats(handleStatsUpdate);
       window.electronAPI.getInitialStats().then(handleStatsUpdate);
     }
 
     return () => {
-      if (typeof window !== 'undefined' && window.electronAPI) {
+      if (typeof window !== "undefined" && window.electronAPI) {
         window?.electronAPI?.offUpdateStats(handleStatsUpdate);
       }
     };
   }, []);
 
   const startLogging = () => {
-    if (!isLogging && typeof window !== 'undefined' && window.electronAPI) {
+    if (!isLogging && typeof window !== "undefined" && window.electronAPI) {
       window.electronAPI.startLogging();
       setIsLogging(true);
       setStats(initialStats);
-      localStorage.setItem("isLogging",JSON.stringify(true))
+      localStorage.setItem("isLogging", JSON.stringify(true));
     }
   };
 
   const stopLogging = () => {
-    if (isLogging && typeof window !== 'undefined' && window.electronAPI) {
+    if (isLogging && typeof window !== "undefined" && window.electronAPI) {
       window.electronAPI.stopLogging();
       setIsLogging(false);
-      localStorage.setItem("isLogging",JSON.stringify(false))
+      localStorage.setItem("isLogging", JSON.stringify(false));
     }
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
-      if(storedIsLogging){
+      if (storedIsLogging) {
         setIsLogging(storedIsLogging);
         window.electronAPI.restartLogging();
       }
@@ -108,9 +107,7 @@ function ActivityLogger() {
   return (
     <>
       {!isLoggedIn ? (
-        <Login 
-          onLogin={handleLogin} 
-        />
+        <Login onLogin={handleLogin} />
       ) : (
         <Dashboard
           onLogout={handleLogout}
