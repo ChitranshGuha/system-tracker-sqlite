@@ -126,6 +126,9 @@ const useTaskLogic = (
 
   const startStopActivityDetailHandler = async (startUserData) => {
     const ipAddress = await getIpAddress();
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const dispatchStartStop = () => {
       const updatedStats = statsRef.current;
       const lastStats = lastStatsRef.current;
@@ -164,7 +167,7 @@ const useTaskLogic = (
         (status) => {
           if (status?.success) {
             setProjectTaskActivityDetailId(null);
-            localStorage.setItem("projectTaskActivityDetailId", null);
+            localStorage.removeItem("projectTaskActivityDetailId");
             dispatch(
               activityActions(authToken, "start", startUserData, true)
             ).then((status) => {
@@ -182,9 +185,13 @@ const useTaskLogic = (
       );
     };
 
+    if (activityIntervalRef.current) {
+      clearInterval(activityIntervalRef.current);
+    }
+
     activityIntervalRef.current = setInterval(
       dispatchStartStop,
-      activityInterval * 1000 * 60
+      (activityInterval || 1) * 1000 * 60
     );
   };
 
@@ -301,7 +308,7 @@ const useTaskLogic = (
     ).then((status) => {
       if (status?.success) {
         setProjectTaskActivityDetailId(null);
-        localStorage.setItem("projectTaskActivityDetailId", null);
+        localStorage.removeItem("projectTaskActivityDetailId");
         lastStatsRef.current = initialLastStats;
         dispatch(
           activityActions(authToken, "end", {
@@ -316,9 +323,8 @@ const useTaskLogic = (
               });
               socket.on("/project/task/activity/end", () => {
                 setEmployeeRealtimeProjectTaskActivityId(null);
-                localStorage.setItem(
-                  "employeeRealtimeProjectTaskActivityId",
-                  null
+                localStorage.removeItem(
+                  "employeeRealtimeProjectTaskActivityId"
                 );
               });
             } else {
@@ -332,9 +338,9 @@ const useTaskLogic = (
             setProjectTaskId("");
             setDescription("");
             setActiveSession(null);
-            localStorage.setItem("activeSession", null);
+            localStorage.removeItem("activeSession");
             setProjectTaskActivityId(null);
-            localStorage.setItem("projectTaskActivityId", null);
+            localStorage.removeItem("projectTaskActivityId");
             stopLogging();
             const userData = {
               ownerId: null,

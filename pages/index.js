@@ -23,7 +23,6 @@ function ActivityLogger() {
       setIsLoggedIn(true);
     } else {
       setIsLoggedIn(false);
-      localStorage.clear();
     }
   }, [authToken]);
 
