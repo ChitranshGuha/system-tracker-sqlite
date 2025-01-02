@@ -49,13 +49,13 @@ export default function LoginForm({ onLogin }) {
     const platform = window.navigator.platform || '';
 
     if (/Mac/i.test(platform)) {
-      return 'MacOS';
+      return 'MAC';
     } else if (/Win/i.test(platform)) {
-      return 'Windows';
+      return 'WINDOWS';
     } else if (/Linux/i.test(platform)) {
-      return 'Linux';
+      return 'LINUX';
     } else {
-      return 'Unknown';
+      return 'UNKNOWN';
     }
   }
 
