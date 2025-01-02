@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import { Eye, EyeOff } from 'lucide-react'
 import { loginOrRegisterEmployee } from '../redux/auth/authActions'
 import { API_BASE_URL } from '../utils/constants'
+import { TRACKER_VERSION } from '../utils/constants'
 
 export default function LoginForm({ onLogin}) {
   const dispatch = useDispatch();
@@ -45,10 +46,33 @@ export default function LoginForm({ onLogin}) {
     return Object.keys(newErrors).length === 0
   }
 
+  function getOperatingSystem() {
+    const userAgent = window.navigator.userAgent || "";
+    const platform = window.navigator.platform || "";
+  
+    if (/Mac/i.test(platform)) {
+      return "MacOS";
+    } else if (/Win/i.test(platform)) {
+      return "Windows";
+    } else if (/Linux/i.test(platform)) {
+      return "Linux";
+    } else if (/Android/i.test(userAgent)) {
+      return "Android";
+    } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
+      return "iOS";
+    } else {
+      return "Unknown";
+    }
+  }
+  
   const handleLogin = (e) => {
     e.preventDefault()
     if (validateForm()) {
-      dispatch(loginOrRegisterEmployee({ email,password,domainId }))
+      dispatch(loginOrRegisterEmployee({ 
+        email,password,domainId,
+        desktopTrackerVersion:TRACKER_VERSION,
+        operatingSystem: getOperatingSystem(),
+      }))
       .then(status => {
         if(status.success){
           window.electronAPI.sendUserData({authToken : status?.authToken});
