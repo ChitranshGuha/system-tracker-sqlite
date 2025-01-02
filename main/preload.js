@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  sendUserData : (data) => {
+  sendUserData: (data) => {
     ipcRenderer.send('set-user-data', data);
   },
   sendActivityData: (data) => {
@@ -10,7 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startLogging: () => ipcRenderer.send('start-logging'),
   restartLogging: () => ipcRenderer.invoke('restart-logging'),
   stopLogging: () => ipcRenderer.send('stop-logging'),
-  onUpdateStats: (callback) => ipcRenderer.on('update-stats', (_, value) => callback(value)),
+  onUpdateStats: (callback) =>
+    ipcRenderer.on('update-stats', (_, value) => callback(value)),
   getCaptureInterval: (callback) => {
     ipcRenderer.send('fetch-capture-interval');
     ipcRenderer.on('capture-interval', (_, value) => callback(value));

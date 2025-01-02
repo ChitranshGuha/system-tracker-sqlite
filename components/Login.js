@@ -1,93 +1,89 @@
-import { useState,useEffect } from 'react'
-import { useDispatch } from 'react-redux'
-import { Eye, EyeOff } from 'lucide-react'
-import { loginOrRegisterEmployee } from '../redux/auth/authActions'
-import { API_BASE_URL } from '../utils/constants'
-import { TRACKER_VERSION } from '../utils/constants'
+import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { Eye, EyeOff } from 'lucide-react';
+import { loginOrRegisterEmployee } from '../redux/auth/authActions';
+import { API_BASE_URL } from '../utils/constants';
+import { TRACKER_VERSION } from '../utils/constants';
 
-export default function LoginForm({ onLogin}) {
+export default function LoginForm({ onLogin }) {
   const dispatch = useDispatch();
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState({})
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const [domainId,setDomainId] = useState(null);
+  const [domainId, setDomainId] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/employee/auth/domain/get`,
-      {
-        method : "POST",
-        body : JSON.stringify({domainName : "test"}),
-        headers : {
-          "Content-type" : "Application/json"
-        }
-      }
-    )
-    .then(res => res.json())
-    .then(data => setDomainId(data?.data?.id))
-  },[])
+    fetch(`${API_BASE_URL}/employee/auth/domain/get`, {
+      method: 'POST',
+      body: JSON.stringify({ domainName: 'test' }),
+      headers: {
+        'Content-type': 'Application/json',
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setDomainId(data?.data?.id));
+  }, []);
 
   const validateForm = () => {
-    const newErrors = {}
+    const newErrors = {};
 
     if (!email) {
-      newErrors.email = "Email can't be empty"
+      newErrors.email = "Email can't be empty";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email is not valid"
+      newErrors.email = 'Email is not valid';
     }
 
     if (!password) {
-      newErrors.password = "Password can't be empty"
+      newErrors.password = "Password can't be empty";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   function getOperatingSystem() {
-    const userAgent = window.navigator.userAgent || "";
-    const platform = window.navigator.platform || "";
-  
+    const userAgent = window.navigator.userAgent || '';
+    const platform = window.navigator.platform || '';
+
     if (/Mac/i.test(platform)) {
-      return "MacOS";
+      return 'MacOS';
     } else if (/Win/i.test(platform)) {
-      return "Windows";
+      return 'Windows';
     } else if (/Linux/i.test(platform)) {
-      return "Linux";
-    } else if (/Android/i.test(userAgent)) {
-      return "Android";
-    } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
-      return "iOS";
+      return 'Linux';
     } else {
-      return "Unknown";
+      return 'Unknown';
     }
   }
-  
+
   const handleLogin = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (validateForm()) {
-      dispatch(loginOrRegisterEmployee({ 
-        email,password,domainId,
-        desktopTrackerVersion:TRACKER_VERSION,
-        operatingSystem: getOperatingSystem(),
-      }))
-      .then(status => {
-        if(status.success){
-          window.electronAPI.sendUserData({authToken : status?.authToken});
-          onLogin()
-        }
-        else {
-          setErrors({ 
+      dispatch(
+        loginOrRegisterEmployee({
+          email,
+          password,
+          domainId,
+          desktopTrackerVersion: TRACKER_VERSION,
+          operatingSystem: getOperatingSystem(),
+        })
+      ).then((status) => {
+        if (status.success) {
+          window.electronAPI.sendUserData({ authToken: status?.authToken });
+          onLogin();
+        } else {
+          setErrors({
             form: status?.message,
-            email: 'Please enter a valid email', 
-            password: 'Please enter a valid password'
-          })
+            email: 'Please enter a valid email',
+            password: 'Please enter a valid password',
+          });
         }
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8">
@@ -101,11 +97,16 @@ export default function LoginForm({ onLogin}) {
               height={20}
               className="mx-auto mb-4"
             />
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Login to Activity Logger</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Login to Activity Logger
+            </h2>
           </div>
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email Address
               </label>
               <input
@@ -113,31 +114,36 @@ export default function LoginForm({ onLogin}) {
                 type="text"
                 value={email}
                 onChange={(e) => {
-                  setEmail(e.target.value)
-                  setErrors({...errors, form: "", email: ""})
+                  setEmail(e.target.value);
+                  setErrors({ ...errors, form: '', email: '' });
                 }}
                 className={`w-full px-3 py-2 border rounded-md ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 } focus:outline-none focus:ring-2 focus:ring-black`}
                 placeholder="Enter your email address"
               />
-              <p className={`${errors.email ? "text-red-500" : "text-gray-400"} text-xs mt-1`}>
-                {errors.email || "Please enter a valid email address"}
+              <p
+                className={`${errors.email ? 'text-red-500' : 'text-gray-400'} text-xs mt-1`}
+              >
+                {errors.email || 'Please enter a valid email address'}
               </p>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Password
               </label>
               <div className="relative">
                 <input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => {
-                    setPassword(e.target.value)
-                    setErrors({...errors, form: "", password: ""})
+                    setPassword(e.target.value);
+                    setErrors({ ...errors, form: '', password: '' });
                   }}
                   className={`w-full px-3 py-2 border rounded-md ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
@@ -156,8 +162,10 @@ export default function LoginForm({ onLogin}) {
                   )}
                 </button>
               </div>
-              <p className={`${errors.password ? "text-red-500" : "text-gray-400"} text-xs mt-1`}>
-                {errors.password || "Please enter your password"}
+              <p
+                className={`${errors.password ? 'text-red-500' : 'text-gray-400'} text-xs mt-1`}
+              >
+                {errors.password || 'Please enter your password'}
               </p>
             </div>
 
@@ -169,19 +177,27 @@ export default function LoginForm({ onLogin}) {
                   type="checkbox"
                   className="h-4 w-4 text-black border-gray-300 rounded focus:ring-black"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
                   Remember me
                 </label>
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-black hover:text-gray-700">
+                <a
+                  href="#"
+                  className="font-medium text-black hover:text-gray-700"
+                >
                   Forgot your password?
                 </a>
               </div>
             </div>
 
-            {errors.form && <p className="text-red-500 text-sm">{errors.form}</p>}
+            {errors.form && (
+              <p className="text-red-500 text-sm">{errors.form}</p>
+            )}
 
             <button
               type="submit"
@@ -193,7 +209,7 @@ export default function LoginForm({ onLogin}) {
         </div>
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 sm:px-8">
           <p className="text-center text-sm text-gray-600">
-            Don't have an account?{" "}
+            Don't have an account?{' '}
             <a href="#" className="font-medium text-black hover:text-gray-700">
               Sign up
             </a>
@@ -201,5 +217,5 @@ export default function LoginForm({ onLogin}) {
         </div>
       </div>
     </div>
-  )
+  );
 }

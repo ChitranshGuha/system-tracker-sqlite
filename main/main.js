@@ -1,14 +1,14 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer } = require("electron");
-const store = require("electron-settings");
-const path = require("path");
-const fs = require("fs");
-const { GlobalKeyboardListener } = require("node-global-key-listener");
-const moment = require("moment");
+const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
+const store = require('electron-settings');
+const path = require('path');
+const fs = require('fs');
+const { GlobalKeyboardListener } = require('node-global-key-listener');
+const moment = require('moment');
 
 // API
-const { default: axios } = require("axios");
+const { default: axios } = require('axios');
 
-const API_BASE_URL = "https://webtracker.infoware.xyz/api";
+const API_BASE_URL = 'https://webtracker.infoware.xyz/api';
 
 let mainWindow;
 let isLogging = false;
@@ -19,7 +19,7 @@ let activityIntervalMinutes;
 // Activities
 let clickCount = 0;
 let keyCount = 0;
-let accumulatedText = "";
+let accumulatedText = '';
 
 // Idle time
 let lastActivityTime = Date.now();
@@ -42,35 +42,35 @@ let initialStats = {
   clickCount: 0,
   keyCount: 0,
   idleTime: 0,
-  accumulatedText: "",
-  lastActive: "",
+  accumulatedText: '',
+  lastActive: '',
   appWebsites: [],
   appWebsiteDetails: [],
 };
 
 let stats = initialStats;
 
-ipcMain.on("set-user-data", async (event, data) => {
+ipcMain.on('set-user-data', async (event, data) => {
   authToken = data.authToken;
   if (authToken) {
-    store.set("authToken", authToken);
+    store.set('authToken', authToken);
     await fetchCaptureInterval();
   }
 });
 
-ipcMain.on("set-activity-data", (event, data) => {
+ipcMain.on('set-activity-data', (event, data) => {
   ownerId = data.ownerId;
   projectTaskActivityId = data.projectTaskActivityId;
 });
 
 // Function to fetch capture interval from API
-ipcMain.on("fetch-capture-interval", async (event) => {
-  event.sender.send("capture-interval", captureIntervalMinutes);
+ipcMain.on('fetch-capture-interval', async (event) => {
+  event.sender.send('capture-interval', captureIntervalMinutes);
 });
 
 // Function to fetch activity interval from API
-ipcMain.on("fetch-activity-interval", async (event) => {
-  event.sender.send("activity-interval", activityIntervalMinutes);
+ipcMain.on('fetch-activity-interval', async (event) => {
+  event.sender.send('activity-interval', activityIntervalMinutes);
 });
 
 async function fetchCaptureInterval(auth) {
@@ -81,7 +81,7 @@ async function fetchCaptureInterval(auth) {
       {
         headers: {
           Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       }
     );
@@ -93,25 +93,25 @@ async function fetchCaptureInterval(auth) {
 
     if (mainWindow) {
       mainWindow.webContents.send(
-        "capture-interval",
+        'capture-interval',
         captureIntervalMinutes || 5
       );
       mainWindow.webContents.send(
-        "acitivity-interval",
+        'acitivity-interval',
         activityIntervalMinutes || 1
       );
     }
 
     return captureIntervalMinutes;
   } catch (error) {
-    console.error("Error fetching capture interval:", error);
+    console.error('Error fetching capture interval:', error);
     return null;
   }
 }
 
 // Create main application window
 async function createWindow() {
-  const isDev = await import("electron-is-dev").then(
+  const isDev = await import('electron-is-dev').then(
     (module) => module.default
   );
 
@@ -122,21 +122,21 @@ async function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
   mainWindow.loadURL(
     isDev
-      ? "http://localhost:3000"
-      : `file://${path.join(__dirname, "../out/index.html")}`
+      ? 'http://localhost:3000'
+      : `file://${path.join(__dirname, '../out/index.html')}`
   );
 
-  mainWindow.on("closed", () => {
+  mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  const storeToken = await store.get("authToken");
+  const storeToken = await store.get('authToken');
 
   if (storeToken) {
     authToken = storeToken;
@@ -145,7 +145,7 @@ async function createWindow() {
 
   await loadStats();
   setTimeout(() => {
-    mainWindow.webContents.send("update-stats", stats);
+    mainWindow.webContents.send('update-stats', stats);
   }, 500);
 
   // if (isDev) {
@@ -153,15 +153,15 @@ async function createWindow() {
   // }
 }
 
-app.on("ready", createWindow);
+app.on('ready', createWindow);
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-app.on("activate", () => {
+app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
   }
@@ -169,7 +169,7 @@ app.on("activate", () => {
 
 async function getActiveWindowInfo() {
   try {
-    const { activeWindow } = await import("get-windows");
+    const { activeWindow } = await import('get-windows');
     const window = await activeWindow();
     if (window) {
       return {
@@ -181,7 +181,7 @@ async function getActiveWindowInfo() {
       };
     }
   } catch (error) {
-    console.error("Error getting active window info:", error);
+    console.error('Error getting active window info:', error);
   }
   return null;
 }
@@ -205,7 +205,7 @@ async function updateStats(isActivity = false) {
 
   if (
     activeWindow &&
-    activeWindow.name?.toLowerCase().trim() !== "electron" &&
+    activeWindow.name?.toLowerCase().trim() !== 'electron' &&
     (lastActiveWindow === null ||
       activeWindow.name !== lastActiveWindow.name ||
       activeWindow.title !== lastActiveWindow.title)
@@ -226,12 +226,12 @@ async function updateStats(isActivity = false) {
     keyCount,
     idleTime: accumulatedIdleTime,
     accumulatedText,
-    lastActive: moment(lastActivityTime).format("hh:mm:ss A"),
+    lastActive: moment(lastActivityTime).format('hh:mm:ss A'),
     appWebsites,
     appWebsiteDetails,
   };
 
-  mainWindow.webContents.send("update-stats", stats);
+  mainWindow.webContents.send('update-stats', stats);
   saveStats(stats);
 
   // Clear existing interval and start a new one
@@ -252,19 +252,19 @@ function startIdleTracking() {
 const keyboardListener = new GlobalKeyboardListener();
 keyboardListener.addListener((e) => {
   if (isLogging && !mainWindow.isFocused()) {
-    if (e.name === "MOUSE LEFT" || e.name === "MOUSE RIGHT") {
-      if (e.state === "UP") {
+    if (e.name === 'MOUSE LEFT' || e.name === 'MOUSE RIGHT') {
+      if (e.state === 'UP') {
         clickCount++;
       }
     } else {
-      if (e.state === "DOWN") {
+      if (e.state === 'DOWN') {
         keyCount++;
         accumulatedText +=
-          e.name === "SPACE"
-            ? " "
+          e.name === 'SPACE'
+            ? ' '
             : e.name.length === 1
-            ? e.name?.toLowerCase()
-            : "";
+              ? e.name?.toLowerCase()
+              : '';
       }
     }
 
@@ -276,7 +276,7 @@ keyboardListener.addListener((e) => {
 async function captureAndSaveScreenshot() {
   try {
     const sources = await desktopCapturer.getSources({
-      types: ["screen"],
+      types: ['screen'],
       thumbnailSize: { width: 1920, height: 1080 },
     });
     const primaryDisplay = sources[0];
@@ -284,22 +284,22 @@ async function captureAndSaveScreenshot() {
     if (primaryDisplay) {
       const screenshotBuffer = primaryDisplay.thumbnail.toPNG();
       const fileName = `Screenshot_${moment().format(
-        "YYYY-MM-DD_HH-mm-ss"
+        'YYYY-MM-DD_HH-mm-ss'
       )}.png`;
 
       const screenshotBlob = new Blob([screenshotBuffer], {
-        type: "image/png",
+        type: 'image/png',
       });
 
-      const file = new File([screenshotBlob], fileName, { type: "image/png" });
+      const file = new File([screenshotBlob], fileName, { type: 'image/png' });
 
       const formData = new FormData();
-      formData.append("files", file);
+      formData.append('files', file);
 
       if (!ownerId || !authToken) {
-        throw new Error("ownerId or authToken not set");
+        throw new Error('ownerId or authToken not set');
       }
-      formData.append("ownerId", ownerId);
+      formData.append('ownerId', ownerId);
 
       const response = await axios.post(
         `${API_BASE_URL}/employee/media/add`,
@@ -307,7 +307,7 @@ async function captureAndSaveScreenshot() {
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
-            "Content-Type": "multipart/form-data",
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
@@ -331,7 +331,7 @@ async function captureAndSaveScreenshot() {
       );
     }
   } catch (error) {
-    console.error("Error capturing or uploading screenshot:", error);
+    console.error('Error capturing or uploading screenshot:', error);
   }
 }
 // Function to start screenshot capture
@@ -348,11 +348,11 @@ function stopScreenshotCapture() {
 }
 
 // IPC handlers
-ipcMain.on("start-logging", () => {
+ipcMain.on('start-logging', () => {
   isLogging = true;
   clickCount = 0;
   keyCount = 0;
-  accumulatedText = "";
+  accumulatedText = '';
   accumulatedIdleTime = 0;
   lastActivityTime = Date.now();
   lastIdleCheckTime = Date.now();
@@ -363,8 +363,8 @@ ipcMain.on("start-logging", () => {
   startScreenshotCapture();
 });
 
-ipcMain.handle("restart-logging", async () => {
-  const savedStats = await store.get("stats");
+ipcMain.handle('restart-logging', async () => {
+  const savedStats = await store.get('stats');
 
   isLogging = true;
   clickCount = savedStats.clickCount;
@@ -380,23 +380,23 @@ ipcMain.handle("restart-logging", async () => {
   startScreenshotCapture();
 });
 
-ipcMain.on("stop-logging", () => {
+ipcMain.on('stop-logging', () => {
   isLogging = false;
   clearInterval(idleInterval);
   stopScreenshotCapture();
   stats = initialStats;
 });
 
-ipcMain.handle("get-initial-stats", async () => {
+ipcMain.handle('get-initial-stats', async () => {
   return stats;
 });
 
 function saveStats(stats) {
-  store.set("stats", stats);
+  store.set('stats', stats);
 }
 
 async function loadStats() {
-  const savedStats = await store.get("stats");
+  const savedStats = await store.get('stats');
   if (savedStats) {
     stats = savedStats;
     clickCount = stats.clickCount;
@@ -414,17 +414,17 @@ async function loadStats() {
 async function clearRendererStorage() {
   if (mainWindow && !mainWindow.isDestroyed()) {
     await mainWindow.webContents.session.clearStorageData({
-      storages: ["localStorage"],
+      storages: ['localStorage'],
     });
   }
 }
 
-app.on("will-uninstall", async (event) => {
+app.on('will-uninstall', async (event) => {
   event.preventDefault();
   try {
     await clearRendererStorage();
   } catch (error) {
-    console.error("Error clearing renderer storage:", error);
+    console.error('Error clearing renderer storage:', error);
   }
   event.continue();
 });

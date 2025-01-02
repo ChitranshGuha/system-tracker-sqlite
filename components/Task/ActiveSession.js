@@ -1,5 +1,5 @@
-import React from "react";
-import { FiFolder, FiList, FiFileText } from "react-icons/fi";
+import React from 'react';
+import { FiFolder, FiList, FiFileText } from 'react-icons/fi';
 
 const ActiveSession = ({ activeSession, projects, tasks }) => {
   return (

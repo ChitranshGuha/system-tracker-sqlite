@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { FiMousePointer, FiClock, FiActivity } from "react-icons/fi";
-import { BsKeyboard } from "react-icons/bs";
-import { X } from "lucide-react";
-import Task from "./Task/Task";
-import PastActivities from "./PastActivities";
-import { gettingEmployeeActionsList } from "../redux/employee/employeeActions";
-import io from "socket.io-client";
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { FiMousePointer, FiClock, FiActivity } from 'react-icons/fi';
+import { BsKeyboard } from 'react-icons/bs';
+import { X } from 'lucide-react';
+import Task from './Task/Task';
+import PastActivities from './PastActivities';
+import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
+import io from 'socket.io-client';
 
 function ActivityLogger({
   onLogout,
@@ -27,8 +27,8 @@ function ActivityLogger({
     dispatch(
       gettingEmployeeActionsList(
         authToken,
-        "employee/auth/workspace/list",
-        "workspaces"
+        'employee/auth/workspace/list',
+        'workspaces'
       )
     );
   }, []);
@@ -40,12 +40,12 @@ function ActivityLogger({
       );
       setSocket(socketInstance);
 
-      socketInstance.on("connect", () => {
-        console.log("Socket connection successful!");
+      socketInstance.on('connect', () => {
+        console.log('Socket connection successful!');
       });
 
-      socketInstance.on("connect_error", (error) => {
-        console.error("Socket connection error:", error, socketInstance);
+      socketInstance.on('connect_error', (error) => {
+        console.error('Socket connection error:', error, socketInstance);
       });
 
       return () => {
@@ -55,7 +55,7 @@ function ActivityLogger({
   }, [ownerId, authToken]);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("current");
+  const [activeTab, setActiveTab] = useState('current');
   const [activeSession, setActiveSession] = useState(null);
   const user = useSelector((state) => state?.auth?.employeeDetails);
 
@@ -70,15 +70,15 @@ function ActivityLogger({
     if (workspaces && workspaces?.length !== 0) {
       const workspaceOwnerId = workspaces?.[workspaces.length - 1]?.ownerId;
       setOwnerId(workspaceOwnerId);
-      localStorage.setItem("ownerId", workspaceOwnerId);
+      localStorage.setItem('ownerId', workspaceOwnerId);
     }
   }, [workspaces]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
-      const storedOwnerId = localStorage.getItem("ownerId");
-      const storedActiveSession = localStorage.getItem("activeSession");
+    if (typeof window !== 'undefined') {
+      const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
+      const storedOwnerId = localStorage.getItem('ownerId');
+      const storedActiveSession = localStorage.getItem('activeSession');
       if (storedIsLogging) {
         if (storedOwnerId) {
           setOwnerId(storedOwnerId);
@@ -118,7 +118,7 @@ function ActivityLogger({
             ) : null} */}
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer transition-transform hover:scale-105"
-              style={{ backgroundColor: "#059669" }}
+              style={{ backgroundColor: '#059669' }}
               onClick={() => setShowLogoutModal(true)}
             >
               {user?.firstName?.[0]?.toUpperCase()}
@@ -132,27 +132,27 @@ function ActivityLogger({
             <div className="flex mb-6">
               <button
                 className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === "current"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-200 text-gray-700"
+                  activeTab === 'current'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700'
                 }`}
-                onClick={() => setActiveTab("current")}
+                onClick={() => setActiveTab('current')}
               >
                 Active Tab Session
               </button>
               <button
                 className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === "past"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-200 text-gray-700"
+                  activeTab === 'past'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700'
                 }`}
-                onClick={() => setActiveTab("past")}
+                onClick={() => setActiveTab('past')}
               >
                 Past Activities
               </button>
             </div>
 
-            {activeTab === "current" ? (
+            {activeTab === 'current' ? (
               <>
                 <Task
                   startLogging={startLogging}
@@ -215,7 +215,7 @@ function ActivityLogger({
                         </p>
                       </div>
                       <p className="text-base sm:text-lg font-bold text-indigo-600">
-                        {stats.lastActive || "--"}
+                        {stats.lastActive || '--'}
                       </p>
                     </div>
                   </div>
@@ -229,8 +229,8 @@ function ActivityLogger({
                         </p>
                       </div>
                       <p className="text-base sm:text-lg font-bold text-indigo-600">
-                        {captureInterval}{" "}
-                        {captureInterval <= 1 ? "minute" : "minutes"}
+                        {captureInterval}{' '}
+                        {captureInterval <= 1 ? 'minute' : 'minutes'}
                       </p>
                     </div>
                   </div>

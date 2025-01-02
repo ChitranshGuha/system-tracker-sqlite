@@ -1,1 +1,1 @@
-export const getEmployeeToken = () => localStorage.getItem("employeeAuthToken");
+export const getEmployeeToken = () => localStorage.getItem('employeeAuthToken');

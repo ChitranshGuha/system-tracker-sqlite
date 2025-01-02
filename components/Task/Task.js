@@ -1,9 +1,9 @@
-import React from "react";
-import { useSelector } from "react-redux";
-import TaskForm from "./TaskForm";
-import ActiveSession from "./ActiveSession";
-import ActionButtons from "./ActionButtons";
-import useTaskLogic from "./useTaskLogic";
+import React from 'react';
+import { useSelector } from 'react-redux';
+import TaskForm from './TaskForm';
+import ActiveSession from './ActiveSession';
+import ActionButtons from './ActionButtons';
+import useTaskLogic from './useTaskLogic';
 
 const Task = ({
   startLogging,
@@ -49,7 +49,7 @@ const Task = ({
         className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm"
       >
         <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          {isLogging ? "Active Logging Session" : "Activity Details"}
+          {isLogging ? 'Active Logging Session' : 'Activity Details'}
         </h2>
         {!isLogging ? (
           <TaskForm

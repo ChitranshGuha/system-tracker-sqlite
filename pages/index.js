@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import Login from "../components/Login";
-import Dashboard from "../components/Dashboard";
-import moment from "moment";
-import { useSelector, useDispatch } from "react-redux";
-import { getAuthDetails, logOutEmployee } from "../redux/auth/authActions";
+import React, { useState, useEffect } from 'react';
+import Login from '../components/Login';
+import Dashboard from '../components/Dashboard';
+import moment from 'moment';
+import { useSelector, useDispatch } from 'react-redux';
+import { getAuthDetails, logOutEmployee } from '../redux/auth/authActions';
 
 function ActivityLogger() {
   const dispatch = useDispatch();
@@ -30,14 +30,14 @@ function ActivityLogger() {
     clickCount: 0,
     keyCount: 0,
     idleTime: 0,
-    accumulatedText: "",
-    lastActive: moment(Date.now()).format("hh:mm:ss A"),
+    accumulatedText: '',
+    lastActive: moment(Date.now()).format('hh:mm:ss A'),
   };
 
   const [stats, setStats] = useState(initialStats);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window?.electronAPI) {
+    if (typeof window !== 'undefined' && window?.electronAPI) {
       window.electronAPI.getCaptureInterval((interval) => {
         setCaptureInterval(interval);
       });
@@ -64,38 +64,38 @@ function ActivityLogger() {
       setStats(stats);
     };
 
-    if (typeof window !== "undefined" && window?.electronAPI) {
+    if (typeof window !== 'undefined' && window?.electronAPI) {
       window?.electronAPI?.onUpdateStats(handleStatsUpdate);
       window.electronAPI.getInitialStats().then(handleStatsUpdate);
     }
 
     return () => {
-      if (typeof window !== "undefined" && window.electronAPI) {
+      if (typeof window !== 'undefined' && window.electronAPI) {
         window?.electronAPI?.offUpdateStats(handleStatsUpdate);
       }
     };
   }, []);
 
   const startLogging = () => {
-    if (!isLogging && typeof window !== "undefined" && window.electronAPI) {
+    if (!isLogging && typeof window !== 'undefined' && window.electronAPI) {
       window.electronAPI.startLogging();
       setIsLogging(true);
       setStats(initialStats);
-      localStorage.setItem("isLogging", JSON.stringify(true));
+      localStorage.setItem('isLogging', JSON.stringify(true));
     }
   };
 
   const stopLogging = () => {
-    if (isLogging && typeof window !== "undefined" && window.electronAPI) {
+    if (isLogging && typeof window !== 'undefined' && window.electronAPI) {
       window.electronAPI.stopLogging();
       setIsLogging(false);
-      localStorage.setItem("isLogging", JSON.stringify(false));
+      localStorage.setItem('isLogging', JSON.stringify(false));
     }
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
+    if (typeof window !== 'undefined') {
+      const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
       if (storedIsLogging) {
         setIsLogging(storedIsLogging);
         window.electronAPI.restartLogging();

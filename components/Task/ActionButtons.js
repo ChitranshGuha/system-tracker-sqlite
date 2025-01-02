@@ -1,5 +1,5 @@
-import React from "react";
-import { FiPlay, FiSquare } from "react-icons/fi";
+import React from 'react';
+import { FiPlay, FiSquare } from 'react-icons/fi';
 
 const ActionButtons = ({ isLogging, handleFormSubmit, stopLoggingHandler }) => {
   return (
@@ -10,8 +10,8 @@ const ActionButtons = ({ isLogging, handleFormSubmit, stopLoggingHandler }) => {
         id="start-logging"
         className={`w-full py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center space-x-2 transition-all ${
           isLogging
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-green-600 hover:bg-green-700 hover:shadow-md"
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-green-600 hover:bg-green-700 hover:shadow-md'
         }`}
       >
         <FiPlay className="text-xl" />
@@ -28,8 +28,8 @@ const ActionButtons = ({ isLogging, handleFormSubmit, stopLoggingHandler }) => {
         id="stop-logging"
         className={`w-full py-3 px-4 rounded-xl text-white font-medium flex items-center justify-center space-x-2 transition-all ${
           !isLogging
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-red-600 hover:bg-red-700 hover:shadow-md"
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-red-600 hover:bg-red-700 hover:shadow-md'
         }`}
       >
         <FiSquare className="text-xl" />

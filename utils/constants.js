@@ -1,3 +1,3 @@
 export const API_BASE_URL = 'https://webtracker.infoware.xyz/api';
 
-export const TRACKER_VERSION = "1.0.0";
+export const TRACKER_VERSION = '1.0.0';

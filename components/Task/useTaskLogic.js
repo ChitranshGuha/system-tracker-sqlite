@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
-import { useDispatch } from "react-redux";
-import { gettingEmployeeActionsList } from "../../redux/employee/employeeActions";
-import { activityActions } from "../../redux/activity/activityActions";
-import { TRACKER_VERSION } from "../../utils/constants";
+import { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
+import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
+import { activityActions } from '../../redux/activity/activityActions';
+import { TRACKER_VERSION } from '../../utils/constants';
 
 const useTaskLogic = (
   ownerId,
@@ -28,13 +28,13 @@ const useTaskLogic = (
   };
   const lastStatsRef = useRef(initialLastStats);
 
-  const [projectId, setProjectId] = useState("");
-  const [projectTaskId, setProjectTaskId] = useState("");
-  const [description, setDescription] = useState("");
+  const [projectId, setProjectId] = useState('');
+  const [projectTaskId, setProjectTaskId] = useState('');
+  const [description, setDescription] = useState('');
   const [errors, setErrors] = useState({
-    projectId: "",
-    projectTaskId: "",
-    description: "",
+    projectId: '',
+    projectTaskId: '',
+    description: '',
   });
   const [projectTaskActivityId, setProjectTaskActivityId] = useState(null);
   const [projectTaskActivityDetailId, setProjectTaskActivityDetailId] =
@@ -46,26 +46,26 @@ const useTaskLogic = (
   const [activityLength, setActivityLength] = useState(0);
 
   useEffect(() => {
-    setProjectId("");
-    setProjectTaskId("");
+    setProjectId('');
+    setProjectTaskId('');
     dispatch(
       gettingEmployeeActionsList(
         authToken,
-        "employee/project/project/list",
-        "projects",
+        'employee/project/project/list',
+        'projects',
         { ownerId }
       )
     );
   }, [ownerId, authToken, dispatch]);
 
   useEffect(() => {
-    setProjectTaskId("");
+    setProjectTaskId('');
     if (projectId) {
       dispatch(
         gettingEmployeeActionsList(
           authToken,
-          "employee/project/project/task/list",
-          "tasks",
+          'employee/project/project/task/list',
+          'tasks',
           {
             ownerId,
             projectId,
@@ -93,18 +93,18 @@ const useTaskLogic = (
       stats?.appWebsiteDetails
     ) {
       if (activityLength !== stats?.appWebsiteDetails?.length) {
-        socket.emit("/project/task/activity/update", {
+        socket.emit('/project/task/activity/update', {
           employeeRealtimeProjectTaskActivityId,
           appWebsites: stats?.appWebsites,
           appWebsiteDetails: stats?.appWebsiteDetails,
         });
-        socket.on("/project/task/activity/update", (response) =>
-          console.log("Activity socket updated ::", response)
+        socket.on('/project/task/activity/update', (response) =>
+          console.log('Activity socket updated ::', response)
         );
       }
       setActivityLength(stats?.appWebsiteDetails?.length);
     } else {
-      console.error("Socket is not connected!");
+      console.error('Socket is not connected!');
     }
   }, [
     stats?.appWebsiteDetails,
@@ -115,12 +115,12 @@ const useTaskLogic = (
 
   const getIpAddress = async () => {
     try {
-      const response = await fetch("https://api.ipify.org?format=json");
+      const response = await fetch('https://api.ipify.org?format=json');
       const data = await response.json();
       return data.ip;
     } catch (error) {
-      console.error("Failed to get IP address", error);
-      return "unknown";
+      console.error('Failed to get IP address', error);
+      return 'unknown';
     }
   };
 
@@ -163,17 +163,17 @@ const useTaskLogic = (
         ...activityDifference,
       };
 
-      dispatch(activityActions(authToken, "end", stopUserData, true)).then(
+      dispatch(activityActions(authToken, 'end', stopUserData, true)).then(
         (status) => {
           if (status?.success) {
             setProjectTaskActivityDetailId(null);
-            localStorage.removeItem("projectTaskActivityDetailId");
+            localStorage.removeItem('projectTaskActivityDetailId');
             dispatch(
-              activityActions(authToken, "start", startUserData, true)
+              activityActions(authToken, 'start', startUserData, true)
             ).then((status) => {
               if (status?.success) {
                 setProjectTaskActivityDetailId(status?.id);
-                localStorage.setItem("projectTaskActivityDetailId", status?.id);
+                localStorage.setItem('projectTaskActivityDetailId', status?.id);
               } else {
                 console.log(status?.error);
               }
@@ -201,11 +201,11 @@ const useTaskLogic = (
       projectTaskActivityId: activityId || projectTaskActivityId,
     };
 
-    dispatch(activityActions(authToken, "start", startUserData, true)).then(
+    dispatch(activityActions(authToken, 'start', startUserData, true)).then(
       (status) => {
         if (status?.success) {
           setProjectTaskActivityDetailId(status?.id);
-          localStorage.setItem("projectTaskActivityDetailId", status?.id);
+          localStorage.setItem('projectTaskActivityDetailId', status?.id);
         } else {
           console.log(status?.error);
         }
@@ -218,9 +218,9 @@ const useTaskLogic = (
   const handleFormSubmit = (e) => {
     e.preventDefault();
     const newErrors = {
-      projectId: projectId ? "" : "Project is required",
-      projectTaskId: projectTaskId ? "" : "Task is required",
-      description: description ? "" : "Task Description is required",
+      projectId: projectId ? '' : 'Project is required',
+      projectTaskId: projectTaskId ? '' : 'Task is required',
+      description: description ? '' : 'Task Description is required',
     };
     setErrors(newErrors);
 
@@ -229,14 +229,14 @@ const useTaskLogic = (
 
       setActiveSession({ projectId, projectTaskId, description });
       localStorage.setItem(
-        "activeSession",
+        'activeSession',
         JSON.stringify({ projectId, projectTaskId, description })
       );
 
-      dispatch(activityActions(authToken, "start", payload)).then((status) => {
+      dispatch(activityActions(authToken, 'start', payload)).then((status) => {
         if (status?.success) {
           setProjectTaskActivityId(status?.id);
-          localStorage.setItem("projectTaskActivityId", status?.id);
+          localStorage.setItem('projectTaskActivityId', status?.id);
 
           const userData = {
             ownerId,
@@ -246,14 +246,14 @@ const useTaskLogic = (
           startLogging();
 
           if (socket) {
-            socket.emit("/project/task/activity/start", { projectTaskId });
-            socket.on("/project/task/activity/start", (response) => {
+            socket.emit('/project/task/activity/start', { projectTaskId });
+            socket.on('/project/task/activity/start', (response) => {
               const id = response?.data?.id;
               setEmployeeRealtimeProjectTaskActivityId(id);
-              localStorage.setItem("employeeRealtimeProjectTaskActivityId", id);
+              localStorage.setItem('employeeRealtimeProjectTaskActivityId', id);
             });
           } else {
-            console.error("Socket is not connected!");
+            console.error('Socket is not connected!');
           }
 
           projectDetailActions(status?.id);
@@ -297,7 +297,7 @@ const useTaskLogic = (
     dispatch(
       activityActions(
         authToken,
-        "end",
+        'end',
         {
           ...payload,
           projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
@@ -308,39 +308,39 @@ const useTaskLogic = (
     ).then((status) => {
       if (status?.success) {
         setProjectTaskActivityDetailId(null);
-        localStorage.removeItem("projectTaskActivityDetailId");
+        localStorage.removeItem('projectTaskActivityDetailId');
         lastStatsRef.current = initialLastStats;
         dispatch(
-          activityActions(authToken, "end", {
+          activityActions(authToken, 'end', {
             ...payload,
             projectTaskActivityId,
           })
         ).then((status) => {
           if (status?.success) {
             if (socket) {
-              socket.emit("/project/task/activity/end", {
+              socket.emit('/project/task/activity/end', {
                 employeeRealtimeProjectTaskActivityId,
               });
-              socket.on("/project/task/activity/end", () => {
+              socket.on('/project/task/activity/end', () => {
                 setEmployeeRealtimeProjectTaskActivityId(null);
                 localStorage.removeItem(
-                  "employeeRealtimeProjectTaskActivityId"
+                  'employeeRealtimeProjectTaskActivityId'
                 );
               });
             } else {
-              console.error("Socket is not connected!");
+              console.error('Socket is not connected!');
             }
 
             clearInterval(activityIntervalRef.current);
             activityIntervalRef.current = null;
 
-            setProjectId("");
-            setProjectTaskId("");
-            setDescription("");
+            setProjectId('');
+            setProjectTaskId('');
+            setDescription('');
             setActiveSession(null);
-            localStorage.removeItem("activeSession");
+            localStorage.removeItem('activeSession');
             setProjectTaskActivityId(null);
-            localStorage.removeItem("projectTaskActivityId");
+            localStorage.removeItem('projectTaskActivityId');
             stopLogging();
             const userData = {
               ownerId: null,
@@ -358,24 +358,24 @@ const useTaskLogic = (
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleFormSubmit(e);
     }
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined" && authToken !== null) {
-      const storedIsLogging = JSON.parse(localStorage.getItem("isLogging"));
-      const storedOwnerId = localStorage.getItem("ownerId");
+    if (typeof window !== 'undefined' && authToken !== null) {
+      const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
+      const storedOwnerId = localStorage.getItem('ownerId');
       const storedProjectTaskActivityId = localStorage.getItem(
-        "projectTaskActivityId"
+        'projectTaskActivityId'
       );
       const storedProjectTaskActivityDetailId = localStorage.getItem(
-        "projectTaskActivityDetailId"
+        'projectTaskActivityDetailId'
       );
       const storedEmployeeRealtimeProjectTaskActivityId = localStorage.getItem(
-        "employeeRealtimeProjectTaskActivityId"
+        'employeeRealtimeProjectTaskActivityId'
       );
 
       if (storedIsLogging) {
@@ -410,7 +410,7 @@ const useTaskLogic = (
             try {
               await startStopActivityDetailHandler(startUserData);
             } catch (error) {
-              console.error("Error in startStopActivityDetailHandler:", error);
+              console.error('Error in startStopActivityDetailHandler:', error);
             }
           };
 
