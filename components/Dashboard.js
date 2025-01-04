@@ -237,7 +237,7 @@ function ActivityLogger({
                 </div>
 
                 {/* Keys Pressed Section */}
-                {/* <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
                   <div className="flex items-center mb-3">
                     <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
                     <h2 className="font-semibold text-gray-700 text-base sm:text-lg">
@@ -247,7 +247,7 @@ function ActivityLogger({
                   <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">
                     {stats.accumulatedText}
                   </p>
-                </div> */}
+                </div>
               </>
             ) : (
               <PastActivities authToken={authToken} ownerId={ownerId} />

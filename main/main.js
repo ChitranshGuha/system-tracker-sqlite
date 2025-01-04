@@ -61,6 +61,8 @@ ipcMain.on('set-user-data', async (event, data) => {
 ipcMain.on('set-activity-data', (event, data) => {
   ownerId = data.ownerId;
   projectTaskActivityId = data.projectTaskActivityId;
+  store.set('ownerId', ownerId);
+  store.set('projectTaskActivityId', projectTaskActivityId);
 });
 
 // Function to fetch capture interval from API
@@ -73,7 +75,7 @@ ipcMain.on('fetch-activity-interval', async (event) => {
   event.sender.send('activity-interval', activityIntervalMinutes);
 });
 
-async function fetchCaptureInterval(auth) {
+async function fetchCaptureInterval() {
   try {
     const response = await axios.post(
       `${API_BASE_URL}/employee/auth/configuration/get`,
@@ -335,7 +337,11 @@ async function captureAndSaveScreenshot() {
   }
 }
 // Function to start screenshot capture
-function startScreenshotCapture() {
+async function startScreenshotCapture() {
+  if (screenshotInterval) {
+    stopScreenshotCapture();
+  }
+
   screenshotInterval = setInterval(
     captureAndSaveScreenshot,
     captureIntervalMinutes * 60 * 1000
@@ -364,6 +370,9 @@ ipcMain.on('start-logging', () => {
 });
 
 ipcMain.handle('restart-logging', async () => {
+  authToken = await store.get('authToken');
+  ownerId = await store.get('ownerId');
+  projectTaskActivityId = await store.get('projectTaskActivityId');
   const savedStats = await store.get('stats');
 
   isLogging = true;
@@ -377,7 +386,7 @@ ipcMain.handle('restart-logging', async () => {
   appWebsites = savedStats.appWebsites;
   appWebsiteDetails = savedStats.appWebsiteDetails;
   startIdleTracking();
-  startScreenshotCapture();
+  await startScreenshotCapture();
 });
 
 ipcMain.on('stop-logging', () => {

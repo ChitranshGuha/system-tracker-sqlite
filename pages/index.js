@@ -98,6 +98,20 @@ function ActivityLogger() {
       const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
       if (storedIsLogging) {
         setIsLogging(storedIsLogging);
+
+        const storedOwnerId = localStorage.getItem('ownerId');
+        const storedProjectTaskActivityId = localStorage.getItem(
+          'projectTaskActivityId'
+        );
+
+        if (storedOwnerId && storedProjectTaskActivityId) {
+          const userData = {
+            ownerId: storedOwnerId,
+            projectTaskActivityId: storedProjectTaskActivityId,
+          };
+          window.electronAPI.sendActivityData(userData);
+        }
+
         window.electronAPI.restartLogging();
       }
     }
