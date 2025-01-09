@@ -67,14 +67,6 @@ function ActivityLogger({
   };
 
   useEffect(() => {
-    if (workspaces && workspaces?.length !== 0) {
-      const workspaceOwnerId = workspaces?.[workspaces.length - 1]?.ownerId;
-      setOwnerId(workspaceOwnerId);
-      localStorage.setItem('ownerId', workspaceOwnerId);
-    }
-  }, [workspaces]);
-
-  useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
       const storedOwnerId = localStorage.getItem('ownerId');
@@ -90,6 +82,12 @@ function ActivityLogger({
     }
   }, []);
 
+  const handleWorkspaceSelection = (e) => {
+    const value = e.target.value;
+    setOwnerId(value);
+    localStorage.setItem('ownerId', value);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
@@ -103,10 +101,10 @@ function ActivityLogger({
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* {ownerId ? (
+            {ownerId ? (
               <select
                 value={ownerId}
-                onChange={(e) => setOwnerId(e.target.value)}
+                onChange={handleWorkspaceSelection}
                 className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
               >
                 {workspaces.map((workspace) => (
@@ -115,7 +113,7 @@ function ActivityLogger({
                   </option>
                 ))}
               </select>
-            ) : null} */}
+            ) : null}
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer transition-transform hover:scale-105"
               style={{ backgroundColor: '#059669' }}
@@ -255,8 +253,8 @@ function ActivityLogger({
           </>
         ) : (
           <div className="flex justify-center items-center h-64">
-            {/* <select
-              onChange={(e) => setOwnerId(e.target.value)}
+            <select
+              onChange={handleWorkspaceSelection}
               className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
             >
               <option value="">Select a workspace</option>
@@ -265,7 +263,7 @@ function ActivityLogger({
                   {workspace.workspaceName}
                 </option>
               ))}
-            </select> */}
+            </select>
           </div>
         )}
       </div>

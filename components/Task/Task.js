@@ -17,6 +17,9 @@ const Task = ({
   activityInterval,
   socket,
 }) => {
+  const projects = useSelector((state) => state?.employee?.projects?.list);
+  const tasks = useSelector((state) => state?.employee?.tasks?.list);
+
   const {
     projectId,
     setProjectId,
@@ -36,11 +39,10 @@ const Task = ({
     socket,
     setActiveSession,
     stopLogging,
-    startLogging
+    startLogging,
+    projects,
+    tasks
   );
-
-  const projects = useSelector((state) => state?.employee?.projects?.list);
-  const tasks = useSelector((state) => state?.employee?.tasks?.list);
 
   return (
     <div className="mb-6 sm:mb-8">

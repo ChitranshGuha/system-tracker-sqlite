@@ -12,7 +12,9 @@ const useTaskLogic = (
   socket,
   setActiveSession,
   stopLogging,
-  startLogging
+  startLogging,
+  projects,
+  tasks
 ) => {
   const dispatch = useDispatch();
   const activityIntervalRef = useRef(null);
@@ -227,11 +229,14 @@ const useTaskLogic = (
     if (Object.values(newErrors).every((error) => !error)) {
       const payload = { ownerId, projectTaskId, description };
 
-      setActiveSession({ projectId, projectTaskId, description });
-      localStorage.setItem(
-        'activeSession',
-        JSON.stringify({ projectId, projectTaskId, description })
-      );
+      const activeSessionObj = {
+        projectName: projects.find((p) => p?.id === projectId)?.name,
+        projectTaskName: tasks?.find((t) => t?.id === projectTaskId)?.name,
+        description,
+      };
+
+      setActiveSession(activeSessionObj);
+      localStorage.setItem('activeSession', JSON.stringify(activeSessionObj));
 
       dispatch(activityActions(authToken, 'start', payload)).then((status) => {
         if (status?.success) {
