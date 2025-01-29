@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
 import { activityActions } from '../../redux/activity/activityActions';
 import { TRACKER_VERSION } from '../../utils/constants';
+import { getSystemTimezone } from '../../utils/helpers';
 
 const useTaskLogic = (
   ownerId,
@@ -201,6 +202,7 @@ const useTaskLogic = (
     const startUserData = {
       ownerId,
       projectTaskActivityId: activityId || projectTaskActivityId,
+      timezone: getSystemTimezone(),
     };
 
     dispatch(activityActions(authToken, 'start', startUserData, true)).then(
@@ -227,7 +229,12 @@ const useTaskLogic = (
     setErrors(newErrors);
 
     if (Object.values(newErrors).every((error) => !error)) {
-      const payload = { ownerId, projectTaskId, description };
+      const payload = {
+        ownerId,
+        projectTaskId,
+        description,
+        timezone: getSystemTimezone(),
+      };
 
       const activeSessionObj = {
         projectName: projects.find((p) => p?.id === projectId)?.name,
@@ -251,7 +258,11 @@ const useTaskLogic = (
           startLogging();
 
           if (socket) {
-            socket.emit('/project/task/activity/start', { projectTaskId });
+            socket.emit('/project/task/activity/start', {
+              projectTaskId,
+              description,
+              timezone: getSystemTimezone(),
+            });
             socket.on('/project/task/activity/start', (response) => {
               const id = response?.data?.id;
               setEmployeeRealtimeProjectTaskActivityId(id);
@@ -410,6 +421,7 @@ const useTaskLogic = (
             const startUserData = {
               ownerId: storedOwnerId,
               projectTaskActivityId: storedProjectTaskActivityId,
+              timezone: getSystemTimezone(),
             };
 
             try {

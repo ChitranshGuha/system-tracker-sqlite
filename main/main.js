@@ -61,8 +61,8 @@ ipcMain.on('set-user-data', async (event, data) => {
 ipcMain.on('set-activity-data', (event, data) => {
   ownerId = data.ownerId;
   projectTaskActivityId = data.projectTaskActivityId;
-  store.set('ownerId', ownerId);
-  store.set('projectTaskActivityId', projectTaskActivityId);
+  store.set('ownerId', data.ownerId);
+  store.set('projectTaskActivityId', data.projectTaskActivityId);
 });
 
 // Function to fetch capture interval from API
@@ -320,6 +320,7 @@ async function captureAndSaveScreenshot() {
         ownerId,
         projectTaskActivityId,
         mediaId,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
       await axios.post(

@@ -1,7 +1,7 @@
 import React from 'react';
 import { FiPlay, FiSquare } from 'react-icons/fi';
 
-const ActionButtons = ({ isLogging, handleFormSubmit, stopLoggingHandler }) => {
+const ActionButtons = ({ isLogging, stopLoggingHandler }) => {
   return (
     <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mt-4 sm:mt-6 lg:space-x-0 lg:grid lg:grid-cols-2 lg:gap-4">
       <button
