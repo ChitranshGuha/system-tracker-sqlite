@@ -26,7 +26,6 @@ const useTaskLogic = (
   const activityIntervalRef = useRef(null);
   const statsRef = useRef(stats);
   const projectTaskActivityDetailIdRef = useRef(stats);
-  console.log('test', socket);
 
   const initialLastStats = {
     clickCount: 0,
@@ -92,28 +91,6 @@ const useTaskLogic = (
       projectTaskActivityDetailIdRef.current = projectTaskActivityDetailId;
     else projectTaskActivityDetailIdRef.current = null;
   }, [projectTaskActivityDetailId]);
-
-  useEffect(() => {
-    console.log('values', socket, isLogging, projectTaskId, description);
-    if (isLogging && projectTaskId && description) {
-      console.log('true values', socket, isLogging, projectTaskId, description);
-      if (socket) {
-        let payload = {
-          projectTaskId,
-          description,
-          timezone: getSystemTimezone(),
-        };
-
-        socket.emit('/project/task/activity/start', payload);
-        socket.on('/project/task/activity/start', (response) => {
-          const id = response?.data?.id;
-          setEmployeeRealtimeProjectTaskActivityId(id);
-        });
-      } else {
-        console.error('Socket is not connected!');
-      }
-    }
-  }, [socket, isLogging, projectTaskId, description]);
 
   useEffect(() => {
     if (
@@ -286,6 +263,23 @@ const useTaskLogic = (
           window.electronAPI.sendActivityData(userData);
           startLogging();
 
+          if (socket) {
+            let payload = {
+              projectTaskId,
+              description,
+              timezone: getSystemTimezone(),
+            };
+            console.log('start values ::', projectTaskId);
+
+            socket.emit('/project/task/activity/start', payload);
+            socket.on('/project/task/activity/start', (response) => {
+              const id = response?.data?.id;
+              setEmployeeRealtimeProjectTaskActivityId(id);
+            });
+          } else {
+            console.error('Socket is not connected!');
+          }
+
           projectDetailActions(status?.id);
         } else {
           console.log(status?.error);
@@ -395,6 +389,7 @@ const useTaskLogic = (
     if (typeof window !== 'undefined' && authToken !== null) {
       const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
       const storedOwnerId = localStorage.getItem('ownerId');
+      const storedProjectTaskId = localStorage.getItem('projectTaskId');
       const storedProjectTaskActivityId = localStorage.getItem(
         'projectTaskActivityId'
       );
@@ -430,6 +425,22 @@ const useTaskLogic = (
 
             try {
               await startStopActivityDetailHandler(startUserData);
+              if (socket) {
+                let payload = {
+                  projectTaskId: storedProjectTaskId,
+                  description,
+                  timezone: getSystemTimezone(),
+                };
+
+                socket.emit('/project/task/activity/start', payload);
+                socket.on('/project/task/activity/start', (response) => {
+                  const id = response?.data?.id;
+                  setEmployeeRealtimeProjectTaskActivityId(id);
+                  console.log('socket test', response);
+                });
+              } else {
+                console.error('Socket is not connected!');
+              }
             } catch (error) {
               console.error('Error in startStopActivityDetailHandler:', error);
             }
@@ -446,7 +457,7 @@ const useTaskLogic = (
         activityIntervalRef.current = null;
       }
     };
-  }, [authToken]);
+  }, [authToken, socket]);
 
   return {
     projectId,

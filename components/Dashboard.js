@@ -38,6 +38,8 @@ function ActivityLogger({
       const socketInstance = io(
         `https://webtracker.infoware.xyz/employee?token=${authToken}&ownerId=${ownerId}`
       );
+
+      console.log('dashboard socket', socketInstance);
       setSocket(socketInstance);
 
       socketInstance.on('connect', () => {
