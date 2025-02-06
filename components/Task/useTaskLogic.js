@@ -15,12 +15,18 @@ const useTaskLogic = (
   stopLogging,
   startLogging,
   projects,
-  tasks
+  tasks,
+  isLogging,
+  projectTaskId,
+  setProjectTaskId,
+  description,
+  setDescription
 ) => {
   const dispatch = useDispatch();
   const activityIntervalRef = useRef(null);
   const statsRef = useRef(stats);
   const projectTaskActivityDetailIdRef = useRef(stats);
+  console.log('test', socket);
 
   const initialLastStats = {
     clickCount: 0,
@@ -32,8 +38,7 @@ const useTaskLogic = (
   const lastStatsRef = useRef(initialLastStats);
 
   const [projectId, setProjectId] = useState('');
-  const [projectTaskId, setProjectTaskId] = useState('');
-  const [description, setDescription] = useState('');
+
   const [errors, setErrors] = useState({
     projectId: '',
     projectTaskId: '',
@@ -89,25 +94,48 @@ const useTaskLogic = (
   }, [projectTaskActivityDetailId]);
 
   useEffect(() => {
+    console.log('values', socket, isLogging, projectTaskId, description);
+    if (isLogging && projectTaskId && description) {
+      console.log('true values', socket, isLogging, projectTaskId, description);
+      if (socket) {
+        let payload = {
+          projectTaskId,
+          description,
+          timezone: getSystemTimezone(),
+        };
+
+        socket.emit('/project/task/activity/start', payload);
+        socket.on('/project/task/activity/start', (response) => {
+          const id = response?.data?.id;
+          setEmployeeRealtimeProjectTaskActivityId(id);
+        });
+      } else {
+        console.error('Socket is not connected!');
+      }
+    }
+  }, [socket, isLogging, projectTaskId, description]);
+
+  useEffect(() => {
     if (
-      socket &&
       employeeRealtimeProjectTaskActivityId &&
       employeeRealtimeProjectTaskActivityId !== null &&
       stats?.appWebsiteDetails
     ) {
       if (activityLength !== stats?.appWebsiteDetails?.length) {
-        socket.emit('/project/task/activity/update', {
-          employeeRealtimeProjectTaskActivityId,
-          appWebsites: stats?.appWebsites,
-          appWebsiteDetails: stats?.appWebsiteDetails,
-        });
-        socket.on('/project/task/activity/update', (response) =>
-          console.log('Activity socket updated ::', response)
-        );
+        if (socket) {
+          socket.emit('/project/task/activity/update', {
+            employeeRealtimeProjectTaskActivityId,
+            appWebsites: stats?.appWebsites,
+            appWebsiteDetails: stats?.appWebsiteDetails,
+          });
+          socket.on('/project/task/activity/update', (response) =>
+            console.log('Activity socket updated ::', response)
+          );
+        } else {
+          console.error('Socket is not connected!');
+        }
       }
       setActivityLength(stats?.appWebsiteDetails?.length);
-    } else {
-      console.error('Socket is not connected!');
     }
   }, [
     stats?.appWebsiteDetails,
@@ -244,6 +272,7 @@ const useTaskLogic = (
 
       setActiveSession(activeSessionObj);
       localStorage.setItem('activeSession', JSON.stringify(activeSessionObj));
+      localStorage.setItem('projectTaskId', JSON.stringify(projectTaskId));
 
       dispatch(activityActions(authToken, 'start', payload)).then((status) => {
         if (status?.success) {
@@ -256,21 +285,6 @@ const useTaskLogic = (
           };
           window.electronAPI.sendActivityData(userData);
           startLogging();
-
-          if (socket) {
-            socket.emit('/project/task/activity/start', {
-              projectTaskId,
-              description,
-              timezone: getSystemTimezone(),
-            });
-            socket.on('/project/task/activity/start', (response) => {
-              const id = response?.data?.id;
-              setEmployeeRealtimeProjectTaskActivityId(id);
-              localStorage.setItem('employeeRealtimeProjectTaskActivityId', id);
-            });
-          } else {
-            console.error('Socket is not connected!');
-          }
 
           projectDetailActions(status?.id);
         } else {
@@ -339,9 +353,6 @@ const useTaskLogic = (
               });
               socket.on('/project/task/activity/end', () => {
                 setEmployeeRealtimeProjectTaskActivityId(null);
-                localStorage.removeItem(
-                  'employeeRealtimeProjectTaskActivityId'
-                );
               });
             } else {
               console.error('Socket is not connected!');
@@ -390,24 +401,17 @@ const useTaskLogic = (
       const storedProjectTaskActivityDetailId = localStorage.getItem(
         'projectTaskActivityDetailId'
       );
-      const storedEmployeeRealtimeProjectTaskActivityId = localStorage.getItem(
-        'employeeRealtimeProjectTaskActivityId'
-      );
 
       if (storedIsLogging) {
         if (
           storedOwnerId &&
           storedProjectTaskActivityId &&
-          storedProjectTaskActivityDetailId &&
-          storedEmployeeRealtimeProjectTaskActivityId
+          storedProjectTaskActivityDetailId
         ) {
           const fetchData = async () => {
             setProjectTaskActivityId(storedProjectTaskActivityId);
             projectTaskActivityDetailIdRef.current =
               storedProjectTaskActivityDetailId;
-            setEmployeeRealtimeProjectTaskActivityId(
-              storedEmployeeRealtimeProjectTaskActivityId
-            );
 
             const updatedStats = statsRef.current;
             lastStatsRef.current = {

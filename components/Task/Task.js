@@ -16,6 +16,10 @@ const Task = ({
   stats,
   activityInterval,
   socket,
+  projectTaskId,
+  setProjectTaskId,
+  description,
+  setDescription,
 }) => {
   const projects = useSelector((state) => state?.employee?.projects?.list);
   const tasks = useSelector((state) => state?.employee?.tasks?.list);
@@ -23,10 +27,6 @@ const Task = ({
   const {
     projectId,
     setProjectId,
-    projectTaskId,
-    setProjectTaskId,
-    description,
-    setDescription,
     errors,
     handleFormSubmit,
     handleKeyDown,
@@ -41,7 +41,12 @@ const Task = ({
     stopLogging,
     startLogging,
     projects,
-    tasks
+    tasks,
+    isLogging,
+    projectTaskId,
+    setProjectTaskId,
+    description,
+    setDescription
   );
 
   return (

@@ -56,7 +56,11 @@ function ActivityLogger({
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
+
+  const [projectTaskId, setProjectTaskId] = useState('');
+  const [description, setDescription] = useState('');
   const [activeSession, setActiveSession] = useState(null);
+
   const user = useSelector((state) => state?.auth?.employeeDetails);
 
   const workspaces = useSelector((state) => state?.employee?.workspaces?.list);
@@ -71,12 +75,18 @@ function ActivityLogger({
       const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
       const storedOwnerId = localStorage.getItem('ownerId');
       const storedActiveSession = localStorage.getItem('activeSession');
+      const storedProjectTaskId = localStorage.getItem('projectTaskId');
       if (storedIsLogging) {
         if (storedOwnerId) {
           setOwnerId(storedOwnerId);
         }
         if (storedActiveSession) {
-          setActiveSession(JSON.parse(storedActiveSession));
+          const storedActiveSessionObj = JSON.parse(storedActiveSession);
+          setActiveSession(storedActiveSessionObj);
+          setDescription(storedActiveSessionObj?.description);
+        }
+        if (storedProjectTaskId) {
+          setProjectTaskId(storedProjectTaskId);
         }
       }
     }
@@ -164,6 +174,10 @@ function ActivityLogger({
                   stats={stats}
                   activityInterval={activityInterval}
                   socket={socket}
+                  projectTaskId={projectTaskId}
+                  setProjectTaskId={setProjectTaskId}
+                  description={description}
+                  setDescription={setDescription}
                 />
 
                 {/* Stats Grid */}
