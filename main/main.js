@@ -87,16 +87,15 @@ async function fetchCaptureInterval() {
         },
       }
     );
-    captureIntervalMinutes = Math.ceil(
-      response?.data?.data?.screenshotIntervalInSeconds / 60
-    );
+    captureIntervalMinutes =
+      response?.data?.data?.screenshotIntervalInSeconds / 60;
     activityIntervalMinutes =
       response?.data?.data?.activityDetailIntervalInSeconds / 60;
 
     if (mainWindow) {
       mainWindow.webContents.send(
         'capture-interval',
-        captureIntervalMinutes || 5
+        captureIntervalMinutes?.toFixed(1) || 5
       );
       mainWindow.webContents.send(
         'acitivity-interval',
@@ -298,6 +297,10 @@ async function captureAndSaveScreenshot() {
       const formData = new FormData();
       formData.append('files', file);
 
+      authToken = await store.get('authToken');
+      ownerId = await store.get('ownerId');
+      projectTaskActivityId = await store.get('projectTaskActivityId');
+
       if (!ownerId || !authToken) {
         throw new Error('ownerId or authToken not set');
       }
@@ -355,7 +358,7 @@ function stopScreenshotCapture() {
 }
 
 // IPC handlers
-ipcMain.on('start-logging', () => {
+ipcMain.handle('start-logging', async () => {
   isLogging = true;
   clickCount = 0;
   keyCount = 0;
@@ -367,7 +370,7 @@ ipcMain.on('start-logging', () => {
   appWebsites = [];
   appWebsiteDetails = [];
   startIdleTracking();
-  startScreenshotCapture();
+  await startScreenshotCapture();
 });
 
 ipcMain.handle('restart-logging', async () => {

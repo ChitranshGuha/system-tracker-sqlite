@@ -427,7 +427,7 @@ const useTaskLogic = (
               await startStopActivityDetailHandler(startUserData);
               if (socket) {
                 let payload = {
-                  projectTaskId: storedProjectTaskId,
+                  projectTaskId: JSON.parse(storedProjectTaskId),
                   description,
                   timezone: getSystemTimezone(),
                 };

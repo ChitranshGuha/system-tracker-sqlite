@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendActivityData: (data) => {
     ipcRenderer.send('set-activity-data', data);
   },
-  startLogging: () => ipcRenderer.send('start-logging'),
+  startLogging: () => ipcRenderer.invoke('start-logging'),
   restartLogging: () => ipcRenderer.invoke('restart-logging'),
   stopLogging: () => ipcRenderer.send('stop-logging'),
   onUpdateStats: (callback) =>
