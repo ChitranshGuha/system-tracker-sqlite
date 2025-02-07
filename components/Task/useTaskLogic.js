@@ -98,8 +98,6 @@ const useTaskLogic = (
       employeeRealtimeProjectTaskActivityId !== null &&
       stats?.appWebsiteDetails
     ) {
-      console.log('app websites', stats?.appWebsites);
-
       if (activityLength !== stats?.appWebsiteDetails?.length) {
         if (socket) {
           socket.emit('/project/task/activity/update', {
