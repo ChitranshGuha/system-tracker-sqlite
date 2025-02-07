@@ -103,13 +103,16 @@ function ActivityLogger() {
         const storedProjectTaskActivityId = localStorage.getItem(
           'projectTaskActivityId'
         );
-
         if (storedOwnerId && storedProjectTaskActivityId) {
-          const userData = {
+          console.log(
+            'checking stored',
+            storedOwnerId,
+            storedProjectTaskActivityId
+          );
+          window.electronAPI.sendActivityData({
             ownerId: storedOwnerId,
             projectTaskActivityId: storedProjectTaskActivityId,
-          };
-          window.electronAPI.sendActivityData(userData);
+          });
         }
 
         window.electronAPI.restartLogging();
