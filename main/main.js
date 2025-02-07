@@ -297,9 +297,10 @@ async function captureAndSaveScreenshot() {
       const formData = new FormData();
       formData.append('files', file);
 
-      authToken = await store.get('authToken');
-      ownerId = await store.get('ownerId');
-      projectTaskActivityId = await store.get('projectTaskActivityId');
+      authToken = authToken || (await store.get('authToken'));
+      ownerId = ownerId || (await store.get('ownerId'));
+      projectTaskActivityId =
+        projectTaskActivityId || (await store.get('projectTaskActivityId'));
 
       if (!ownerId || !authToken) {
         throw new Error('ownerId or authToken not set');
@@ -386,7 +387,7 @@ ipcMain.handle('restart-logging', async () => {
   accumulatedIdleTime = savedStats.idleTime;
   lastActivityTime = Date.now();
   lastIdleCheckTime = Date.now();
-  lastActiveWindow = null;
+  lastActiveWindow = await getActiveWindowInfo();
   appWebsites = savedStats.appWebsites;
   appWebsiteDetails = savedStats.appWebsiteDetails;
   startIdleTracking();

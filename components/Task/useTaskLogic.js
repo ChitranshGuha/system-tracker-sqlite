@@ -98,6 +98,8 @@ const useTaskLogic = (
       employeeRealtimeProjectTaskActivityId !== null &&
       stats?.appWebsiteDetails
     ) {
+      console.log('app websites', stats?.appWebsites);
+
       if (activityLength !== stats?.appWebsiteDetails?.length) {
         if (socket) {
           socket.emit('/project/task/activity/update', {
@@ -269,7 +271,6 @@ const useTaskLogic = (
               description,
               timezone: getSystemTimezone(),
             };
-            console.log('start values ::', projectTaskId);
 
             socket.emit('/project/task/activity/start', payload);
             socket.on('/project/task/activity/start', (response) => {
@@ -436,7 +437,6 @@ const useTaskLogic = (
                 socket.on('/project/task/activity/start', (response) => {
                   const id = response?.data?.id;
                   setEmployeeRealtimeProjectTaskActivityId(id);
-                  console.log('socket test', response);
                 });
               } else {
                 console.error('Socket is not connected!');
