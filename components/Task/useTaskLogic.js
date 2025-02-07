@@ -358,10 +358,11 @@ const useTaskLogic = (
 
             setProjectId('');
             setProjectTaskId('');
+            setProjectTaskActivityId(null);
             setDescription('');
             setActiveSession(null);
             localStorage.removeItem('activeSession');
-            setProjectTaskActivityId(null);
+            localStorage.removeItem('projectTaskId');
             localStorage.removeItem('projectTaskActivityId');
             stopLogging();
             const userData = {
