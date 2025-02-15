@@ -17,6 +17,8 @@ function ActivityLogger({
   captureInterval,
   authToken,
   activityInterval,
+  endedActivityRestart,
+  setEndedActivityRestart,
 }) {
   const dispatch = useDispatch();
 
@@ -179,6 +181,8 @@ function ActivityLogger({
                   setProjectTaskId={setProjectTaskId}
                   description={description}
                   setDescription={setDescription}
+                  endedActivityRestart={endedActivityRestart}
+                  setEndedActivityRestart={setEndedActivityRestart}
                 />
 
                 {/* Stats Grid */}

@@ -16,11 +16,12 @@ const useTaskLogic = (
   startLogging,
   projects,
   tasks,
-  isLogging,
   projectTaskId,
   setProjectTaskId,
   description,
-  setDescription
+  setDescription,
+  endedActivityRestart,
+  setEndedActivityRestart
 ) => {
   const dispatch = useDispatch();
   const activityIntervalRef = useRef(null);
@@ -249,7 +250,7 @@ const useTaskLogic = (
 
       setActiveSession(activeSessionObj);
       localStorage.setItem('activeSession', JSON.stringify(activeSessionObj));
-      localStorage.setItem('projectTaskId', JSON.stringify(projectTaskId));
+      localStorage.setItem('projectTaskId', projectTaskId);
 
       dispatch(activityActions(authToken, 'start', payload)).then((status) => {
         if (status?.success) {
@@ -425,9 +426,9 @@ const useTaskLogic = (
 
             try {
               await startStopActivityDetailHandler(startUserData);
-              if (socket) {
+              if (socket && authToken) {
                 let payload = {
-                  projectTaskId: JSON.parse(storedProjectTaskId),
+                  projectTaskId: storedProjectTaskId,
                   description,
                   timezone: getSystemTimezone(),
                 };
@@ -457,6 +458,84 @@ const useTaskLogic = (
       }
     };
   }, [authToken, socket]);
+
+  useEffect(() => {
+    if (endedActivityRestart) {
+      if (typeof window !== 'undefined' && authToken !== null) {
+        const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
+        const storedOwnerId = localStorage.getItem('ownerId');
+        const storedProjectTaskId = localStorage.getItem('projectTaskId');
+        const storedDescription =
+          localStorage.getItem('activeSession')?.description;
+        localStorage.removeItem('projectTaskActivityId');
+        localStorage.removeItem('projectTaskActivityDetailId');
+        lastStatsRef.current = initialLastStats;
+        setProjectTaskActivityId(null);
+        setProjectTaskActivityDetailId(null);
+
+        if (storedIsLogging) {
+          if (storedOwnerId && storedProjectTaskId) {
+            const fetchData = async () => {
+              try {
+                const payload = {
+                  ownerId: storedOwnerId,
+                  projectTaskId: storedProjectTaskId,
+                  description: storedDescription,
+                  timezone: getSystemTimezone(),
+                };
+                console.log('payload for start', payload, storedProjectTaskId);
+
+                dispatch(activityActions(authToken, 'start', payload)).then(
+                  (status) => {
+                    if (status?.success) {
+                      setProjectTaskActivityId(status?.id);
+                      localStorage.setItem('projectTaskActivityId', status?.id);
+
+                      const userData = {
+                        ownerId,
+                        projectTaskActivityId: status?.id,
+                      };
+                      window.electronAPI.sendActivityData(userData);
+                      startLogging();
+
+                      if (socket) {
+                        let payload = {
+                          projectTaskId,
+                          description,
+                          timezone: getSystemTimezone(),
+                        };
+
+                        socket.emit('/project/task/activity/start', payload);
+                        socket.on(
+                          '/project/task/activity/start',
+                          (response) => {
+                            const id = response?.data?.id;
+                            setEmployeeRealtimeProjectTaskActivityId(id);
+                          }
+                        );
+                      } else {
+                        console.error('Socket is not connected!');
+                      }
+
+                      projectDetailActions(status?.id);
+                    } else {
+                      console.log(status?.error);
+                    }
+                  }
+                );
+              } catch (error) {
+                console.error('Error in start activity handler:', error);
+              } finally {
+                setEndedActivityRestart(false);
+              }
+            };
+
+            fetchData();
+          }
+        }
+      }
+    }
+  }, [endedActivityRestart, authToken, socket]);
 
   return {
     projectId,

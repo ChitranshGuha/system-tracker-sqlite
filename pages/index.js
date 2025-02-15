@@ -4,6 +4,10 @@ import Dashboard from '../components/Dashboard';
 import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
 import { getAuthDetails, logOutEmployee } from '../redux/auth/authActions';
+import {
+  getActivityEndStatus,
+  removeActivityDetailTimeout,
+} from '../redux/activity/activityActions';
 
 function ActivityLogger() {
   const dispatch = useDispatch();
@@ -13,6 +17,7 @@ function ActivityLogger() {
   const [captureInterval, setCaptureInterval] = useState(1);
   const [activityInterval, setActivityInterval] = useState(1);
   const authToken = useSelector((state) => state?.auth?.authToken);
+  const [endedActivityRestart, setEndedActivityRestart] = useState(false);
 
   useEffect(() => {
     dispatch(getAuthDetails());
@@ -71,7 +76,7 @@ function ActivityLogger() {
 
     return () => {
       if (typeof window !== 'undefined' && window.electronAPI) {
-        window?.electronAPI?.offUpdateStats(handleStatsUpdate);
+        window?.electronAPI?.onUpdateStats(handleStatsUpdate);
       }
     };
   }, []);
@@ -96,7 +101,8 @@ function ActivityLogger() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
-      if (storedIsLogging) {
+      const storedAuthToken = localStorage.getItem('employeeAuthToken');
+      if (storedIsLogging && storedAuthToken) {
         setIsLogging(storedIsLogging);
 
         const storedOwnerId = localStorage.getItem('ownerId');
@@ -104,18 +110,24 @@ function ActivityLogger() {
           'projectTaskActivityId'
         );
         if (storedOwnerId && storedProjectTaskActivityId) {
-          console.log(
-            'checking stored',
-            storedOwnerId,
-            storedProjectTaskActivityId
-          );
-          window.electronAPI.sendActivityData({
+          const payload = {
             ownerId: storedOwnerId,
             projectTaskActivityId: storedProjectTaskActivityId,
-          });
+          };
+          dispatch(getActivityEndStatus(storedAuthToken, payload)).then(
+            (data) => {
+              if (data?.data?.endTime) {
+                window.electronAPI.startLogging();
+                setStats(initialStats);
+                setEndedActivityRestart(true);
+              } else {
+                dispatch(removeActivityDetailTimeout(storedAuthToken, payload));
+                window.electronAPI.sendActivityData(payload);
+                window.electronAPI.restartLogging();
+              }
+            }
+          );
         }
-
-        window.electronAPI.restartLogging();
       }
     }
   }, []);
@@ -134,6 +146,8 @@ function ActivityLogger() {
           captureInterval={captureInterval}
           activityInterval={activityInterval}
           authToken={authToken}
+          endedActivityRestart={endedActivityRestart}
+          setEndedActivityRestart={setEndedActivityRestart}
         />
       )}
     </>

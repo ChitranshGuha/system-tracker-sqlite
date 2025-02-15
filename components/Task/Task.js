@@ -20,6 +20,8 @@ const Task = ({
   setProjectTaskId,
   description,
   setDescription,
+  endedActivityRestart,
+  setEndedActivityRestart,
 }) => {
   const projects = useSelector((state) => state?.employee?.projects?.list);
   const tasks = useSelector((state) => state?.employee?.tasks?.list);
@@ -42,11 +44,12 @@ const Task = ({
     startLogging,
     projects,
     tasks,
-    isLogging,
     projectTaskId,
     setProjectTaskId,
     description,
-    setDescription
+    setDescription,
+    endedActivityRestart,
+    setEndedActivityRestart
   );
 
   return (
