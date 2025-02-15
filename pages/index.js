@@ -121,9 +121,21 @@ function ActivityLogger() {
                 setStats(initialStats);
                 setEndedActivityRestart(true);
               } else {
-                dispatch(removeActivityDetailTimeout(storedAuthToken, payload));
-                window.electronAPI.sendActivityData(payload);
-                window.electronAPI.restartLogging();
+                dispatch(removeActivityDetailTimeout(storedAuthToken, payload))
+                  .then(async () => {
+                    const response =
+                      await window.electronAPI.sendActivityData(payload);
+
+                    if (response?.success) {
+                      window.electronAPI.restartLogging();
+                    }
+                  })
+                  .catch((error) => {
+                    console.error(
+                      'Error removing activity detail timeout:',
+                      error
+                    );
+                  });
               }
             }
           );

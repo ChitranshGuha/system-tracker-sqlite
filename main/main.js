@@ -58,11 +58,13 @@ ipcMain.on('set-user-data', async (event, data) => {
   }
 });
 
-ipcMain.on('set-activity-data', (event, data) => {
+ipcMain.handle('set-activity-data', async (event, data) => {
   ownerId = data.ownerId;
   projectTaskActivityId = data.projectTaskActivityId;
   store.set('ownerId', data.ownerId);
   store.set('projectTaskActivityId', data.projectTaskActivityId);
+
+  return { success: true };
 });
 
 // Function to fetch capture interval from API
@@ -379,6 +381,7 @@ ipcMain.handle('restart-logging', async () => {
   ownerId = await store.get('ownerId');
   projectTaskActivityId = await store.get('projectTaskActivityId');
   const savedStats = await store.get('stats');
+  console.log('restart logging', authToken, ownerId, projectTaskActivityId);
 
   isLogging = true;
   clickCount = savedStats.clickCount;
