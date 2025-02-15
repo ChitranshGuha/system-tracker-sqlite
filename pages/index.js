@@ -123,8 +123,12 @@ function ActivityLogger() {
               } else {
                 dispatch(removeActivityDetailTimeout(storedAuthToken, payload))
                   .then(async () => {
-                    const response =
-                      await window.electronAPI.sendActivityData(payload);
+                    const response = await window.electronAPI.sendActivityData({
+                      ownerId: localStorage.getItem('employeeAuthToken'),
+                      projectTaskActivityId: localStorage.getItem(
+                        'projectTaskActivityId'
+                      ),
+                    });
 
                     if (response?.success) {
                       window.electronAPI.restartLogging();
