@@ -124,7 +124,7 @@ function ActivityLogger() {
                 dispatch(removeActivityDetailTimeout(storedAuthToken, payload))
                   .then(async () => {
                     const response = await window.electronAPI.sendActivityData({
-                      ownerId: localStorage.getItem('employeeAuthToken'),
+                      ownerId: localStorage.getItem('ownerId'),
                       projectTaskActivityId: localStorage.getItem(
                         'projectTaskActivityId'
                       ),
