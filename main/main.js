@@ -381,7 +381,6 @@ ipcMain.handle('restart-logging', async () => {
   ownerId = await store.get('ownerId');
   projectTaskActivityId = await store.get('projectTaskActivityId');
   const savedStats = await store.get('stats');
-  console.log('restart logging', authToken, ownerId, projectTaskActivityId);
 
   isLogging = true;
   clickCount = savedStats.clickCount;
