@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
 import { activityActions } from '../../redux/activity/activityActions';
 import { TRACKER_VERSION } from '../../utils/constants';
-import { getSystemTimezone } from '../../utils/helpers';
+import { getSpeed, getSystemTimezone } from '../../utils/helpers';
 
 const useTaskLogic = (
   ownerId,
@@ -236,6 +236,7 @@ const useTaskLogic = (
 
     if (Object.values(newErrors).every((error) => !error)) {
       const geoLocation = await window.electronAPI.getGeoLocation();
+      const speed = await getSpeed();
 
       const payload = {
         ownerId,
@@ -243,6 +244,7 @@ const useTaskLogic = (
         description,
         timezone: getSystemTimezone(),
         ...geoLocation,
+        speed,
       };
 
       const activeSessionObj = {
@@ -273,6 +275,7 @@ const useTaskLogic = (
               description,
               timezone: getSystemTimezone(),
               ...geoLocation,
+              speed,
             };
 
             socket.emit('/project/task/activity/start', payload);
@@ -482,6 +485,7 @@ const useTaskLogic = (
             const fetchData = async () => {
               try {
                 const geoLocation = await window.electronAPI.getGeoLocation();
+                const speed = await getSpeed();
 
                 const payload = {
                   ownerId: storedOwnerId,
@@ -489,6 +493,7 @@ const useTaskLogic = (
                   description: storedDescription,
                   timezone: getSystemTimezone(),
                   ...geoLocation,
+                  speed,
                 };
 
                 dispatch(activityActions(authToken, 'start', payload)).then(
@@ -510,6 +515,7 @@ const useTaskLogic = (
                           description,
                           timezone: getSystemTimezone(),
                           ...geoLocation,
+                          speed,
                         };
 
                         socket.emit('/project/task/activity/start', payload);

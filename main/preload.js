@@ -19,5 +19,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('fetch-activity-interval');
     ipcRenderer.on('activity-interval', (_, value) => callback(value));
   },
+  getActivitySpeedLocationInterval: (callback) => {
+    ipcRenderer.send('fetch-activity-speed-location-interval');
+    ipcRenderer.on('activity-speed-location-interval', (_, value) =>
+      callback(value)
+    );
+  },
   getInitialStats: () => ipcRenderer.invoke('get-initial-stats'),
 });

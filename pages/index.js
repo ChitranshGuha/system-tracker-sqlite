@@ -16,6 +16,7 @@ function ActivityLogger() {
   const [isLogging, setIsLogging] = useState(false);
   const [captureInterval, setCaptureInterval] = useState(1);
   const [activityInterval, setActivityInterval] = useState(1);
+  const [activityLocationInterval, setActivityLocationInterval] = useState(1);
   const authToken = useSelector((state) => state?.auth?.authToken);
   const [endedActivityRestart, setEndedActivityRestart] = useState(false);
 
@@ -49,6 +50,10 @@ function ActivityLogger() {
 
       window.electronAPI.getActivityInterval((interval) => {
         setActivityInterval(interval);
+      });
+
+      window.electronAPI.getActivitySpeedLocationInterval((interval) => {
+        setActivityLocationInterval(interval);
       });
     }
   }, [authToken]);
@@ -161,6 +166,7 @@ function ActivityLogger() {
           isLogging={isLogging}
           captureInterval={captureInterval}
           activityInterval={activityInterval}
+          activityLocationInterval={activityLocationInterval}
           authToken={authToken}
           endedActivityRestart={endedActivityRestart}
           setEndedActivityRestart={setEndedActivityRestart}

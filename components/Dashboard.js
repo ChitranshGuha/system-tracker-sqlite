@@ -19,6 +19,7 @@ function ActivityLogger({
   captureInterval,
   authToken,
   activityInterval,
+  activityLocationInterval,
   endedActivityRestart,
   setEndedActivityRestart,
 }) {
@@ -227,7 +228,10 @@ function ActivityLogger({
                   <div className="flex items-center justify-between mb-2">
                     <IoSpeedometerOutline className="text-purple-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold">
-                      <InternetSpeedTracker socket={socket} />
+                      <InternetSpeedTracker
+                        socket={socket}
+                        interval={activityLocationInterval}
+                      />
                     </p>
                   </div>
                   <p className="text-sm text-purple-600 font-medium">

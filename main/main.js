@@ -14,6 +14,7 @@ let isLogging = false;
 let screenshotInterval;
 let captureIntervalMinutes;
 let activityIntervalMinutes;
+let activitySpeedLocationInterval;
 
 // Activities
 let clickCount = 0;
@@ -76,6 +77,13 @@ ipcMain.on('fetch-activity-interval', async (event) => {
   event.sender.send('activity-interval', activityIntervalMinutes);
 });
 
+ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
+  event.sender.send(
+    'activity-speed-location-interval',
+    activitySpeedLocationInterval
+  );
+});
+
 async function fetchCaptureInterval() {
   try {
     const response = await axios.post(
@@ -92,6 +100,8 @@ async function fetchCaptureInterval() {
       response?.data?.data?.screenshotIntervalInSeconds / 60;
     activityIntervalMinutes =
       response?.data?.data?.activityDetailIntervalInSeconds / 60;
+    activitySpeedLocationInterval =
+      response?.data?.data?.activityDetailIntervalInSeconds;
 
     if (mainWindow) {
       mainWindow.webContents.send(
@@ -101,6 +111,10 @@ async function fetchCaptureInterval() {
       mainWindow.webContents.send(
         'acitivity-interval',
         activityIntervalMinutes || 1
+      );
+      mainWindow.webContents.send(
+        'activity-speed-location-interval',
+        +activitySpeedLocationInterval || 2000
       );
     }
 

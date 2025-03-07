@@ -1,39 +1,30 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { getSpeed } from '../utils/helpers';
 
-export default function InternetSpeedTracker({ socket }) {
+export default function InternetSpeedTracker({ socket, interval }) {
   const [speed, setSpeed] = useState(null);
   const [speedClass, setSpeedClass] = useState('');
 
   const checkSpeed = useCallback(async () => {
     try {
-      const url =
-        'https://omnichannel.infoware.xyz/uploads/3e33171f73864123a6283d5fd78ad5f0.jpg';
+      const speed = await getSpeed();
+      const geoLocation = await window.electronAPI.getGeoLocation();
 
-      const startTime = new Date().getTime();
-
-      const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Network response was not ok');
-
-      const blob = await response.blob();
-      const endTime = new Date().getTime();
-
-      const duration = (endTime - startTime) / 1000;
-      const fileSizeInBits = blob.size * 8;
-      const speedMbps = fileSizeInBits / duration / 1000000;
-      const speedBps = fileSizeInBits / duration;
+      const speedMbps = speed / 1000000;
 
       const formattedSpeed = speedMbps.toFixed(2);
       setSpeed(formattedSpeed);
 
       if (socket) {
         socket.emit('/internet-speed/add', {
-          speed: speedBps,
+          speed,
+          ...geoLocation,
         });
       }
 
       if (speedMbps < 2) {
         setSpeedClass('text-red-600');
-      } else if (speedMbps >= 30) {
+      } else if (speedMbps >= 20) {
         setSpeedClass('text-green-600');
       } else {
         setSpeedClass('text-yellow-600');
@@ -42,17 +33,18 @@ export default function InternetSpeedTracker({ socket }) {
       console.error('Error checking speed:', error);
       setSpeed(null);
     }
-  }, [socket, navigator.connection.downlink]);
+  }, [socket]);
 
   useEffect(() => {
-    checkSpeed();
+    if (interval) {
+      checkSpeed();
+      const speedInterval = setInterval(checkSpeed, interval * 1000);
 
-    const speedInterval = setInterval(checkSpeed, 2000);
-
-    return () => {
-      clearInterval(speedInterval);
-    };
-  }, [checkSpeed]);
+      return () => {
+        clearInterval(speedInterval);
+      };
+    }
+  }, [checkSpeed, interval]);
 
   if (speed === null) {
     return 'Checking...';
@@ -64,7 +56,7 @@ export default function InternetSpeedTracker({ socket }) {
       <span className="text-sm ml-1">
         {Number(speed) < 2
           ? '(Slow)'
-          : Number(speed) >= 30
+          : Number(speed) >= 20
             ? '(Fast)'
             : '(Medium)'}
       </span>
