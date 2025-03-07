@@ -225,7 +225,7 @@ const useTaskLogic = (
     startStopActivityDetailHandler(startUserData);
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {
       projectId: projectId ? '' : 'Project is required',
@@ -235,11 +235,14 @@ const useTaskLogic = (
     setErrors(newErrors);
 
     if (Object.values(newErrors).every((error) => !error)) {
+      const geoLocation = await window.electronAPI.getGeoLocation();
+
       const payload = {
         ownerId,
         projectTaskId,
         description,
         timezone: getSystemTimezone(),
+        ...geoLocation,
       };
 
       const activeSessionObj = {
@@ -269,6 +272,7 @@ const useTaskLogic = (
               projectTaskId,
               description,
               timezone: getSystemTimezone(),
+              ...geoLocation,
             };
 
             socket.emit('/project/task/activity/start', payload);
@@ -477,13 +481,15 @@ const useTaskLogic = (
           if (storedOwnerId && storedProjectTaskId) {
             const fetchData = async () => {
               try {
+                const geoLocation = await window.electronAPI.getGeoLocation();
+
                 const payload = {
                   ownerId: storedOwnerId,
                   projectTaskId: storedProjectTaskId,
                   description: storedDescription,
                   timezone: getSystemTimezone(),
+                  ...geoLocation,
                 };
-                console.log('payload for start', payload, storedProjectTaskId);
 
                 dispatch(activityActions(authToken, 'start', payload)).then(
                   (status) => {
@@ -503,6 +509,7 @@ const useTaskLogic = (
                           projectTaskId,
                           description,
                           timezone: getSystemTimezone(),
+                          ...geoLocation,
                         };
 
                         socket.emit('/project/task/activity/start', payload);

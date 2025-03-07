@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FiMousePointer, FiClock, FiActivity } from 'react-icons/fi';
+import { IoSpeedometerOutline } from 'react-icons/io5';
 import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
 import Task from './Task/Task';
 import PastActivities from './PastActivities';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 import io from 'socket.io-client';
+import InternetSpeedTracker from './InternetSpeedTracker';
 
 function ActivityLogger({
   onLogout,
@@ -164,112 +166,125 @@ function ActivityLogger({
               </button>
             </div>
 
-            {activeTab === 'current' ? (
-              <>
-                <Task
-                  startLogging={startLogging}
-                  stopLogging={stopLogging}
-                  isLogging={isLogging}
-                  activeSession={activeSession}
-                  setActiveSession={setActiveSession}
-                  ownerId={ownerId}
-                  authToken={authToken}
-                  stats={stats}
-                  activityInterval={activityInterval}
-                  socket={socket}
-                  projectTaskId={projectTaskId}
-                  setProjectTaskId={setProjectTaskId}
-                  description={description}
-                  setDescription={setDescription}
-                  endedActivityRestart={endedActivityRestart}
-                  setEndedActivityRestart={setEndedActivityRestart}
-                />
+            <div
+              className={`${activeTab === 'current' ? 'visible' : 'hidden'}`}
+            >
+              <Task
+                startLogging={startLogging}
+                stopLogging={stopLogging}
+                isLogging={isLogging}
+                activeSession={activeSession}
+                setActiveSession={setActiveSession}
+                ownerId={ownerId}
+                authToken={authToken}
+                stats={stats}
+                activityInterval={activityInterval}
+                socket={socket}
+                projectTaskId={projectTaskId}
+                setProjectTaskId={setProjectTaskId}
+                description={description}
+                setDescription={setDescription}
+                endedActivityRestart={endedActivityRestart}
+                setEndedActivityRestart={setEndedActivityRestart}
+              />
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-2">
-                      <FiMousePointer className="text-blue-600 text-xl sm:text-2xl" />
-                      <p className="text-2xl sm:text-3xl font-bold text-blue-800">
-                        {stats.clickCount}
-                      </p>
-                    </div>
-                    <p className="text-sm text-blue-600 font-medium">
-                      Mouse Clicks
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <FiMousePointer className="text-blue-600 text-xl sm:text-2xl" />
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-800">
+                      {stats.clickCount}
                     </p>
                   </div>
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-2">
-                      <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
-                      <p className="text-2xl sm:text-3xl font-bold text-green-800">
-                        {stats.keyCount}
-                      </p>
-                    </div>
-                    <p className="text-sm text-green-600 font-medium">
-                      Keystrokes
-                    </p>
-                  </div>
-                  <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-2">
-                      <FiClock className="text-red-600 text-xl sm:text-2xl" />
-                      <p className="text-2xl sm:text-3xl font-bold text-red-800">
-                        {stats.idleTime}
-                      </p>
-                    </div>
-                    <p className="text-sm text-red-600 font-medium">
-                      Idle Time (min)
-                    </p>
-                  </div>
-                </div>
-
-                {/* Status Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                      <div className="flex items-center">
-                        <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
-                        <p className="text-base sm:text-lg font-medium text-gray-700">
-                          Last Active
-                        </p>
-                      </div>
-                      <p className="text-base sm:text-lg font-bold text-indigo-600">
-                        {stats.lastActive || '--'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                      <div className="flex items-center">
-                        <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
-                        <p className="text-base sm:text-lg font-medium text-gray-700">
-                          Capture Interval
-                        </p>
-                      </div>
-                      <p className="text-base sm:text-lg font-bold text-indigo-600">
-                        {captureInterval}{' '}
-                        {captureInterval <= 1 ? 'minute' : 'minutes'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Keys Pressed Section */}
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
-                  <div className="flex items-center mb-3">
-                    <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
-                    <h2 className="font-semibold text-gray-700 text-base sm:text-lg">
-                      Keys pressed:
-                    </h2>
-                  </div>
-                  <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">
-                    {stats.accumulatedText}
+                  <p className="text-sm text-blue-600 font-medium">
+                    Mouse Clicks
                   </p>
                 </div>
-              </>
-            ) : (
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
+                    <p className="text-2xl sm:text-3xl font-bold text-green-800">
+                      {stats.keyCount}
+                    </p>
+                  </div>
+                  <p className="text-sm text-green-600 font-medium">
+                    Keystrokes
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <FiClock className="text-red-600 text-xl sm:text-2xl" />
+                    <p className="text-2xl sm:text-3xl font-bold text-red-800">
+                      {stats.idleTime}
+                    </p>
+                  </div>
+                  <p className="text-sm text-red-600 font-medium">
+                    Idle Time (min)
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <IoSpeedometerOutline className="text-purple-600 text-xl sm:text-2xl" />
+                    <p className="text-2xl sm:text-3xl font-bold">
+                      <InternetSpeedTracker socket={socket} />
+                    </p>
+                  </div>
+                  <p className="text-sm text-purple-600 font-medium">
+                    Internet Speed (Mbps)
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+                    <div className="flex items-center">
+                      <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
+                      <p className="text-base sm:text-lg font-medium text-gray-700">
+                        Last Active
+                      </p>
+                    </div>
+                    <p className="text-base sm:text-lg font-bold text-indigo-600">
+                      {stats.lastActive || '--'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+                    <div className="flex items-center">
+                      <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
+                      <p className="text-base sm:text-lg font-medium text-gray-700">
+                        Capture Interval
+                      </p>
+                    </div>
+                    <p className="text-base sm:text-lg font-bold text-indigo-600">
+                      {captureInterval}{' '}
+                      {captureInterval <= 1 ? 'minute' : 'minutes'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Keys Pressed Section */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
+                <div className="flex items-center mb-3">
+                  <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
+                  <h2 className="font-semibold text-gray-700 text-base sm:text-lg">
+                    Keys pressed:
+                  </h2>
+                </div>
+                <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">
+                  {stats.accumulatedText}
+                </p>
+              </div>
+            </div>
+
+            <div className={`${activeTab === 'past' ? 'visible' : 'hidden'}`}>
               <PastActivities authToken={authToken} ownerId={ownerId} />
-            )}
+            </div>
           </>
         ) : (
           <div className="flex justify-center items-center h-64">

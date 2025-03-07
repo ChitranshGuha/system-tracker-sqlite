@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
 const store = require('electron-settings');
 const path = require('path');
-const fs = require('fs');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
 const moment = require('moment');
 
@@ -394,6 +393,18 @@ ipcMain.handle('restart-logging', async () => {
   appWebsiteDetails = savedStats.appWebsiteDetails;
   startIdleTracking();
   await startScreenshotCapture();
+});
+
+ipcMain.handle('get-location', async () => {
+  let location = null;
+  try {
+    const response = await axios.get('http://ip-api.com/json/');
+    location = { latitude: response.data.lat, longitude: response.data.lon };
+  } catch (error) {
+    console.error('Failed to fetch location:', error.message);
+  }
+
+  return location;
 });
 
 ipcMain.on('stop-logging', () => {
