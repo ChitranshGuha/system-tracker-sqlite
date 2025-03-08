@@ -101,7 +101,7 @@ async function fetchCaptureInterval() {
     activityIntervalMinutes =
       response?.data?.data?.activityDetailIntervalInSeconds / 60;
     activitySpeedLocationInterval =
-      response?.data?.data?.activityDetailIntervalInSeconds;
+      response?.data?.data?.internetSpeedIntervalInSeconds;
 
     if (mainWindow) {
       mainWindow.webContents.send(
@@ -413,7 +413,11 @@ ipcMain.handle('get-location', async () => {
   let location = null;
   try {
     const response = await axios.get('http://ip-api.com/json/');
-    location = { latitude: response.data.lat, longitude: response.data.lon };
+    location = {
+      latitude: response.data.lat,
+      longitude: response.data.lon,
+      city: `${response.data.city}, ${response.data.country}`,
+    };
   } catch (error) {
     console.error('Failed to fetch location:', error.message);
   }

@@ -6,7 +6,7 @@ export const getSystemTimezone = () => {
 
 export const getSpeed = async () => {
   const url =
-    'https://omnichannel.infoware.xyz/uploads/f01cca18169d4308b2dc801a7bd2c97e.jpg';
+    'https://webtracker.infoware.xyz/uploads/1f26df891fde44db8e703bcb312dd24f.jpg';
 
   const startTime = new Date().getTime();
 

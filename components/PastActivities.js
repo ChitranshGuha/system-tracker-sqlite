@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
+import { MapPin } from 'lucide-react';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -192,7 +193,7 @@ export default function PastActivities({ authToken, ownerId }) {
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Idle Minutes
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Activity Start Location
                   </th>
                 </tr>
@@ -253,11 +254,16 @@ export default function PastActivities({ authToken, ownerId }) {
                       <div className="text-gray-700 mb-2">
                         Long: {activity.longitude || 'N/A'}
                       </div>
+                      <div className="text-gray-700 mb-2 flex items-center gap-1 justify-end">
+                        <MapPin className="text-blue-800 w-4 h-4" />
+                        {activity.city || 'N/A'}
+                      </div>
                       <button
                         onClick={() =>
                           toggleModal(false, {
                             latitude: activity.latitude,
                             longitude: activity.longitude,
+                            city: activity.city,
                           })
                         }
                         className={`px-4 py-2 rounded-md text-white font-semibold transition ${
@@ -281,7 +287,9 @@ export default function PastActivities({ authToken, ownerId }) {
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-[90%] max-w-lg">
-            <h2 className="text-lg font-bold mb-4">Location on Map</h2>
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-1">
+              <MapPin className="text-blue-700 w-6 -8" /> {location.city}
+            </h2>
             <iframe
               src={`https://www.openstreetmap.org/export/embed.html?bbox=${+location.longitude}%2C${+location.latitude}%2C${location.longitude}%2C${location.latitude}&layer=mapnik&marker=${location.latitude}%2C${location.longitude}&zoom=15`}
               width="100%"
