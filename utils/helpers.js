@@ -1,3 +1,5 @@
+import { API_BASE_URL } from './constants';
+
 export const getEmployeeToken = () => localStorage.getItem('employeeAuthToken');
 
 export const getSystemTimezone = () => {
@@ -5,8 +7,7 @@ export const getSystemTimezone = () => {
 };
 
 export const getSpeed = async () => {
-  const url =
-    'https://webtracker.infoware.xyz/uploads/1f26df891fde44db8e703bcb312dd24f.jpg';
+  const url = `${API_BASE_URL}/public/sample-files/image.jpg`;
 
   const startTime = new Date().getTime();
 
