@@ -10,6 +10,7 @@ const initialState = {
   projects: initObj,
   tasks: initObj,
   activities: initObj,
+  appUsages: initObj,
 };
 
 export default function employeeReducer(state = initialState, action) {
@@ -47,6 +48,14 @@ export default function employeeReducer(state = initialState, action) {
         activities: {
           list: action.activities,
           count: action.count,
+        },
+      };
+
+    case type.GET_APPUSAGES_LIST:
+      return {
+        ...state,
+        appUsages: {
+          list: action.appUsages,
         },
       };
 

@@ -9,6 +9,7 @@ import PastActivities from './PastActivities';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 import io from 'socket.io-client';
 import InternetSpeedTracker from './InternetSpeedTracker';
+import AppUsage from './AppUsage';
 
 function ActivityLogger({
   onLogout,
@@ -165,6 +166,16 @@ function ActivityLogger({
               >
                 Past Activities
               </button>
+              <button
+                className={`px-4 py-2 font-medium text-sm ${
+                  activeTab === 'app-usage'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700'
+                }`}
+                onClick={() => setActiveTab('app-usage')}
+              >
+                App Usage
+              </button>
             </div>
 
             <div
@@ -288,6 +299,12 @@ function ActivityLogger({
 
             <div className={`${activeTab === 'past' ? 'visible' : 'hidden'}`}>
               <PastActivities authToken={authToken} ownerId={ownerId} />
+            </div>
+
+            <div
+              className={`${activeTab === 'app-usage' ? 'visible' : 'hidden'}`}
+            >
+              <AppUsage authToken={authToken} ownerId={ownerId} />
             </div>
           </>
         ) : (
