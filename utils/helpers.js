@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './constants';
+import { BASE_URL } from './constants';
 
 export const getEmployeeToken = () => localStorage.getItem('employeeAuthToken');
 
@@ -7,7 +7,7 @@ export const getSystemTimezone = () => {
 };
 
 export const getSpeed = async () => {
-  const url = `${API_BASE_URL}/public/sample-files/image.jpg`;
+  const url = `${BASE_URL}/public/sample-files/image.jpg`;
 
   const startTime = new Date().getTime();
 
