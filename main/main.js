@@ -7,7 +7,8 @@ const moment = require('moment');
 // API
 const { default: axios } = require('axios');
 
-const API_BASE_URL = 'https://webtracker.infoware.xyz/api';
+const IS_PRODUCTION = false;
+const API_BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infoware.xyz/api`;
 
 let mainWindow;
 let isLogging = false;
