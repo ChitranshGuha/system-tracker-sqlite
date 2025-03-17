@@ -10,6 +10,7 @@ import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 import io from 'socket.io-client';
 import InternetSpeedTracker from './InternetSpeedTracker';
 import AppUsage from './AppUsage';
+import { IS_PRODUCTION } from '../utils/constants';
 
 function ActivityLogger({
   onLogout,
@@ -284,17 +285,19 @@ function ActivityLogger({
               </div>
 
               {/* Keys Pressed Section */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
-                <div className="flex items-center mb-3">
-                  <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
-                  <h2 className="font-semibold text-gray-700 text-base sm:text-lg">
-                    Keys pressed:
-                  </h2>
+              {IS_PRODUCTION ? null : (
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
+                  <div className="flex items-center mb-3">
+                    <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
+                    <h2 className="font-semibold text-gray-700 text-base sm:text-lg">
+                      Keys pressed:
+                    </h2>
+                  </div>
+                  <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">
+                    {stats.accumulatedText}
+                  </p>
                 </div>
-                <p className="whitespace-normal break-words text-gray-600 text-sm sm:text-base">
-                  {stats.accumulatedText}
-                </p>
-              </div>
+              )}
             </div>
 
             <div className={`${activeTab === 'past' ? 'visible' : 'hidden'}`}>

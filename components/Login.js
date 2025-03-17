@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { loginOrRegisterEmployee } from '../redux/auth/authActions';
 import { API_BASE_URL } from '../utils/constants';
 import { TRACKER_VERSION } from '../utils/constants';
+import { DOMAIN_TYPE } from '../utils/constants';
 
 export default function LoginForm({ onLogin }) {
   const dispatch = useDispatch();
@@ -18,7 +19,7 @@ export default function LoginForm({ onLogin }) {
   useEffect(() => {
     fetch(`${API_BASE_URL}/employee/auth/domain/get`, {
       method: 'POST',
-      body: JSON.stringify({ domainName: 'test' }),
+      body: JSON.stringify({ domainName: DOMAIN_TYPE }),
       headers: {
         'Content-type': 'Application/json',
       },

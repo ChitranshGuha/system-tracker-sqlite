@@ -1,5 +1,9 @@
-export const BASE_URL = 'https://webtracker.infoware.xyz';
+export const IS_PRODUCTION = false;
 
-export const API_BASE_URL = 'https://webtracker.infoware.xyz/api';
+export const DOMAIN_TYPE = IS_PRODUCTION ? 'production' : 'test';
+
+export const BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infoware.xyz`;
+
+export const API_BASE_URL = `${BASE_URL}/api`;
 
 export const TRACKER_VERSION = '1.0.0';
