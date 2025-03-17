@@ -10,7 +10,7 @@ import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 import io from 'socket.io-client';
 import InternetSpeedTracker from './InternetSpeedTracker';
 import AppUsage from './AppUsage';
-import { IS_PRODUCTION } from '../utils/constants';
+import { BASE_URL, IS_PRODUCTION } from '../utils/constants';
 
 function ActivityLogger({
   onLogout,
@@ -43,7 +43,7 @@ function ActivityLogger({
   useEffect(() => {
     if (ownerId && authToken) {
       const socketInstance = io(
-        `https://webtracker.infoware.xyz/employee?token=${authToken}&ownerId=${ownerId}`
+        `${BASE_URL}/employee?token=${authToken}&ownerId=${ownerId}`
       );
 
       setSocket(socketInstance);
