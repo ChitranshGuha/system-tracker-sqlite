@@ -175,13 +175,23 @@ const useTaskLogic = (
         ),
       };
 
-      [isReport ? lastReportsStatsRef : lastStatsRef].current = {
-        clickCount: +updatedStats?.clickCount,
-        keyCount: +updatedStats?.keyCount,
-        idleTime: +updatedStats?.idleTime,
-        accumulatedText: updatedStats?.accumulatedText,
-        appWebsiteDetails: updatedStats?.appWebsiteDetails,
-      };
+      if (isReport) {
+        lastReportsStatsRef.current = {
+          clickCount: +updatedStats?.clickCount,
+          keyCount: +updatedStats?.keyCount,
+          idleTime: +updatedStats?.idleTime,
+          accumulatedText: updatedStats?.accumulatedText,
+          appWebsiteDetails: updatedStats?.appWebsiteDetails,
+        };
+      } else {
+        lastStatsRef.current = {
+          clickCount: +updatedStats?.clickCount,
+          keyCount: +updatedStats?.keyCount,
+          idleTime: +updatedStats?.idleTime,
+          accumulatedText: updatedStats?.accumulatedText,
+          appWebsiteDetails: updatedStats?.appWebsiteDetails,
+        };
+      }
 
       const stopUserData = {
         ownerId,
@@ -212,7 +222,7 @@ const useTaskLogic = (
             localStorage.removeItem('projectTaskActivityDetailId');
           }
           dispatch(
-            activityActions(authToken, 'start', startUserData, true)
+            activityActions(authToken, 'start', startUserData, true, isReport)
           ).then((status) => {
             if (status?.success) {
               if (isReport) {
@@ -258,31 +268,37 @@ const useTaskLogic = (
       timezone: getSystemTimezone(),
     };
 
-    dispatch(activityActions(authToken, 'start', startUserData, true)).then(
-      (status) => {
-        if (status?.success) {
-          setProjectTaskActivityDetailId(status?.id);
-          localStorage.setItem('projectTaskActivityDetailId', status?.id);
+    try {
+      const detailStatus = await dispatch(
+        activityActions(authToken, 'start', startUserData, true)
+      );
+
+      if (detailStatus?.success) {
+        setProjectTaskActivityDetailId(detailStatus?.id);
+        localStorage.setItem('projectTaskActivityDetailId', detailStatus?.id);
+
+        const reportStatus = await dispatch(
+          activityActions(authToken, 'start', startUserData, true, true)
+        );
+
+        if (reportStatus?.success) {
+          setProjectTaskActivityReportId(reportStatus?.id);
+          localStorage.setItem('projectTaskActivityReportId', reportStatus?.id);
+
+          await startStopActivityDetailHandler(startUserData);
         } else {
-          console.log(status?.error);
+          console.error(
+            'Failed to start activity report:',
+            reportStatus?.error
+          );
         }
-      }
-    );
-
-    dispatch(
-      activityActions(authToken, 'start', startUserData, true, true)
-    ).then((status) => {
-      if (status?.success) {
-        setProjectTaskActivityReportId(status?.id);
-        localStorage.setItem('projectTaskActivityReportId', status?.id);
       } else {
-        console.log(status?.error);
+        console.error('Failed to start activity detail:', detailStatus?.error);
       }
-    });
-
-    startStopActivityDetailHandler(startUserData);
+    } catch (error) {
+      console.error('Error in project detail actions:', error);
+    }
   };
-
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {
@@ -359,30 +375,41 @@ const useTaskLogic = (
     const baseStats = stats;
 
     const buildPayload = (lastStats, identifierKey, identifierValue) => {
+      const safeBaseStats = baseStats || {};
+      const safeLastStats = lastStats || {};
+
+      const safeBaseAccumulatedText = safeBaseStats.accumulatedText || '';
+      const safeLastAccumulatedText = safeLastStats.accumulatedText || '';
+      const safeBaseAppWebsiteDetails = safeBaseStats.appWebsiteDetails || [];
+      const safeLastAppWebsiteDetails = safeLastStats.appWebsiteDetails || [];
+
       const activityDifference = {
-        mouseClick: +baseStats?.clickCount - +lastStats?.clickCount,
-        keystroke: +baseStats?.keyCount - +lastStats?.keyCount,
-        idleTime: (+baseStats?.idleTime - +lastStats?.idleTime) * 60,
-        keyPressed: baseStats?.accumulatedText?.slice(
-          lastStats?.accumulatedText?.length
+        mouseClick:
+          +(safeBaseStats.clickCount || 0) - +(safeLastStats.clickCount || 0),
+        keystroke:
+          +(safeBaseStats.keyCount || 0) - +(safeLastStats.keyCount || 0),
+        idleTime:
+          (+(safeBaseStats.idleTime || 0) - +(safeLastStats.idleTime || 0)) *
+          60,
+        keyPressed: safeBaseAccumulatedText.slice(
+          safeLastAccumulatedText.length || 0
         ),
-        appWebsiteDetails: baseStats?.appWebsiteDetails?.slice(
+        appWebsiteDetails: safeBaseAppWebsiteDetails.slice(
           0,
-          baseStats?.appWebsiteDetails.length -
-            lastStats?.appWebsiteDetails.length
+          safeBaseAppWebsiteDetails.length - safeLastAppWebsiteDetails.length
         ),
       };
 
       return {
         ownerId,
-        mouseClick: baseStats?.clickCount,
-        keystroke: baseStats?.keyCount,
-        keyPressed: baseStats?.accumulatedText,
-        idleTime: baseStats?.idleTime * 60,
+        mouseClick: safeBaseStats.clickCount || 0,
+        keystroke: safeBaseStats.keyCount || 0,
+        keyPressed: safeBaseAccumulatedText,
+        idleTime: (safeBaseStats.idleTime || 0) * 60,
         trackerVersion: TRACKER_VERSION,
         ipAddress,
-        appWebsites: baseStats?.appWebsites,
-        appWebsiteDetails: baseStats?.appWebsiteDetails,
+        appWebsites: safeBaseStats.appWebsites || [],
+        appWebsiteDetails: safeBaseAppWebsiteDetails,
         ...activityDifference,
         [identifierKey]: identifierValue,
       };
@@ -406,8 +433,6 @@ const useTaskLogic = (
         setProjectTaskActivityDetailId(null);
         localStorage.removeItem('projectTaskActivityDetailId');
         lastStatsRef.current = initialLastStats;
-      } else {
-        throw new Error(activityDetailStatus?.error);
       }
 
       const activityReportStatus = await dispatch(
@@ -428,13 +453,11 @@ const useTaskLogic = (
         setProjectTaskActivityReportId(null);
         localStorage.removeItem('projectTaskActivityReportId');
         lastReportsStatsRef.current = initialLastStats;
-      } else {
-        throw new Error(activityReportStatus?.error);
       }
 
       const finalStatus = await dispatch(
         activityActions(authToken, 'end', {
-          ...buildPayload({}, 'projectTaskActivityId', projectTaskActivityId), // no difference calc here
+          ...buildPayload({}, 'projectTaskActivityId', projectTaskActivityId),
         })
       );
 
