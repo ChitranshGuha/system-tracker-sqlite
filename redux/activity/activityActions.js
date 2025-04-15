@@ -1,11 +1,17 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/constants';
 
-export function activityActions(authToken, activityType, payload, isDetail) {
+export function activityActions(
+  authToken,
+  activityType,
+  payload,
+  isDetail,
+  isReport
+) {
   return async () => {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/employee/project/project/task/activity${isDetail ? '/detail' : ''}/${activityType}`,
+        `${API_BASE_URL}/employee/project/project/task/activity${isDetail ? (isReport ? '/report' : '/detail') : ''}/${activityType}`,
         payload,
         {
           headers: {

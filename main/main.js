@@ -16,6 +16,7 @@ let screenshotInterval;
 let captureIntervalMinutes;
 let activityIntervalMinutes;
 let activitySpeedLocationInterval;
+let activityReportInterval;
 
 // Activities
 let clickCount = 0;
@@ -85,6 +86,10 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
   );
 });
 
+ipcMain.on('fetch-activity-report-interval', async (event) => {
+  event.sender.send('activity-report-interval', activityReportInterval);
+});
+
 async function fetchCaptureInterval() {
   try {
     const response = await axios.post(
@@ -97,12 +102,22 @@ async function fetchCaptureInterval() {
         },
       }
     );
+
+    // 1) Screenshot capture interval
     captureIntervalMinutes =
       response?.data?.data?.screenshotIntervalInSeconds / 60;
+
+    // 2) Activity interval
     activityIntervalMinutes =
       response?.data?.data?.activityDetailIntervalInSeconds / 60;
+
+    // 3) Speed location interval
     activitySpeedLocationInterval =
       response?.data?.data?.internetSpeedIntervalInSeconds;
+
+    // 4) Report Iinterval
+    activityReportInterval =
+      response?.data?.data?.activityReportIntervalInSeconds;
 
     if (mainWindow) {
       mainWindow.webContents.send(
@@ -116,6 +131,10 @@ async function fetchCaptureInterval() {
       mainWindow.webContents.send(
         'activity-speed-location-interval',
         +activitySpeedLocationInterval || 2000
+      );
+      mainWindow.webContents.send(
+        'activity-report-interval',
+        +activityReportInterval || 900
       );
     }
 

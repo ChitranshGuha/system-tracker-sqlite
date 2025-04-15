@@ -10,6 +10,7 @@ const useTaskLogic = (
   authToken,
   stats,
   activityInterval,
+  activityReportInterval,
   socket,
   setActiveSession,
   stopLogging,
@@ -25,8 +26,10 @@ const useTaskLogic = (
 ) => {
   const dispatch = useDispatch();
   const activityIntervalRef = useRef(null);
+  const activityReportIntervalRef = useRef(null);
   const statsRef = useRef(stats);
   const projectTaskActivityDetailIdRef = useRef(stats);
+  const projectTaskActivityReportIdRef = useRef(stats);
 
   const initialLastStats = {
     clickCount: 0,
@@ -35,7 +38,9 @@ const useTaskLogic = (
     accumulatedText: [],
     appWebsiteDetails: [],
   };
+
   const lastStatsRef = useRef(initialLastStats);
+  const lastReportsStatsRef = useRef(initialLastStats);
 
   const [projectId, setProjectId] = useState('');
 
@@ -44,9 +49,15 @@ const useTaskLogic = (
     projectTaskId: '',
     description: '',
   });
+
   const [projectTaskActivityId, setProjectTaskActivityId] = useState(null);
   const [projectTaskActivityDetailId, setProjectTaskActivityDetailId] =
     useState(null);
+  const [projectTaskActivityReportId, setProjectTaskActivityReportId] =
+    useState(null);
+
+  console.log('projectTaskActivityReportId', projectTaskActivityReportId);
+
   const [
     employeeRealtimeProjectTaskActivityId,
     setEmployeeRealtimeProjectTaskActivityId,
@@ -94,6 +105,12 @@ const useTaskLogic = (
   }, [projectTaskActivityDetailId]);
 
   useEffect(() => {
+    if (projectTaskActivityReportId)
+      projectTaskActivityReportIdRef.current = projectTaskActivityReportId;
+    else projectTaskActivityReportIdRef.current = null;
+  }, [projectTaskActivityReportId]);
+
+  useEffect(() => {
     if (
       employeeRealtimeProjectTaskActivityId &&
       employeeRealtimeProjectTaskActivityId !== null &&
@@ -138,9 +155,12 @@ const useTaskLogic = (
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const dispatchStartStop = () => {
+    const dispatchStartStop = (isReport) => {
       const updatedStats = statsRef.current;
-      const lastStats = lastStatsRef.current;
+      const lastStats = isReport
+        ? lastReportsStatsRef?.current
+        : lastStatsRef.current;
+
       const activityDifference = {
         mouseClick: +updatedStats?.clickCount - +lastStats.clickCount,
         keystroke: +updatedStats?.keyCount - +lastStats.keyCount,
@@ -155,7 +175,7 @@ const useTaskLogic = (
         ),
       };
 
-      lastStatsRef.current = {
+      [isReport ? lastReportsStatsRef : lastStatsRef].current = {
         clickCount: +updatedStats?.clickCount,
         keyCount: +updatedStats?.keyCount,
         idleTime: +updatedStats?.idleTime,
@@ -165,42 +185,69 @@ const useTaskLogic = (
 
       const stopUserData = {
         ownerId,
-        projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
+        ...(isReport
+          ? {
+              projectTaskActivityReportId:
+                projectTaskActivityReportIdRef.current,
+            }
+          : {
+              projectTaskActivityDetailId:
+                projectTaskActivityDetailIdRef.current,
+            }),
         trackerVersion: TRACKER_VERSION,
         ipAddress,
         appWebsites: updatedStats?.appWebsites,
         ...activityDifference,
       };
 
-      dispatch(activityActions(authToken, 'end', stopUserData, true)).then(
-        (status) => {
-          if (status?.success) {
+      dispatch(
+        activityActions(authToken, 'end', stopUserData, true, isReport)
+      ).then((status) => {
+        if (status?.success) {
+          if (isReport) {
+            setProjectTaskActivityReportId(null);
+            localStorage.removeItem('projectTaskActivityReportId');
+          } else {
             setProjectTaskActivityDetailId(null);
             localStorage.removeItem('projectTaskActivityDetailId');
-            dispatch(
-              activityActions(authToken, 'start', startUserData, true)
-            ).then((status) => {
-              if (status?.success) {
+          }
+          dispatch(
+            activityActions(authToken, 'start', startUserData, true)
+          ).then((status) => {
+            if (status?.success) {
+              if (isReport) {
+                setProjectTaskActivityReportId(status?.id);
+                localStorage.setItem('projectTaskActivityReportId', status?.id);
+              } else {
                 setProjectTaskActivityDetailId(status?.id);
                 localStorage.setItem('projectTaskActivityDetailId', status?.id);
-              } else {
-                console.log(status?.error);
               }
-            });
-          } else {
-            console.log(status?.error);
-          }
+            } else {
+              console.log(status?.error);
+            }
+          });
+        } else {
+          console.log(status?.error);
         }
-      );
+      });
     };
 
     if (activityIntervalRef.current) {
       clearInterval(activityIntervalRef.current);
     }
 
+    if (activityReportIntervalRef.current) {
+      clearInterval(activityReportIntervalRef.current);
+    }
+
     activityIntervalRef.current = setInterval(
-      dispatchStartStop,
+      () => dispatchStartStop(false),
       (activityInterval || 1) * 1000 * 60
+    );
+
+    activityReportIntervalRef.current = setInterval(
+      () => dispatchStartStop(true),
+      2 * 60 * 1000
     );
   };
 
@@ -221,6 +268,17 @@ const useTaskLogic = (
         }
       }
     );
+
+    dispatch(
+      activityActions(authToken, 'start', startUserData, true, true)
+    ).then((status) => {
+      if (status?.success) {
+        setProjectTaskActivityReportId(status?.id);
+        localStorage.setItem('projectTaskActivityReportId', status?.id);
+      } else {
+        console.log(status?.error);
+      }
+    });
 
     startStopActivityDetailHandler(startUserData);
   };
@@ -298,92 +356,124 @@ const useTaskLogic = (
   const stopLoggingHandler = async () => {
     const ipAddress = await getIpAddress();
 
-    const lastStats = lastStatsRef.current;
+    const baseStats = stats;
 
-    const activityDifference = {
-      mouseClick: +stats?.clickCount - +lastStats.clickCount,
-      keystroke: +stats?.keyCount - +lastStats.keyCount,
-      idleTime: (+stats?.idleTime - +lastStats.idleTime) * 60,
-      keyPressed: stats?.accumulatedText?.slice(
-        lastStats?.accumulatedText?.length
-      ),
-      appWebsiteDetails: stats?.appWebsiteDetails?.slice(
-        0,
-        stats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length
-      ),
+    const buildPayload = (lastStats, identifierKey, identifierValue) => {
+      const activityDifference = {
+        mouseClick: +baseStats?.clickCount - +lastStats?.clickCount,
+        keystroke: +baseStats?.keyCount - +lastStats?.keyCount,
+        idleTime: (+baseStats?.idleTime - +lastStats?.idleTime) * 60,
+        keyPressed: baseStats?.accumulatedText?.slice(
+          lastStats?.accumulatedText?.length
+        ),
+        appWebsiteDetails: baseStats?.appWebsiteDetails?.slice(
+          0,
+          baseStats?.appWebsiteDetails.length -
+            lastStats?.appWebsiteDetails.length
+        ),
+      };
+
+      return {
+        ownerId,
+        mouseClick: baseStats?.clickCount,
+        keystroke: baseStats?.keyCount,
+        keyPressed: baseStats?.accumulatedText,
+        idleTime: baseStats?.idleTime * 60,
+        trackerVersion: TRACKER_VERSION,
+        ipAddress,
+        appWebsites: baseStats?.appWebsites,
+        appWebsiteDetails: baseStats?.appWebsiteDetails,
+        ...activityDifference,
+        [identifierKey]: identifierValue,
+      };
     };
 
-    const payload = {
-      ownerId,
-      mouseClick: stats?.clickCount,
-      keystroke: stats?.keyCount,
-      keyPressed: stats?.accumulatedText,
-      idleTime: stats?.idleTime * 60,
-      trackerVersion: TRACKER_VERSION,
-      ipAddress,
-      appWebsites: stats?.appWebsites,
-      appWebsiteDetails: stats?.appWebsiteDetails,
-    };
+    try {
+      const activityDetailStatus = await dispatch(
+        activityActions(
+          authToken,
+          'end',
+          buildPayload(
+            lastStatsRef.current,
+            'projectTaskActivityDetailId',
+            projectTaskActivityDetailIdRef.current
+          ),
+          true
+        )
+      );
 
-    dispatch(
-      activityActions(
-        authToken,
-        'end',
-        {
-          ...payload,
-          projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
-          ...activityDifference,
-        },
-        true
-      )
-    ).then((status) => {
-      if (status?.success) {
+      if (activityDetailStatus?.success) {
         setProjectTaskActivityDetailId(null);
         localStorage.removeItem('projectTaskActivityDetailId');
         lastStatsRef.current = initialLastStats;
-        dispatch(
-          activityActions(authToken, 'end', {
-            ...payload,
-            projectTaskActivityId,
-          })
-        ).then((status) => {
-          if (status?.success) {
-            if (socket) {
-              socket.emit('/project/task/activity/end', {
-                employeeRealtimeProjectTaskActivityId,
-              });
-              socket.on('/project/task/activity/end', () => {
-                setEmployeeRealtimeProjectTaskActivityId(null);
-              });
-            } else {
-              console.error('Socket is not connected!');
-            }
-
-            clearInterval(activityIntervalRef.current);
-            activityIntervalRef.current = null;
-
-            setProjectId('');
-            setProjectTaskId('');
-            setProjectTaskActivityId(null);
-            setDescription('');
-            setActiveSession(null);
-            localStorage.removeItem('activeSession');
-            localStorage.removeItem('projectTaskId');
-            localStorage.removeItem('projectTaskActivityId');
-            stopLogging();
-            const userData = {
-              ownerId: null,
-              projectTaskActivityId: null,
-            };
-            window.electronAPI.sendActivityData(userData);
-          } else {
-            console.log(status?.error);
-          }
-        });
       } else {
-        console.log(status?.error);
+        throw new Error(activityDetailStatus?.error);
       }
-    });
+
+      const activityReportStatus = await dispatch(
+        activityActions(
+          authToken,
+          'end',
+          buildPayload(
+            lastReportsStatsRef.current,
+            'projectTaskActivityReportId',
+            projectTaskActivityReportIdRef.current
+          ),
+          true,
+          true
+        )
+      );
+
+      if (activityReportStatus?.success) {
+        setProjectTaskActivityReportId(null);
+        localStorage.removeItem('projectTaskActivityReportId');
+        lastReportsStatsRef.current = initialLastStats;
+      } else {
+        throw new Error(activityReportStatus?.error);
+      }
+
+      const finalStatus = await dispatch(
+        activityActions(authToken, 'end', {
+          ...buildPayload({}, 'projectTaskActivityId', projectTaskActivityId), // no difference calc here
+        })
+      );
+
+      if (finalStatus?.success) {
+        if (socket) {
+          socket.emit('/project/task/activity/end', {
+            employeeRealtimeProjectTaskActivityId,
+          });
+          socket.on('/project/task/activity/end', () => {
+            setEmployeeRealtimeProjectTaskActivityId(null);
+          });
+        } else {
+          console.error('Socket is not connected!');
+        }
+
+        clearInterval(activityIntervalRef.current);
+        activityIntervalRef.current = null;
+
+        setProjectId('');
+        setProjectTaskId('');
+        setProjectTaskActivityId(null);
+        setDescription('');
+        setActiveSession(null);
+        localStorage.removeItem('activeSession');
+        localStorage.removeItem('projectTaskId');
+        localStorage.removeItem('projectTaskActivityId');
+        stopLogging();
+
+        const userData = {
+          ownerId: null,
+          projectTaskActivityId: null,
+        };
+        window.electronAPI.sendActivityData(userData);
+      } else {
+        console.log(finalStatus?.error);
+      }
+    } catch (err) {
+      console.log('Error :: ', err);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -405,16 +495,24 @@ const useTaskLogic = (
         'projectTaskActivityDetailId'
       );
 
+      const storedProjectTaskActivityReportId = localStorage.getItem(
+        'projectTaskActivityReportId'
+      );
+
       if (storedIsLogging) {
         if (
           storedOwnerId &&
           storedProjectTaskActivityId &&
-          storedProjectTaskActivityDetailId
+          storedProjectTaskActivityDetailId &&
+          storedProjectTaskActivityReportId
         ) {
           const fetchData = async () => {
             setProjectTaskActivityId(storedProjectTaskActivityId);
             projectTaskActivityDetailIdRef.current =
               storedProjectTaskActivityDetailId;
+
+            projectTaskActivityReportIdRef.current =
+              storedProjectTaskActivityReportId;
 
             const updatedStats = statsRef.current;
             lastStatsRef.current = {
@@ -476,9 +574,12 @@ const useTaskLogic = (
           localStorage.getItem('activeSession')?.description;
         localStorage.removeItem('projectTaskActivityId');
         localStorage.removeItem('projectTaskActivityDetailId');
+        localStorage.removeItem('projectTaskActivityReportId');
         lastStatsRef.current = initialLastStats;
+        lastReportsStatsRef.current = initialLastStats;
         setProjectTaskActivityId(null);
         setProjectTaskActivityDetailId(null);
+        setProjectTaskActivityReportId(null);
 
         if (storedIsLogging) {
           if (storedOwnerId && storedProjectTaskId) {

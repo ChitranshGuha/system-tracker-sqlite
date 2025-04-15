@@ -21,6 +21,7 @@ function ActivityLogger({
   captureInterval,
   authToken,
   activityInterval,
+  activityReportInterval,
   activityLocationInterval,
   endedActivityRestart,
   setEndedActivityRestart,
@@ -192,6 +193,7 @@ function ActivityLogger({
                 authToken={authToken}
                 stats={stats}
                 activityInterval={activityInterval}
+                activityReportInterval={activityReportInterval}
                 socket={socket}
                 projectTaskId={projectTaskId}
                 setProjectTaskId={setProjectTaskId}
