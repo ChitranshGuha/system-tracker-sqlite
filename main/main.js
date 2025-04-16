@@ -184,7 +184,7 @@ async function createWindow() {
     mainWindow.webContents.send('update-stats', stats);
   }, 500);
 
-  if (isDev) {
+  if (!IS_PRODUCTION) {
     mainWindow.webContents.openDevTools();
   }
 }
