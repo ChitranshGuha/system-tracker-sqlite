@@ -303,13 +303,23 @@ function ActivityLogger({
             </div>
 
             <div className={`${activeTab === 'past' ? 'visible' : 'hidden'}`}>
-              <PastActivities authToken={authToken} ownerId={ownerId} />
+              <PastActivities
+                authToken={authToken}
+                ownerId={ownerId}
+                isLogging={isLogging}
+                activeTab={activeTab}
+              />
             </div>
 
             <div
               className={`${activeTab === 'app-usage' ? 'visible' : 'hidden'}`}
             >
-              <AppUsage authToken={authToken} ownerId={ownerId} />
+              <AppUsage
+                authToken={authToken}
+                ownerId={ownerId}
+                isLogging={isLogging}
+                activeTab={activeTab}
+              />
             </div>
           </>
         ) : (

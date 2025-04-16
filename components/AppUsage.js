@@ -21,7 +21,7 @@ import dynamic from 'next/dynamic';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const AppUsage = ({ authToken, ownerId }) => {
+const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
   const dispatch = useDispatch();
   const [dateFilter, setDateFilter] = useState('today');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -72,6 +72,21 @@ const AppUsage = ({ authToken, ownerId }) => {
       })
     );
   }, [dateFilter, dispatch, authToken, ownerId]);
+
+  useEffect(() => {
+    if (activeTab === 'app-usage' && !isLogging) {
+      const { startDate, endDate } = getDateRange(dateFilter);
+
+      dispatch(
+        gettingAppUsages(authToken, {
+          ownerId,
+          startDate,
+          endDate,
+          timezone: getSystemTimezone(),
+        })
+      );
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (appUsages && appUsages.length > 0) {

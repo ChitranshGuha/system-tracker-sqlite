@@ -7,7 +7,12 @@ import { MapPin } from 'lucide-react';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-export default function PastActivities({ authToken, ownerId }) {
+export default function PastActivities({
+  authToken,
+  ownerId,
+  isLogging,
+  activeTab,
+}) {
   const dispatch = useDispatch();
 
   const [selectedMetric, setSelectedMetric] = useState('mouseClick');
@@ -25,6 +30,19 @@ export default function PastActivities({ authToken, ownerId }) {
       )
     );
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'past' && !isLogging) {
+      dispatch(
+        gettingEmployeeActionsList(
+          authToken,
+          'employee/project/project/task/activity/list',
+          'activities',
+          { ownerId }
+        )
+      );
+    }
+  }, [activeTab]);
 
   const getLineChartData = () => {
     return pastActivities
