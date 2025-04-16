@@ -4,6 +4,7 @@ import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions
 import { activityActions } from '../../redux/activity/activityActions';
 import { TRACKER_VERSION } from '../../utils/constants';
 import { getSpeed, getSystemTimezone } from '../../utils/helpers';
+import moment from 'moment';
 
 const useTaskLogic = (
   ownerId,
@@ -120,7 +121,7 @@ const useTaskLogic = (
         if (socket) {
           socket.emit('/project/task/activity/update', {
             employeeRealtimeProjectTaskActivityId,
-            appWebsites: stats?.appWebsites,
+            appWebsites: stats?.appWebsites || [],
             appWebsiteDetails: stats?.appWebsiteDetails,
           });
           socket.on('/project/task/activity/update', (response) =>
@@ -206,7 +207,7 @@ const useTaskLogic = (
             }),
         trackerVersion: TRACKER_VERSION,
         ipAddress,
-        appWebsites: updatedStats?.appWebsites,
+        appWebsites: updatedStats?.appWebsites || [],
         ...activityDifference,
       };
 
@@ -255,10 +256,18 @@ const useTaskLogic = (
       (activityInterval || 1) * 1000 * 60
     );
 
-    activityReportIntervalRef.current = setInterval(
-      () => dispatchStartStop(true),
-      2 * 60 * 1000
-    );
+    const now = moment();
+    const alignmentTime = 15 * 60 * 1000;
+    const nextAligned = moment(Math.ceil(+now / alignmentTime) * alignmentTime);
+    const delay = nextAligned.diff(now);
+
+    setTimeout(() => {
+      dispatchStartStop(true);
+      activityReportIntervalRef.current = setInterval(
+        () => dispatchStartStop(true),
+        activityReportInterval * 1000
+      );
+    }, delay);
   };
 
   const projectDetailActions = async (activityId) => {
