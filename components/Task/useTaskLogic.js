@@ -57,8 +57,6 @@ const useTaskLogic = (
   const [projectTaskActivityReportId, setProjectTaskActivityReportId] =
     useState(null);
 
-  console.log('projectTaskActivityReportId', projectTaskActivityReportId);
-
   const [
     employeeRealtimeProjectTaskActivityId,
     setEmployeeRealtimeProjectTaskActivityId,
@@ -68,14 +66,16 @@ const useTaskLogic = (
   useEffect(() => {
     setProjectId('');
     setProjectTaskId('');
-    dispatch(
-      gettingEmployeeActionsList(
-        authToken,
-        'employee/project/project/list',
-        'projects',
-        { ownerId }
-      )
-    );
+    if (authToken) {
+      dispatch(
+        gettingEmployeeActionsList(
+          authToken,
+          'employee/project/project/list',
+          'projects',
+          { ownerId }
+        )
+      );
+    }
   }, [ownerId, authToken, dispatch]);
 
   useEffect(() => {

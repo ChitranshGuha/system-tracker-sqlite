@@ -21,15 +21,17 @@ export default function PastActivities({
   );
 
   useEffect(() => {
-    dispatch(
-      gettingEmployeeActionsList(
-        authToken,
-        'employee/project/project/task/activity/list',
-        'activities',
-        { ownerId }
-      )
-    );
-  }, []);
+    if (authToken) {
+      dispatch(
+        gettingEmployeeActionsList(
+          authToken,
+          'employee/project/project/task/activity/list',
+          'activities',
+          { ownerId }
+        )
+      );
+    }
+  }, [authToken]);
 
   useEffect(() => {
     if (activeTab === 'past' && !isLogging) {

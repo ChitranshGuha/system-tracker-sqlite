@@ -61,16 +61,18 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
   };
 
   useEffect(() => {
-    const { startDate, endDate } = getDateRange(dateFilter);
+    if (authToken) {
+      const { startDate, endDate } = getDateRange(dateFilter);
 
-    dispatch(
-      gettingAppUsages(authToken, {
-        ownerId,
-        startDate,
-        endDate,
-        timezone: getSystemTimezone(),
-      })
-    );
+      dispatch(
+        gettingAppUsages(authToken, {
+          ownerId,
+          startDate,
+          endDate,
+          timezone: getSystemTimezone(),
+        })
+      );
+    }
   }, [dateFilter, dispatch, authToken, ownerId]);
 
   useEffect(() => {
