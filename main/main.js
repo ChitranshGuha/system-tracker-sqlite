@@ -53,20 +53,34 @@ let initialStats = {
 let stats = initialStats;
 
 ipcMain.on('set-user-data', async (event, data) => {
-  authToken = data.authToken;
-  if (authToken) {
-    store.set('authToken', authToken);
-    await fetchCaptureInterval();
+  try {
+    authToken = data.authToken;
+    if (authToken) {
+      await store.set('authToken', authToken);
+      await fetchCaptureInterval();
+    }
+  } catch (error) {
+    console.error('Failed to set user data:', error);
+    event.reply('set-user-data-error', {
+      success: false,
+      error: error.message,
+    });
   }
 });
 
 ipcMain.handle('set-activity-data', async (event, data) => {
-  ownerId = data.ownerId;
-  projectTaskActivityId = data.projectTaskActivityId;
-  store.set('ownerId', data.ownerId);
-  store.set('projectTaskActivityId', data.projectTaskActivityId);
+  try {
+    ownerId = data.ownerId;
+    projectTaskActivityId = data.projectTaskActivityId;
 
-  return { success: true };
+    await store.set('ownerId', ownerId);
+    await store.set('projectTaskActivityId', projectTaskActivityId);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to set activity data:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Function to fetch capture interval from API
