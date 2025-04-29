@@ -8,6 +8,7 @@ import {
   getActivityEndStatus,
   removeActivityDetailTimeout,
 } from '../redux/activity/activityActions';
+import Loader from '../components/Loader';
 
 function ActivityLogger() {
   const dispatch = useDispatch();
@@ -20,6 +21,8 @@ function ActivityLogger() {
   const [activityLocationInterval, setActivityLocationInterval] = useState(1);
   const authToken = useSelector((state) => state?.auth?.authToken);
   const [endedActivityRestart, setEndedActivityRestart] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     dispatch(getAuthDetails());
@@ -163,20 +166,24 @@ function ActivityLogger() {
       {!isLoggedIn ? (
         <Login onLogin={handleLogin} />
       ) : (
-        <Dashboard
-          onLogout={handleLogout}
-          stats={stats}
-          startLogging={startLogging}
-          stopLogging={stopLogging}
-          isLogging={isLogging}
-          captureInterval={captureInterval}
-          activityInterval={activityInterval}
-          activityReportInterval={activityReportInterval}
-          activityLocationInterval={activityLocationInterval}
-          authToken={authToken}
-          endedActivityRestart={endedActivityRestart}
-          setEndedActivityRestart={setEndedActivityRestart}
-        />
+        <Loader isLoading={isLoading}>
+          <Dashboard
+            onLogout={handleLogout}
+            stats={stats}
+            startLogging={startLogging}
+            stopLogging={stopLogging}
+            isLogging={isLogging}
+            captureInterval={captureInterval}
+            activityInterval={activityInterval}
+            activityReportInterval={activityReportInterval}
+            activityLocationInterval={activityLocationInterval}
+            authToken={authToken}
+            endedActivityRestart={endedActivityRestart}
+            setEndedActivityRestart={setEndedActivityRestart}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+          />
+        </Loader>
       )}
     </>
   );

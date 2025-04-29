@@ -23,7 +23,9 @@ const useTaskLogic = (
   description,
   setDescription,
   endedActivityRestart,
-  setEndedActivityRestart
+  setEndedActivityRestart,
+  isLoading,
+  setIsLoading
 ) => {
   const dispatch = useDispatch();
   const activityIntervalRef = useRef(null);
@@ -257,7 +259,7 @@ const useTaskLogic = (
     );
 
     const now = moment();
-    const alignmentTime = 15 * 60 * 1000;
+    const alignmentTime = 2 * 60 * 1000;
     const nextAligned = moment(Math.ceil(+now / alignmentTime) * alignmentTime);
     const delay = nextAligned.diff(now);
 
@@ -265,7 +267,7 @@ const useTaskLogic = (
       dispatchStartStop(true);
       activityReportIntervalRef.current = setInterval(
         () => dispatchStartStop(true),
-        activityReportInterval * 1000
+        120 * 1000
       );
     }, delay);
   };
@@ -318,6 +320,7 @@ const useTaskLogic = (
     setErrors(newErrors);
 
     if (Object.values(newErrors).every((error) => !error)) {
+      setIsLoading(true);
       const geoLocation = await window.electronAPI.getGeoLocation();
       const speed = await getSpeed();
 
@@ -340,45 +343,51 @@ const useTaskLogic = (
       localStorage.setItem('activeSession', JSON.stringify(activeSessionObj));
       localStorage.setItem('projectTaskId', projectTaskId);
 
-      dispatch(activityActions(authToken, 'start', payload)).then((status) => {
-        if (status?.success) {
-          setProjectTaskActivityId(status?.id);
-          localStorage.setItem('projectTaskActivityId', status?.id);
+      await dispatch(activityActions(authToken, 'start', payload)).then(
+        (status) => {
+          if (status?.success) {
+            setProjectTaskActivityId(status?.id);
+            localStorage.setItem('projectTaskActivityId', status?.id);
 
-          const userData = {
-            ownerId,
-            projectTaskActivityId: status?.id,
-          };
-          window.electronAPI.sendActivityData(userData);
-          startLogging();
-
-          if (socket) {
-            let payload = {
-              projectTaskId,
-              description,
-              timezone: getSystemTimezone(),
-              ...geoLocation,
-              speed,
+            const userData = {
+              ownerId,
+              projectTaskActivityId: status?.id,
             };
+            window.electronAPI.sendActivityData(userData);
+            startLogging();
 
-            socket.emit('/project/task/activity/start', payload);
-            socket.on('/project/task/activity/start', (response) => {
-              const id = response?.data?.id;
-              setEmployeeRealtimeProjectTaskActivityId(id);
-            });
+            if (socket) {
+              let payload = {
+                projectTaskId,
+                description,
+                timezone: getSystemTimezone(),
+                ...geoLocation,
+                speed,
+              };
+
+              socket.emit('/project/task/activity/start', payload);
+              socket.on('/project/task/activity/start', (response) => {
+                const id = response?.data?.id;
+                setEmployeeRealtimeProjectTaskActivityId(id);
+              });
+            } else {
+              console.error('Socket is not connected!');
+            }
+
+            projectDetailActions(status?.id);
           } else {
-            console.error('Socket is not connected!');
+            console.log(status?.error);
           }
-
-          projectDetailActions(status?.id);
-        } else {
-          console.log(status?.error);
         }
-      });
+      );
+
+      setIsLoading(false);
     }
   };
 
   const stopLoggingHandler = async () => {
+    setIsLoading(true);
+
     const ipAddress = await getIpAddress();
 
     const baseStats = stats;
@@ -506,6 +515,8 @@ const useTaskLogic = (
     } catch (err) {
       console.log('Error :: ', err);
     }
+
+    setIsLoading(false);
   };
 
   const handleKeyDown = (e) => {
