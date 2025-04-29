@@ -136,6 +136,7 @@ function ActivityLogger() {
               } else {
                 dispatch(removeActivityDetailTimeout(storedAuthToken, payload))
                   .then(async () => {
+                    setIsLoading(true);
                     const response = await window.electronAPI.sendActivityData({
                       ownerId: localStorage.getItem('ownerId'),
                       projectTaskActivityId: localStorage.getItem(
@@ -146,8 +147,10 @@ function ActivityLogger() {
                     if (response?.success) {
                       window.electronAPI.restartLogging();
                     }
+                    setIsLoading(false);
                   })
                   .catch((error) => {
+                    setIsLoading(false);
                     console.error(
                       'Error removing activity detail timeout:',
                       error

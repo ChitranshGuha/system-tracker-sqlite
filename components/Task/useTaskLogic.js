@@ -28,8 +28,13 @@ const useTaskLogic = (
   setIsLoading
 ) => {
   const dispatch = useDispatch();
+
+  // Interval Refs
   const activityIntervalRef = useRef(null);
   const activityReportIntervalRef = useRef(null);
+  const activityReportTimeoutRef = useRef(null);
+
+  // Stats and IDS refs
   const statsRef = useRef(stats);
   const projectTaskActivityDetailIdRef = useRef(stats);
   const projectTaskActivityReportIdRef = useRef(stats);
@@ -249,6 +254,10 @@ const useTaskLogic = (
       clearInterval(activityIntervalRef.current);
     }
 
+    if (activityReportTimeoutRef.current) {
+      clearTimeout(activityReportTimeoutRef.current);
+    }
+
     if (activityReportIntervalRef.current) {
       clearInterval(activityReportIntervalRef.current);
     }
@@ -263,7 +272,7 @@ const useTaskLogic = (
     const nextAligned = moment(Math.ceil(+now / alignmentTime) * alignmentTime);
     const delay = nextAligned.diff(now);
 
-    setTimeout(() => {
+    activityReportTimeoutRef.current = setTimeout(() => {
       dispatchStartStop(true);
       activityReportIntervalRef.current = setInterval(
         () => dispatchStartStop(true),
@@ -627,6 +636,7 @@ const useTaskLogic = (
         if (storedIsLogging) {
           if (storedOwnerId && storedProjectTaskId) {
             const fetchData = async () => {
+              setIsLoading(true);
               try {
                 const geoLocation = await window.electronAPI.getGeoLocation();
                 const speed = await getSpeed();
@@ -684,6 +694,7 @@ const useTaskLogic = (
                 console.error('Error in start activity handler:', error);
               } finally {
                 setEndedActivityRestart(false);
+                setIsLoading(false);
               }
             };
 
