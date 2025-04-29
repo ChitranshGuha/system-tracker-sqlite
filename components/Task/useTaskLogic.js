@@ -24,7 +24,6 @@ const useTaskLogic = (
   setDescription,
   endedActivityRestart,
   setEndedActivityRestart,
-  isLoading,
   setIsLoading
 ) => {
   const dispatch = useDispatch();
@@ -129,7 +128,7 @@ const useTaskLogic = (
           socket.emit('/project/task/activity/update', {
             employeeRealtimeProjectTaskActivityId,
             appWebsites: stats?.appWebsites || [],
-            appWebsiteDetails: stats?.appWebsiteDetails,
+            appWebsiteDetails: stats?.appWebsiteDetails || [],
           });
           socket.on('/project/task/activity/update', (response) =>
             console.log('Activity socket updated ::', response)
@@ -169,17 +168,19 @@ const useTaskLogic = (
         ? lastReportsStatsRef?.current
         : lastStatsRef.current;
 
+      const updatedDetails = updatedStats?.appWebsiteDetails ?? [];
+      const lastDetails = lastStats?.appWebsiteDetails ?? [];
+
       const activityDifference = {
         mouseClick: +updatedStats?.clickCount - +lastStats.clickCount,
         keystroke: +updatedStats?.keyCount - +lastStats.keyCount,
         idleTime: (+updatedStats?.idleTime - +lastStats.idleTime) * 60,
         keyPressed: updatedStats?.accumulatedText?.slice(
-          lastStats?.accumulatedText?.length
+          lastStats?.accumulatedText?.length || 0
         ),
-        appWebsiteDetails: updatedStats?.appWebsiteDetails?.slice(
+        appWebsiteDetails: updatedDetails.slice(
           0,
-          updatedStats?.appWebsiteDetails.length -
-            lastStats?.appWebsiteDetails.length
+          Math.max(updatedDetails.length - lastDetails.length, 0)
         ),
       };
 
@@ -268,7 +269,7 @@ const useTaskLogic = (
     );
 
     const now = moment();
-    const alignmentTime = 15 * 60 * 1000;
+    const alignmentTime = 2 * 60 * 1000;
     const nextAligned = moment(Math.ceil(+now / alignmentTime) * alignmentTime);
     const delay = nextAligned.diff(now);
 
@@ -276,7 +277,8 @@ const useTaskLogic = (
       dispatchStartStop(true);
       activityReportIntervalRef.current = setInterval(
         () => dispatchStartStop(true),
-        activityReportInterval * 1000
+        120 * 1000
+        // activityReportInterval * 1000
       );
     }, delay);
   };
@@ -419,11 +421,15 @@ const useTaskLogic = (
           (+(safeBaseStats.idleTime || 0) - +(safeLastStats.idleTime || 0)) *
           60,
         keyPressed: safeBaseAccumulatedText.slice(
-          safeLastAccumulatedText.length || 0
+          safeLastAccumulatedText?.length || 0
         ),
         appWebsiteDetails: safeBaseAppWebsiteDetails.slice(
           0,
-          safeBaseAppWebsiteDetails.length - safeLastAppWebsiteDetails.length
+          Math.max(
+            safeBaseAppWebsiteDetails?.length -
+              safeLastAppWebsiteDetails?.length,
+            0
+          )
         ),
       };
 

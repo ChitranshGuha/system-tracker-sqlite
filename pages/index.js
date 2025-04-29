@@ -183,7 +183,6 @@ function ActivityLogger() {
             authToken={authToken}
             endedActivityRestart={endedActivityRestart}
             setEndedActivityRestart={setEndedActivityRestart}
-            isLoading={isLoading}
             setIsLoading={setIsLoading}
           />
         </Loader>

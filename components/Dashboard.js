@@ -25,7 +25,6 @@ function ActivityLogger({
   activityLocationInterval,
   endedActivityRestart,
   setEndedActivityRestart,
-  isLoading,
   setIsLoading,
 }) {
   const dispatch = useDispatch();
@@ -203,7 +202,6 @@ function ActivityLogger({
                 setDescription={setDescription}
                 endedActivityRestart={endedActivityRestart}
                 setEndedActivityRestart={setEndedActivityRestart}
-                isLoading={isLoading}
                 setIsLoading={setIsLoading}
               />
 
