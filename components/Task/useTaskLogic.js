@@ -259,7 +259,7 @@ const useTaskLogic = (
     );
 
     const now = moment();
-    const alignmentTime = 2 * 60 * 1000;
+    const alignmentTime = 15 * 60 * 1000;
     const nextAligned = moment(Math.ceil(+now / alignmentTime) * alignmentTime);
     const delay = nextAligned.diff(now);
 
@@ -267,7 +267,7 @@ const useTaskLogic = (
       dispatchStartStop(true);
       activityReportIntervalRef.current = setInterval(
         () => dispatchStartStop(true),
-        120 * 1000
+        activityReportInterval * 1000
       );
     }, delay);
   };
