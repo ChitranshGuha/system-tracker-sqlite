@@ -65,6 +65,7 @@ function ActivityLogger({
   }, [ownerId, authToken]);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showCannotLogoutModal, setShowCannotLogoutModal] = useState(false);
   const [activeTab, setActiveTab] = useState('current');
 
   const [projectTaskId, setProjectTaskId] = useState('');
@@ -136,11 +137,22 @@ function ActivityLogger({
               </select>
             ) : null}
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer transition-transform hover:scale-105"
+              className="relative w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer"
               style={{ backgroundColor: '#059669' }}
-              onClick={() => setShowLogoutModal(true)}
+              onClick={() => !isLogging && setShowLogoutModal(true)}
+              onMouseEnter={() => isLogging && setShowCannotLogoutModal(true)}
+              onMouseLeave={() => isLogging && setShowCannotLogoutModal(false)}
             >
               {user?.firstName?.[0]?.toUpperCase()}
+
+              {showCannotLogoutModal && (
+                <div className="absolute top-full right-0 mt-2 z-50 max-w-[200px]">
+                  <div className="relative w-max text-white bg-red-500 text-xs px-3 py-2 rounded shadow-lg">
+                    <div className="absolute -top-2 right-3 w-0 h-0 border-l-6 border-r-6 border-b-6 border-l-transparent border-r-transparent border-b-white"></div>
+                    Cannot logout while activity logging
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

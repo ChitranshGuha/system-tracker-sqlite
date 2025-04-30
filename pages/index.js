@@ -15,6 +15,7 @@ function ActivityLogger() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const [isLogging, setIsLogging] = useState(false);
+  const [clearStats, setClearStats] = useState(false);
   const [captureInterval, setCaptureInterval] = useState(1);
   const [activityInterval, setActivityInterval] = useState(1);
   const [activityReportInterval, setActivityReportInterval] = useState(900);
@@ -73,6 +74,7 @@ function ActivityLogger() {
   const handleLogout = () => {
     stopLogging();
     window.electronAPI.sendUserData({ authToken: null });
+    window.electronAPI.clearStoreStats();
     setStats(initialStats);
     dispatch(logOutEmployee());
   };
@@ -100,8 +102,16 @@ function ActivityLogger() {
       setIsLogging(true);
       setStats(initialStats);
       localStorage.setItem('isLogging', JSON.stringify(true));
+      setClearStats(true);
     }
   };
+
+  useEffect(() => {
+    if (clearStats && typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.clearStoreStats();
+      setClearStats(false);
+    }
+  }, [clearStats]);
 
   const stopLogging = () => {
     if (isLogging && typeof window !== 'undefined' && window.electronAPI) {

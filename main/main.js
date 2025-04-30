@@ -191,9 +191,9 @@ async function createWindow() {
   if (storeToken) {
     authToken = storeToken;
     await fetchCaptureInterval();
+    await loadStats();
   }
 
-  await loadStats();
   setTimeout(() => {
     mainWindow.webContents.send('update-stats', stats);
   }, 500);
@@ -441,6 +441,10 @@ ipcMain.handle('restart-logging', async () => {
   appWebsiteDetails = savedStats.appWebsiteDetails;
   startIdleTracking();
   await startScreenshotCapture();
+});
+
+ipcMain.handle('clear-store-stats', async () => {
+  await store.set('stats', initialStats);
 });
 
 ipcMain.handle('get-location', async () => {
