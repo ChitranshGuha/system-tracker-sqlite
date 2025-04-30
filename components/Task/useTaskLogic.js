@@ -273,13 +273,24 @@ const useTaskLogic = (
     const nextAligned = moment(Math.ceil(+now / alignmentTime) * alignmentTime);
     const delay = nextAligned.diff(now);
 
+    const threshold = 7500;
+
+    let adjustedDelay;
+
+    if (delay <= threshold || delay === 0) {
+      adjustedDelay = delay + alignmentTime;
+    } else {
+      adjustedDelay = delay;
+    }
+
     activityReportTimeoutRef.current = setTimeout(() => {
       dispatchStartStop(true);
+
       activityReportIntervalRef.current = setInterval(
         () => dispatchStartStop(true),
         activityReportInterval * 1000
       );
-    }, delay);
+    }, adjustedDelay);
   };
 
   const projectDetailActions = async (activityId) => {
