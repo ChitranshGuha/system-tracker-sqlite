@@ -508,6 +508,12 @@ const useTaskLogic = (
         clearInterval(activityIntervalRef.current);
         activityIntervalRef.current = null;
 
+        clearInterval(activityReportIntervalRef.current);
+        activityReportIntervalRef.current = null;
+
+        clearTimeout(activityReportTimeoutRef.current);
+        activityReportTimeoutRef.current = null;
+
         setProjectId('');
         setProjectTaskId('');
         setProjectTaskActivityId(null);
@@ -617,6 +623,16 @@ const useTaskLogic = (
       if (activityIntervalRef.current) {
         clearInterval(activityIntervalRef.current);
         activityIntervalRef.current = null;
+      }
+
+      if (activityReportIntervalRef.current) {
+        clearInterval(activityReportIntervalRef.current);
+        activityReportIntervalRef.current = null;
+      }
+
+      if (activityReportTimeoutRef.current) {
+        clearTimeout(activityReportTimeoutRef.current);
+        activityReportTimeoutRef.current = null;
       }
     };
   }, [authToken, socket]);
