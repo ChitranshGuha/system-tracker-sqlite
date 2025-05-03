@@ -16,7 +16,7 @@ let screenshotInterval;
 let captureIntervalMinutes;
 let activityIntervalMinutes;
 let activitySpeedLocationInterval;
-let activityReportInterval;
+// let activityReportInterval;
 
 // Activities
 let clickCount = 0;
@@ -100,9 +100,9 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
   );
 });
 
-ipcMain.on('fetch-activity-report-interval', async (event) => {
-  event.sender.send('activity-report-interval', activityReportInterval);
-});
+// ipcMain.on('fetch-activity-report-interval', async (event) => {
+//   event.sender.send('activity-report-interval', activityReportInterval);
+// });
 
 async function fetchCaptureInterval() {
   try {
@@ -130,8 +130,8 @@ async function fetchCaptureInterval() {
       response?.data?.data?.internetSpeedIntervalInSeconds;
 
     // 4) Report Iinterval
-    activityReportInterval =
-      response?.data?.data?.activityReportIntervalInSeconds;
+    // activityReportInterval =
+    //   response?.data?.data?.activityReportIntervalInSeconds;
 
     if (mainWindow) {
       mainWindow.webContents.send(
@@ -146,10 +146,10 @@ async function fetchCaptureInterval() {
         'activity-speed-location-interval',
         +activitySpeedLocationInterval || 2000
       );
-      mainWindow.webContents.send(
-        'activity-report-interval',
-        +activityReportInterval || 900
-      );
+      // mainWindow.webContents.send(
+      //   'activity-report-interval',
+      //   +activityReportInterval || 900
+      // );
     }
 
     return captureIntervalMinutes;
@@ -208,8 +208,20 @@ async function createWindow() {
 app.on('ready', createWindow);
 
 app.on('window-all-closed', () => {
+  if (screenshotInterval) {
+    clearInterval(screenshotInterval);
+    screenshotInterval = null;
+  }
+
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('will-quit', () => {
+  if (screenshotInterval) {
+    clearInterval(screenshotInterval);
+    screenshotInterval = null;
   }
 });
 
