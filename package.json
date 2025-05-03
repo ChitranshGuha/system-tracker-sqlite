@@ -12,12 +12,14 @@
   },
   "build": {
     "appId": "com.infoware-logger.123",
-    "productName": "System Tracker",
+    "productName": "Activity Tracker - Digital Links",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "win": {
       "target": "nsis",
+      "icon": "build/icon.ico",
       "signAndEditExecutable": false,
       "sign": false
     },
@@ -28,14 +30,19 @@
       "deleteAppDataOnUninstall": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "System Tracker"
+      "shortcutName": "Activity Tracker - Digital Links",
+      "include": "installer.nsh"
     },
     "mac": {
       "target": "dmg"
     },
     "linux": {
       "target": "AppImage"
-    }
+    },
+    "files": [
+      "**/*",
+      "build/**/*"
+    ]
   },
   "keywords": [],
   "author": "",

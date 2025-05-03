@@ -169,6 +169,8 @@ async function createWindow() {
     width: 800,
     height: 600,
     simpleFullscreen: true,
+    title: 'Activity Tracker - Digital Links',
+    icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
