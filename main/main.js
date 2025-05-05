@@ -17,6 +17,9 @@ const dns = require('dns');
 const IS_PRODUCTION = false;
 const API_BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infoware.xyz/api`;
 
+// Offline & Online
+let isOffline = false;
+
 // Electron Related
 let mainWindow;
 
@@ -114,7 +117,26 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
 //   event.sender.send('activity-report-interval', activityReportInterval);
 // });
 
+// Offline & Online - Logic
+
 ipcMain.on('app-offline', () => {
+  isOffline = true;
+  clearInterval(idleInterval);
+  idleInterval = null;
+
+  if (screenshotInterval) {
+    clearInterval(screenshotInterval);
+    screenshotInterval = null;
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.focus();
+  mainWindow.show();
+});
+
+ipcMain.on('exit-app', () => {
   app.quit();
 });
 
@@ -359,7 +381,7 @@ function startIdleTracking() {
 // Set up global keyboard listener
 const keyboardListener = new GlobalKeyboardListener();
 keyboardListener.addListener((e) => {
-  if (isLogging && !mainWindow.isFocused()) {
+  if (!isOffline && isLogging && !mainWindow.isFocused()) {
     if (e.name === 'MOUSE LEFT' || e.name === 'MOUSE RIGHT') {
       if (e.state === 'UP') {
         clickCount++;
