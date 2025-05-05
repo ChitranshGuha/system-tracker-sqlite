@@ -32,6 +32,26 @@ const AppWrapper = ({ children }) => {
   }, [isElectron]);
 
   useEffect(() => {
+    const handleSuspend = () => {
+      setOnline(false);
+      setStartCountdown(true);
+      if (isElectron) {
+        window.electronAPI.notifyOffline?.();
+      }
+    };
+
+    if (isElectron && window.electronAPI?.onSuspend) {
+      window.electronAPI.onSuspend?.(handleSuspend);
+    }
+
+    return () => {
+      if (isElectron && window.electronAPI?.removeSuspendListener) {
+        window.electronAPI.removeSuspendListener?.(handleSuspend);
+      }
+    };
+  }, [isElectron]);
+
+  useEffect(() => {
     if (!startCountdown) return;
 
     timerRef.current = setInterval(() => {

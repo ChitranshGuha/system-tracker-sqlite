@@ -3,6 +3,7 @@ const {
   BrowserWindow,
   ipcMain,
   desktopCapturer,
+  powerMonitor,
   dialog,
 } = require('electron');
 const store = require('electron-settings');
@@ -138,6 +139,12 @@ ipcMain.on('app-offline', () => {
 
 ipcMain.on('exit-app', () => {
   app.quit();
+});
+
+powerMonitor.on('suspend', () => {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('suspend');
+  }
 });
 
 function checkInternetConnection() {

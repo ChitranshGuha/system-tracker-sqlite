@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Internet Connection
   notifyOffline: () => ipcRenderer.send('app-offline'),
   exitApp: () => ipcRenderer.send('exit-app'),
+  onSuspend: (callback) => ipcRenderer.on('suspend', callback),
+  removeSuspendListener: (callback) =>
+    ipcRenderer.removeListener('suspend', callback),
 
   // Renderer's Data
 
