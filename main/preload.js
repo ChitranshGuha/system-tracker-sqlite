@@ -1,6 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // Internet Connection
+  notifyOffline: () => ipcRenderer.send('app-offline'),
+
+  // Renderer's Data
+
   sendUserData: (data) => {
     ipcRenderer.send('set-user-data', data);
   },

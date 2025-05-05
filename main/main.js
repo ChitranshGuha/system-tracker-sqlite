@@ -1,4 +1,10 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  desktopCapturer,
+  dialog,
+} = require('electron');
 const store = require('electron-settings');
 const path = require('path');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
@@ -6,11 +12,15 @@ const moment = require('moment');
 
 // API
 const { default: axios } = require('axios');
+const dns = require('dns');
 
 const IS_PRODUCTION = false;
 const API_BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infoware.xyz/api`;
 
+// Electron Related
 let mainWindow;
+
+// Renderer Data
 let isLogging = false;
 let screenshotInterval;
 let captureIntervalMinutes;
@@ -104,6 +114,33 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
 //   event.sender.send('activity-report-interval', activityReportInterval);
 // });
 
+ipcMain.on('app-offline', () => {
+  app.quit();
+});
+
+function checkInternetConnection() {
+  return new Promise((resolve) => {
+    dns.lookup('google.com', (err) => {
+      if (err) {
+        isOffline = true;
+        resolve(false);
+      } else {
+        isOffline = false;
+        resolve(true);
+      }
+    });
+  });
+}
+
+function showOfflineDialog() {
+  dialog.showErrorBox(
+    'No Internet Connection 🔌',
+    `This application requires an internet connection to track activities.\nPlease connect to the internet and try again.`
+  );
+
+  app.quit();
+}
+
 async function fetchCaptureInterval() {
   try {
     const response = await axios.post(
@@ -161,6 +198,13 @@ async function fetchCaptureInterval() {
 
 // Create main application window
 async function createWindow() {
+  const isOnline = await checkInternetConnection();
+
+  if (!isOnline) {
+    showOfflineDialog();
+    return;
+  }
+
   const isDev = await import('electron-is-dev').then(
     (module) => module.default
   );
@@ -510,9 +554,14 @@ async function loadStats() {
 
 async function clearRendererStorage() {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    await mainWindow.webContents.session.clearStorageData({
-      storages: ['localStorage'],
-    });
+    try {
+      await mainWindow.webContents.session.clearStorageData({
+        storages: ['localStorage'],
+      });
+      await store.reset();
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+    }
   }
 }
 

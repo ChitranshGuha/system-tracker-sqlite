@@ -175,26 +175,32 @@ const useTaskLogic = (
         ...activityDifference,
       };
 
-      dispatch(activityActions(authToken, 'end', stopUserData, true)).then(
-        (status) => {
+      dispatch(activityActions(authToken, 'end', stopUserData, true))
+        .then((status) => {
           if (status?.success) {
             setProjectTaskActivityDetailId(null);
             localStorage.removeItem('projectTaskActivityDetailId');
-            dispatch(
-              activityActions(authToken, 'start', startUserData, true)
-            ).then((status) => {
+          } else {
+            console.log(status?.error);
+          }
+        })
+        .catch((error) => {
+          console.log('End failed:', error);
+        })
+        .finally(() => {
+          dispatch(activityActions(authToken, 'start', startUserData, true))
+            .then((status) => {
               if (status?.success) {
                 setProjectTaskActivityDetailId(status?.id);
                 localStorage.setItem('projectTaskActivityDetailId', status?.id);
               } else {
                 console.log(status?.error);
               }
+            })
+            .catch((error) => {
+              console.log('Start failed:', error);
             });
-          } else {
-            console.log(status?.error);
-          }
-        }
-      );
+        });
     };
 
     if (activityIntervalRef.current) {
