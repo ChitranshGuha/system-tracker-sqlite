@@ -577,7 +577,7 @@ const useTaskLogic = (
   useEffect(() => {
     if (removeTimerStats) {
       lastStatsRef.current = initialLastStats;
-      setRemoveTimerStats(true);
+      setRemoveTimerStats(false);
     }
   }, [removeTimerStats]);
 
