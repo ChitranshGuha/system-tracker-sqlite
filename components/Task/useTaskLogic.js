@@ -22,8 +22,6 @@ const useTaskLogic = (
   setDescription,
   endedActivityRestart,
   setEndedActivityRestart,
-  removeTimerStats,
-  setRemoveTimerStats,
   setIsLoading
 ) => {
   const dispatch = useDispatch();
@@ -573,13 +571,6 @@ const useTaskLogic = (
       }
     }
   }, [endedActivityRestart, authToken, socket]);
-
-  useEffect(() => {
-    if (removeTimerStats) {
-      lastStatsRef.current = initialLastStats;
-      setRemoveTimerStats(false);
-    }
-  }, [removeTimerStats]);
 
   return {
     projectId,

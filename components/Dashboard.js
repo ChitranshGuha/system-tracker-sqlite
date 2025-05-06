@@ -25,8 +25,6 @@ function ActivityLogger({
   activityLocationInterval,
   endedActivityRestart,
   setEndedActivityRestart,
-  removeTimerStats,
-  setRemoveTimerStats,
   setIsLoading,
 }) {
   const dispatch = useDispatch();
@@ -216,8 +214,6 @@ function ActivityLogger({
                 setDescription={setDescription}
                 endedActivityRestart={endedActivityRestart}
                 setEndedActivityRestart={setEndedActivityRestart}
-                removeTimerStats={removeTimerStats}
-                setRemoveTimerStats={setRemoveTimerStats}
                 setIsLoading={setIsLoading}
               />
 

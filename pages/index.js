@@ -22,8 +22,6 @@ function ActivityLogger() {
   // const [activityReportInterval, setActivityReportInterval] = useState(900);
   const [activityLocationInterval, setActivityLocationInterval] = useState(1);
   const authToken = useSelector((state) => state?.auth?.authToken);
-
-  const [removeTimerStats, setRemoveTimerStats] = useState(false);
   const [endedActivityRestart, setEndedActivityRestart] = useState(false);
 
   useEffect(() => {
@@ -156,7 +154,6 @@ function ActivityLogger() {
                     });
 
                     if (response?.success) {
-                      setRemoveTimerStats(true);
                       window.electronAPI.restartLogging();
                     }
                     setIsLoading(false);
@@ -195,8 +192,6 @@ function ActivityLogger() {
             authToken={authToken}
             endedActivityRestart={endedActivityRestart}
             setEndedActivityRestart={setEndedActivityRestart}
-            removeTimerStats={removeTimerStats}
-            setRemoveTimerStats={setRemoveTimerStats}
             setIsLoading={setIsLoading}
           />
         </Loader>
