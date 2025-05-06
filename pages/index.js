@@ -13,6 +13,7 @@ import Loader from '../components/Loader';
 function ActivityLogger() {
   const dispatch = useDispatch();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [isLogging, setIsLogging] = useState(false);
   const [clearStats, setClearStats] = useState(false);
@@ -21,9 +22,9 @@ function ActivityLogger() {
   // const [activityReportInterval, setActivityReportInterval] = useState(900);
   const [activityLocationInterval, setActivityLocationInterval] = useState(1);
   const authToken = useSelector((state) => state?.auth?.authToken);
-  const [endedActivityRestart, setEndedActivityRestart] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [removeTimerStats, setRemoveTimerStats] = useState(false);
+  const [endedActivityRestart, setEndedActivityRestart] = useState(false);
 
   useEffect(() => {
     dispatch(getAuthDetails());
@@ -155,6 +156,7 @@ function ActivityLogger() {
                     });
 
                     if (response?.success) {
+                      setRemoveTimerStats(true);
                       window.electronAPI.restartLogging();
                     }
                     setIsLoading(false);
@@ -193,6 +195,8 @@ function ActivityLogger() {
             authToken={authToken}
             endedActivityRestart={endedActivityRestart}
             setEndedActivityRestart={setEndedActivityRestart}
+            removeTimerStats={removeTimerStats}
+            setRemoveTimerStats={setRemoveTimerStats}
             setIsLoading={setIsLoading}
           />
         </Loader>

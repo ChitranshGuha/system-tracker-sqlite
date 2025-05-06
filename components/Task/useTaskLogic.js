@@ -22,6 +22,8 @@ const useTaskLogic = (
   setDescription,
   endedActivityRestart,
   setEndedActivityRestart,
+  removeTimerStats,
+  setRemoveTimerStats,
   setIsLoading
 ) => {
   const dispatch = useDispatch();
@@ -142,6 +144,7 @@ const useTaskLogic = (
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const dispatchStartStop = () => {
+      console.log('stats main after', lastStatsRef.current, statsRef.current);
       const updatedStats = statsRef.current;
       const lastStats = lastStatsRef.current;
       const activityDifference = {
@@ -570,6 +573,13 @@ const useTaskLogic = (
       }
     }
   }, [endedActivityRestart, authToken, socket]);
+
+  useEffect(() => {
+    if (removeTimerStats) {
+      lastStatsRef.current = initialLastStats;
+      setRemoveTimerStats(true);
+    }
+  }, [removeTimerStats]);
 
   return {
     projectId,

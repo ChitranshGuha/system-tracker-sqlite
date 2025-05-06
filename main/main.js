@@ -274,7 +274,7 @@ async function createWindow() {
   }, 500);
 
   // if (isDev) {
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
   // }
 }
 
