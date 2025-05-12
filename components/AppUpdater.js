@@ -13,8 +13,7 @@ const AppUpdater = ({ updateData, onClose }) => {
 
   if (!updateData) return null;
 
-  const { version, releaseDate } = updateData;
-  const downloadUrl = updateData.url || '#download-link';
+  const { version, releaseDate, domainId } = updateData;
 
   const updateSteps = [
     'Download the installer using the download button',
@@ -74,7 +73,11 @@ const AppUpdater = ({ updateData, onClose }) => {
               Skip for now
             </button>
 
-            <a href={APP_DOWNLOAD_URL} download className="block w-full">
+            <a
+              href={APP_DOWNLOAD_URL(domainId, version)}
+              download
+              className="block w-full"
+            >
               <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-3 px-4 rounded-md flex items-center justify-center font-medium transition-colors duration-200">
                 <Download className="mr-2 h-5 w-5" />
                 Download v{version}
