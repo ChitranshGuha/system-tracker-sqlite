@@ -1,17 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Login from '../components/Login';
 import Dashboard from '../components/Dashboard';
 import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
-import { getAuthDetails, logOutEmployee } from '../redux/auth/authActions';
+import {
+  appUpdateChecker,
+  getAuthDetails,
+  logOutEmployee,
+} from '../redux/auth/authActions';
 import {
   getActivityEndStatus,
   removeActivityDetailTimeout,
 } from '../redux/activity/activityActions';
 import Loader from '../components/Loader';
+import { API_BASE_URL, TRACKER_VERSION } from '../utils/constants';
+import { DOMAIN_TYPE } from '../utils/constants';
+import AppUpdater from '../components/AppUpdater';
 
 function ActivityLogger() {
   const dispatch = useDispatch();
+
+  const [isUpdateRequired, setIsUpdateRequired] = useState(false);
+  const [updateData, setUpdateData] = useState(false);
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -173,10 +184,44 @@ function ActivityLogger() {
     }
   }, []);
 
+  const [domainId, setDomainId] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/employee/auth/domain/get`, {
+      method: 'POST',
+      body: JSON.stringify({ domainName: DOMAIN_TYPE }),
+      headers: {
+        'Content-type': 'Application/json',
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setDomainId(data?.data?.id);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (domainId) {
+      dispatch(appUpdateChecker({ domainId })).then((data) => {
+        if (data?.success) {
+          setIsUpdateRequired(data?.data?.version !== TRACKER_VERSION);
+          setUpdateData(data?.data?.data);
+        }
+      });
+    }
+  }, [domainId]);
+
   return (
     <>
+      {isUpdateRequired ? (
+        <AppUpdater
+          updateData={updateData}
+          onClose={() => setIsUpdateRequired(false)}
+        />
+      ) : null}
+
       {!isLoggedIn ? (
-        <Login onLogin={handleLogin} />
+        <Login onLogin={handleLogin} domainId={domainId} />
       ) : (
         <Loader isLoading={isLoading}>
           <Dashboard

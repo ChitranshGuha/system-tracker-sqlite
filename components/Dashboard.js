@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FiMousePointer, FiClock, FiActivity } from 'react-icons/fi';
+import { FiMousePointer, FiClock, FiActivity, FiPackage } from 'react-icons/fi';
 import { IoSpeedometerOutline } from 'react-icons/io5';
 import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
@@ -10,7 +10,7 @@ import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
 import io from 'socket.io-client';
 import InternetSpeedTracker from './InternetSpeedTracker';
 import AppUsage from './AppUsage';
-import { BASE_URL, IS_PRODUCTION } from '../utils/constants';
+import { BASE_URL, IS_PRODUCTION, TRACKER_VERSION } from '../utils/constants';
 
 function ActivityLogger({
   onLogout,
@@ -114,11 +114,17 @@ function ActivityLogger({
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-              Activity Logger
-            </h1>
-            <FiActivity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
+          <div>
+            <div className="flex items-center space-x-3">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                Activity Logger
+              </h1>
+              <FiActivity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
+            </div>
+            <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 shadow-sm">
+              <FiPackage className="h-4 w-4" />
+              <span>Current Version: {TRACKER_VERSION}</span>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">

@@ -55,3 +55,26 @@ export function logOutEmployee() {
     type: type.EMPLOYEE_LOGOUT,
   };
 }
+
+// App Update Checker
+
+export function appUpdateChecker(payload) {
+  return async () => {
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/employee/auth/app-version/get`,
+        payload
+      );
+
+      return {
+        success: true,
+        data: res?.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error?.response?.data?.error || 'Server Error',
+      };
+    }
+  };
+}

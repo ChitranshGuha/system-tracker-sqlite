@@ -1,32 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { loginOrRegisterEmployee } from '../redux/auth/authActions';
-import { API_BASE_URL } from '../utils/constants';
 import { TRACKER_VERSION } from '../utils/constants';
-import { DOMAIN_TYPE } from '../utils/constants';
 
-export default function LoginForm({ onLogin }) {
+export default function LoginForm({ onLogin, domainId }) {
   const dispatch = useDispatch();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-
-  const [domainId, setDomainId] = useState(null);
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/employee/auth/domain/get`, {
-      method: 'POST',
-      body: JSON.stringify({ domainName: DOMAIN_TYPE }),
-      headers: {
-        'Content-type': 'Application/json',
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => setDomainId(data?.data?.id));
-  }, []);
 
   const validateForm = () => {
     const newErrors = {};
@@ -92,7 +76,7 @@ export default function LoginForm({ onLogin }) {
         <div className="p-6 sm:p-8">
           <div className="text-center">
             <img
-              src="assets/images/icon.png"
+              src="/assets/images/icon.png"
               alt="Activity Logger Logo"
               width={20}
               height={20}
@@ -170,7 +154,7 @@ export default function LoginForm({ onLogin }) {
               </p>
             </div>
 
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -194,7 +178,7 @@ export default function LoginForm({ onLogin }) {
                   Forgot your password?
                 </a>
               </div>
-            </div>
+            </div> */}
 
             {errors.form && (
               <p className="text-red-500 text-sm">{errors.form}</p>
@@ -210,10 +194,10 @@ export default function LoginForm({ onLogin }) {
         </div>
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 sm:px-8">
           <p className="text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <a href="#" className="font-medium text-black hover:text-gray-700">
+            {/* Don't have an account?{' '} */} v{TRACKER_VERSION}
+            {/* <a href="#" className="font-medium text-black hover:text-gray-700">
               Sign up
-            </a>
+            </a> */}
           </p>
         </div>
       </div>
