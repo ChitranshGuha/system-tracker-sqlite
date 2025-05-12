@@ -205,7 +205,7 @@ function ActivityLogger() {
       dispatch(appUpdateChecker({ domainId })).then((data) => {
         if (data?.success) {
           setIsUpdateRequired(data?.data?.version !== TRACKER_VERSION);
-          setUpdateData(data?.data?.data);
+          setUpdateData(data?.data);
         }
       });
     }

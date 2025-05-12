@@ -68,7 +68,7 @@ export function appUpdateChecker(payload) {
 
       return {
         success: true,
-        data: res?.data,
+        data: res?.data?.data,
       };
     } catch (error) {
       return {
