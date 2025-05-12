@@ -16,11 +16,13 @@ import Loader from '../components/Loader';
 import { API_BASE_URL, TRACKER_VERSION } from '../utils/constants';
 import { DOMAIN_TYPE } from '../utils/constants';
 import AppUpdater from '../components/AppUpdater';
+import { Download } from 'lucide-react';
 
 function ActivityLogger() {
   const dispatch = useDispatch();
 
   const [isUpdateRequired, setIsUpdateRequired] = useState(false);
+  const [updateRequiredModal, setUpdateRequiredModal] = useState(false);
   const [updateData, setUpdateData] = useState(false);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -204,7 +206,11 @@ function ActivityLogger() {
     if (domainId) {
       dispatch(appUpdateChecker({ domainId })).then((data) => {
         if (data?.success) {
-          setIsUpdateRequired(data?.data?.version !== TRACKER_VERSION);
+          const isUpdateRequirement = data?.data?.version !== TRACKER_VERSION;
+          if (isUpdateRequirement) {
+            setIsUpdateRequired(true);
+            setUpdateRequiredModal(true);
+          }
           setUpdateData(data?.data);
         }
       });
@@ -214,9 +220,24 @@ function ActivityLogger() {
   return (
     <>
       {isUpdateRequired ? (
+        <div
+          title="Update available"
+          className="cursor-pointer fixed z-50 top-2 right-2 flex items-center gap-2 bg-yellow-100 text-yellow-800 border border-yellow-300 px-4 py-2 rounded-lg shadow-md"
+          onClick={() => setUpdateRequiredModal(true)}
+        >
+          <span className="font-medium">Update available</span>
+          <button className="inline-flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium px-3 py-1 rounded transition">
+            <Download className="!w-4 !h-4" />
+          </button>
+        </div>
+      ) : null}
+
+      {updateRequiredModal ? (
         <AppUpdater
+          isLogging={isLogging}
+          isLoggedIn={isLoggedIn}
           updateData={updateData}
-          onClose={() => setIsUpdateRequired(false)}
+          onClose={() => setUpdateRequiredModal(false)}
         />
       ) : null}
 

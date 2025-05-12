@@ -194,7 +194,7 @@ export default function LoginForm({ onLogin, domainId }) {
         </div>
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 sm:px-8">
           <p className="text-center text-sm text-gray-600">
-            {/* Don't have an account?{' '} */} v{TRACKER_VERSION}
+            v{TRACKER_VERSION} {/* Don't have an account?{' '} */}
             {/* <a href="#" className="font-medium text-black hover:text-gray-700">
               Sign up
             </a> */}

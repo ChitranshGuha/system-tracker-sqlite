@@ -3,7 +3,7 @@ import { Download, Calendar, Tag, X } from 'lucide-react';
 import moment from 'moment';
 import { APP_DOWNLOAD_URL } from '../utils/constants';
 
-const AppUpdater = ({ updateData, onClose }) => {
+const AppUpdater = ({ updateData, onClose, isLogging, isLoggedIn }) => {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -16,13 +16,12 @@ const AppUpdater = ({ updateData, onClose }) => {
   const { version, releaseDate, domainId } = updateData;
 
   const updateSteps = [
-    'Download the installer using the download button',
-    'Stop logging any current activity',
-    'Log yourself out',
-    'Then uninstall the current version',
-    'Install the version you have downloaded',
+    'Do not close the app until the app has been downloaded.',
+    'Uninstall the current version and then install the downloaded version',
     'Relogin and start logging the activity again',
   ];
+
+  const isAllowDownload = isLogging || isLoggedIn;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -52,11 +51,24 @@ const AppUpdater = ({ updateData, onClose }) => {
         </div>
 
         <div className="p-5 overflow-y-auto flex-grow">
+          {isAllowDownload ? (
+            <h3 className="font-medium text-gray-900 mb-2">
+              Mandatory steps required:
+            </h3>
+          ) : null}
+
+          {isAllowDownload && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md text-sm space-y-1">
+              {isLogging && <div>⚠️ Please stop the current activity.</div>}
+              {isLoggedIn && <div>⚠️ Please log yourself out.</div>}
+            </div>
+          )}
+
           <div className="mb-4">
             <h3 className="font-medium text-gray-900 mb-2">
-              For smooth update transitioning and get latest updates, please:
+              For smooth update transitioning, please:
             </h3>
-            <ol className="space-y-4 list-decimal pl-5">
+            <ol className="space-y-2 list-decimal pl-5">
               {updateSteps.map((step, index) => (
                 <li key={index} className="text-gray-700">
                   <p>{step}</p>
@@ -74,11 +86,23 @@ const AppUpdater = ({ updateData, onClose }) => {
             </button>
 
             <a
-              href={APP_DOWNLOAD_URL(domainId, version)}
+              href={
+                isAllowDownload
+                  ? undefined
+                  : APP_DOWNLOAD_URL(domainId, version)
+              }
               download
               className="block w-full"
+              onClick={(e) => isAllowDownload && e.preventDefault()}
             >
-              <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-3 px-4 rounded-md flex items-center justify-center font-medium transition-colors duration-200">
+              <button
+                className={`w-full py-3 px-4 rounded-md flex items-center justify-center font-medium transition-colors duration-200 ${
+                  isAllowDownload
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white'
+                }`}
+                disabled={isAllowDownload}
+              >
                 <Download className="mr-2 h-5 w-5" />
                 Download v{version}
               </button>
