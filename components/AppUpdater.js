@@ -4,8 +4,6 @@ import moment from 'moment';
 import { APP_DOWNLOAD_URL } from '../utils/constants';
 
 const AppUpdater = ({ updateData, onClose }) => {
-  console.log(updateData);
-
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
