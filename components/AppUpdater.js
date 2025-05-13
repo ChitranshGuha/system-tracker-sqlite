@@ -52,7 +52,7 @@ const AppUpdater = ({ updateData, onClose, isLogging, isLoggedIn }) => {
         <div className="p-5 overflow-y-auto flex-grow">
           {isAllowDownload ? (
             <h3 className="font-medium text-gray-900 mb-2">
-              Mandatory steps required:
+              Mandatory step(s) required:
             </h3>
           ) : null}
 

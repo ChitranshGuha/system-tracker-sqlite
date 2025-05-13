@@ -31,7 +31,7 @@ const HardReset = ({ isLogging, stopLoggingHandler, setIsLoading }) => {
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="absolute top-6 right-6 z-50 flex items-center justify-center p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all duration-800 hover:scale-105"
+        className="absolute top-6 right-6 flex items-center justify-center p-3 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all duration-800 hover:scale-105"
         aria-label="Hard Reset"
         title="Hard Reset"
       >
