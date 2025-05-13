@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Download, Calendar, Tag, X } from 'lucide-react';
 import moment from 'moment';
-import { APP_DOWNLOAD_URL } from '../utils/constants';
 
 const AppUpdater = ({ updateData, onClose, isLogging, isLoggedIn }) => {
   useEffect(() => {
@@ -13,7 +12,7 @@ const AppUpdater = ({ updateData, onClose, isLogging, isLoggedIn }) => {
 
   if (!updateData) return null;
 
-  const { version, releaseDate, domainId } = updateData;
+  const { version, releaseDate, appUrl } = updateData;
 
   const updateSteps = [
     'Do not close the app until the app has been downloaded.',
@@ -86,11 +85,7 @@ const AppUpdater = ({ updateData, onClose, isLogging, isLoggedIn }) => {
             </button>
 
             <a
-              href={
-                isAllowDownload
-                  ? undefined
-                  : APP_DOWNLOAD_URL(domainId, version)
-              }
+              href={isAllowDownload ? undefined : appUrl}
               download
               className="block w-full"
               onClick={(e) => isAllowDownload && e.preventDefault()}

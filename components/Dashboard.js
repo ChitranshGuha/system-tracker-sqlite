@@ -11,6 +11,7 @@ import io from 'socket.io-client';
 import InternetSpeedTracker from './InternetSpeedTracker';
 import AppUsage from './AppUsage';
 import { BASE_URL, IS_PRODUCTION, TRACKER_VERSION } from '../utils/constants';
+import HardReset from './HardReset';
 
 function ActivityLogger({
   onLogout,

@@ -6,7 +6,4 @@ export const BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infowa
 
 export const API_BASE_URL = `${BASE_URL}/api`;
 
-export const TRACKER_VERSION = '1.0.2';
-
-export const APP_DOWNLOAD_URL = (domainId, version) =>
-  `https://infowarewebtracker${IS_PRODUCTION ? 'prod' : ''}.s3.ap-south-1.amazonaws.com/${domainId}/System%20Tracker%20Setup%20${version}%20${DOMAIN_TYPE}.exe`;
+export const TRACKER_VERSION = '1.0.3';

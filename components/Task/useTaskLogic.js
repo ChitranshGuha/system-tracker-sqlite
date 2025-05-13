@@ -71,7 +71,7 @@ const useTaskLogic = (
 
   useEffect(() => {
     setProjectTaskId('');
-    if (projectId) {
+    if (projectId && authToken) {
       dispatch(
         gettingEmployeeActionsList(
           authToken,

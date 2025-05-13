@@ -4,7 +4,10 @@ export default function Loader({ isLoading, children }) {
       {children}
 
       {isLoading && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center"
+          style={{ zIndex: '1000' }}
+        >
           <div className="flex space-x-2 items-center justify-center">
             <div
               className="w-4 h-4 bg-white rounded-full animate-bounce"
