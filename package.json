@@ -1,14 +1,14 @@
 {
   "name": "logger",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "This app basically logs the activity of logged in user and also display its idle times. Moreover it also takes entire desktop screenshot after every n interval of time which would be decided by the admin.",
   "main": "main/main.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && electron-builder",
     "start": "next start && electron .",
     "electron-dev": "electron .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "build": "pyinstaller --onefile --name scroll_tracker main/scroll_tracker.py && next build && electron-builder"
   },
   "build": {
     "appId": "com.infoware-logger.123",
@@ -42,6 +42,15 @@
     "files": [
       "**/*",
       "build/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "resources/dist",
+        "filter": [
+          "scroll_tracker*"
+        ]
+      }
     ]
   },
   "keywords": [],

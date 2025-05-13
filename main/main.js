@@ -11,6 +11,8 @@ const path = require('path');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
 const moment = require('moment');
 
+const { spawn } = require('child_process');
+
 // API
 const { default: axios } = require('axios');
 const dns = require('dns');
@@ -34,6 +36,7 @@ let activitySpeedLocationInterval;
 
 // Activities
 let clickCount = 0;
+let scrollCount = 0;
 let keyCount = 0;
 let accumulatedText = '';
 
@@ -56,6 +59,7 @@ let appWebsiteDetails = [];
 
 let initialStats = {
   clickCount: 0,
+  scrollCount: 0,
   keyCount: 0,
   idleTime: 0,
   accumulatedText: '',
@@ -360,6 +364,7 @@ async function updateStats(isActivity = false) {
 
   stats = {
     clickCount,
+    scrollCount,
     keyCount,
     idleTime: accumulatedIdleTime,
     accumulatedText,
@@ -408,6 +413,74 @@ keyboardListener.addListener((e) => {
     updateStats(true);
   }
 });
+
+// Set up scroll events
+
+async function getScrollTracker() {
+  const isDev = await import('electron-is-dev').then(
+    (module) => module.default
+  );
+
+  if (!isDev) {
+    const executableExtension = process.platform === 'win32' ? '.exe' : '';
+    pythonExecutablePath = path.join(
+      process.resourcesPath,
+      'resources',
+      'dist',
+      `scroll_tracker${executableExtension}`
+    );
+
+    const child = spawn(pythonExecutablePath);
+
+    child.stdout.on('data', (data) => {
+      const message = data.toString().trim();
+
+      if (
+        message === 'scrolled' &&
+        !isOffline &&
+        isLogging &&
+        !mainWindow.isFocused()
+      ) {
+        scrollCount++;
+        updateStats(true);
+      }
+    });
+
+    child.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+
+    child.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
+  } else {
+    const child = spawn('python', ['main/scroll_tracker.py']);
+
+    child.stdout.on('data', (data) => {
+      const message = data.toString().trim();
+
+      if (
+        message === 'scrolled' &&
+        !isOffline &&
+        isLogging &&
+        !mainWindow.isFocused()
+      ) {
+        scrollCount++;
+        updateStats(true);
+      }
+    });
+
+    child.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+
+    child.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
+  }
+}
+
+getScrollTracker();
 
 // Function to capture and save screenshot
 async function captureAndSaveScreenshot() {
@@ -498,6 +571,7 @@ function stopScreenshotCapture() {
 ipcMain.handle('start-logging', async () => {
   isLogging = true;
   clickCount = 0;
+  scrollCount = 0;
   keyCount = 0;
   accumulatedText = '';
   accumulatedIdleTime = 0;
@@ -518,6 +592,7 @@ ipcMain.handle('restart-logging', async () => {
 
   isLogging = true;
   clickCount = savedStats.clickCount;
+  scrollCount = savedStats.scrollCount;
   keyCount = savedStats.keyCount;
   accumulatedText = savedStats.accumulatedText;
   accumulatedIdleTime = savedStats.idleTime;
@@ -570,6 +645,7 @@ async function loadStats() {
   if (savedStats) {
     stats = savedStats;
     clickCount = stats.clickCount;
+    scrollCount = stats.scrollCount;
     keyCount = stats.keyCount;
     accumulatedIdleTime = stats.idleTime;
     accumulatedText = stats.accumulatedText;

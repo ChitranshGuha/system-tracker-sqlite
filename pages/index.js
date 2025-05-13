@@ -51,6 +51,7 @@ function ActivityLogger() {
 
   const initialStats = {
     clickCount: 0,
+    scrollCount: 0,
     keyCount: 0,
     idleTime: 0,
     accumulatedText: '',

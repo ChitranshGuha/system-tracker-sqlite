@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FiMousePointer, FiClock, FiActivity, FiPackage } from 'react-icons/fi';
+import {
+  FiMousePointer,
+  FiClock,
+  FiMove,
+  FiActivity,
+  FiPackage,
+} from 'react-icons/fi';
 import { IoSpeedometerOutline } from 'react-icons/io5';
 import { BsKeyboard } from 'react-icons/bs';
 import { X } from 'lucide-react';
@@ -237,6 +243,7 @@ function ActivityLogger({
                     Mouse Clicks
                   </p>
                 </div>
+
                 <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
                     <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
@@ -248,6 +255,17 @@ function ActivityLogger({
                     Keystrokes
                   </p>
                 </div>
+
+                <div className="bg-gradient-to-br from-purple-100 to-pink-200 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <FiMove className="text-purple-700 text-xl sm:text-2xl" />
+                    <p className="text-2xl sm:text-3xl font-bold text-pink-800">
+                      {stats.scrollCount}
+                    </p>
+                  </div>
+                  <p className="text-sm text-purple-700 font-medium">Scrolls</p>
+                </div>
+
                 <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
                     <FiClock className="text-red-600 text-xl sm:text-2xl" />
@@ -259,6 +277,7 @@ function ActivityLogger({
                     Idle Time (min)
                   </p>
                 </div>
+
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
                     <IoSpeedometerOutline className="text-purple-600 text-xl sm:text-2xl" />
@@ -273,11 +292,23 @@ function ActivityLogger({
                     Internet Speed (Mbps)
                   </p>
                 </div>
+
+                <div className="bg-gradient-to-br from-emerald-100 to-green-200 p-4 sm:p-6 rounded-xl shadow shadow-emerald-200 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <FiActivity className="text-emerald-600 text-xl sm:text-2xl" />
+                    <p className="text-2xl sm:text-3xl font-bold text-green-900">
+                      {stats.lastActive || '--'}
+                    </p>
+                  </div>
+                  <p className="text-sm text-emerald-700 font-semibold">
+                    Last Active
+                  </p>
+                </div>
               </div>
 
               {/* Status Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
+                {/* <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
                     <div className="flex items-center">
                       <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
@@ -287,6 +318,21 @@ function ActivityLogger({
                     </div>
                     <p className="text-base sm:text-lg font-bold text-indigo-600">
                       {stats.lastActive || '--'}
+                    </p>
+                  </div>
+                </div> */}
+
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
+                    <div className="flex items-center">
+                      <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
+                      <p className="text-base sm:text-lg font-medium text-gray-700">
+                        Activity Interval
+                      </p>
+                    </div>
+                    <p className="text-base sm:text-lg font-bold text-indigo-600">
+                      {activityInterval}{' '}
+                      {activityInterval <= 1 ? 'minute' : 'minutes'}
                     </p>
                   </div>
                 </div>

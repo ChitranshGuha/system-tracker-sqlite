@@ -55,7 +55,7 @@ export default function PastActivities({
 
   const lineChartData = getLineChartData();
 
-  const COLORS = ['#1e40af', '#16a34a', '#dc2626'];
+  const COLORS = ['#1e40af', '#16a34a', '#0d9488', '#dc2626'];
   const TEXT_COLORS = ['text-blue-800', 'text-green-600', 'text-red-600'];
 
   const lineChartOptions = {
@@ -211,6 +211,9 @@ export default function PastActivities({
                     Keystroke
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Scroll Count
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Idle Minutes
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -264,6 +267,11 @@ export default function PastActivities({
                     </td>
                     <td
                       className={`px-4 py-3 whitespace-nowrap text-center ${TEXT_COLORS[2]}`}
+                    >
+                      {activity.scroll}
+                    </td>
+                    <td
+                      className={`px-4 py-3 whitespace-nowrap text-center ${TEXT_COLORS[3]}`}
                     >
                       {Number(activity.idleTime / 60).toFixed(2)}
                     </td>

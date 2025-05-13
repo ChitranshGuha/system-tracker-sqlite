@@ -31,6 +31,7 @@ const useTaskLogic = (
 
   const initialLastStats = {
     clickCount: 0,
+    scrollCount: 0,
     keyCount: 0,
     idleTime: 0,
     accumulatedText: [],
@@ -142,11 +143,11 @@ const useTaskLogic = (
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const dispatchStartStop = () => {
-      console.log('stats main after', lastStatsRef.current, statsRef.current);
       const updatedStats = statsRef.current;
       const lastStats = lastStatsRef.current;
       const activityDifference = {
         mouseClick: +updatedStats?.clickCount - +lastStats.clickCount,
+        scroll: +updatedStats?.scrollCount - +lastStats.scrollCount,
         keystroke: +updatedStats?.keyCount - +lastStats.keyCount,
         idleTime: (+updatedStats?.idleTime - +lastStats.idleTime) * 60,
         keyPressed: updatedStats?.accumulatedText?.slice(
@@ -161,6 +162,7 @@ const useTaskLogic = (
 
       lastStatsRef.current = {
         clickCount: +updatedStats?.clickCount,
+        scrollCount: +updatedStats?.scrollCount,
         keyCount: +updatedStats?.keyCount,
         idleTime: +updatedStats?.idleTime,
         accumulatedText: updatedStats?.accumulatedText,
@@ -318,6 +320,7 @@ const useTaskLogic = (
 
     const activityDifference = {
       mouseClick: +stats?.clickCount - +lastStats.clickCount,
+      scroll: +stats?.scrollCount - +lastStats.scrollCount,
       keystroke: +stats?.keyCount - +lastStats.keyCount,
       idleTime: (+stats?.idleTime - +lastStats.idleTime) * 60,
       keyPressed: stats?.accumulatedText?.slice(
@@ -332,6 +335,7 @@ const useTaskLogic = (
     const payload = {
       ownerId,
       mouseClick: stats?.clickCount,
+      scroll: stats?.scrollCount,
       keystroke: stats?.keyCount,
       keyPressed: stats?.accumulatedText,
       idleTime: stats?.idleTime * 60,
@@ -439,6 +443,7 @@ const useTaskLogic = (
             const updatedStats = statsRef.current;
             lastStatsRef.current = {
               clickCount: +updatedStats?.clickCount,
+              scrollCount: +updatedStats?.scrollCount,
               keyCount: +updatedStats?.keyCount,
               idleTime: +updatedStats?.idleTime,
               accumulatedText: updatedStats?.accumulatedText,
