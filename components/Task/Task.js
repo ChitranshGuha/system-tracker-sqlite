@@ -24,7 +24,6 @@ const Task = ({
   endedActivityRestart,
   setEndedActivityRestart,
   setIsLoading,
-  onLogout,
 }) => {
   const projects = useSelector((state) => state?.employee?.projects?.list);
   const tasks = useSelector((state) => state?.employee?.tasks?.list);
@@ -63,6 +62,8 @@ const Task = ({
         stopLoggingHandler={stopLoggingHandler}
         isLogging={isLogging}
         setIsLoading={setIsLoading}
+        ownerId={ownerId}
+        authToken={authToken}
       />
 
       <form

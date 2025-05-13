@@ -2,8 +2,16 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, AlertTriangle, X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { logOutEmployee } from '../redux/auth/authActions';
+import { getSystemTimezone } from '../utils/helpers';
+import { hardResetApp } from '../redux/activity/activityActions';
 
-const HardReset = ({ isLogging, stopLoggingHandler, setIsLoading }) => {
+const HardReset = ({
+  isLogging,
+  stopLoggingHandler,
+  setIsLoading,
+  ownerId,
+  authToken,
+}) => {
   const dispatch = useDispatch();
 
   const isElectron = typeof window !== 'undefined' && window.electronAPI;
@@ -92,7 +100,7 @@ const HardReset = ({ isLogging, stopLoggingHandler, setIsLoading }) => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!isConfirmed) {
                       setIsConfirmed(true);
                       return;
@@ -113,10 +121,19 @@ const HardReset = ({ isLogging, stopLoggingHandler, setIsLoading }) => {
                         .catch((err) => {
                           console.error('Error stopping logging:', err);
                         })
-                        .finally(() => {
+                        .finally(async () => {
+                          await dispatch(
+                            hardResetApp(authToken, {
+                              ownerId,
+                              timezone: getSystemTimezone(),
+                            })
+                          );
+
                           window.electronAPI.sendUserData({ authToken: null });
                           window.electronAPI.clearStoreStats();
-                          dispatch(logOutEmployee());
+
+                          await dispatch(logOutEmployee());
+
                           setTimeout(() => localStorage.clear(), 500);
                           setIsLoading(false);
                           onClose();

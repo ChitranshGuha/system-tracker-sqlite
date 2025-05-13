@@ -91,3 +91,25 @@ export function removeActivityDetailTimeout(authToken, payload) {
     }
   };
 }
+
+export function hardResetApp(authToken, payload) {
+  return async () => {
+    try {
+      await axios.post(`${API_BASE_URL}/employee/project/hard-reset`, payload, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error,
+      };
+    }
+  };
+}
