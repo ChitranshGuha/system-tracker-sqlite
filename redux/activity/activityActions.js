@@ -33,7 +33,7 @@ export function activityActions(
     } catch (error) {
       return {
         success: false,
-        error: error,
+        error: error?.response,
       };
     }
   };
@@ -101,6 +101,32 @@ export function hardResetApp(authToken, payload) {
           'Content-Type': 'application/json',
         },
       });
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error,
+      };
+    }
+  };
+}
+
+export function trackedHourDetails(authToken, payload) {
+  return async () => {
+    try {
+      await axios.post(
+        `${API_BASE_URL}/employee/project/tracked-hours`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       return {
         success: true,

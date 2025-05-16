@@ -19,7 +19,7 @@ export function loginOrRegisterEmployee(payload) {
       .catch((error) => {
         return {
           success: false,
-          message: error?.response?.data?.error || 'Server Error',
+          error: error?.response || 'Server Error',
         };
       });
 }

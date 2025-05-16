@@ -22,7 +22,8 @@ const useTaskLogic = (
   setDescription,
   endedActivityRestart,
   setEndedActivityRestart,
-  setIsLoading
+  setIsLoading,
+  setApiError
 ) => {
   const dispatch = useDispatch();
   const activityIntervalRef = useRef(null);
@@ -397,11 +398,17 @@ const useTaskLogic = (
             };
             window.electronAPI.sendActivityData(userData);
           } else {
-            console.log(status?.error);
+            setApiError({
+              message: status?.error?.data?.error,
+              code: status?.error?.status,
+            });
           }
         });
       } else {
-        console.log(status?.error);
+        setApiError({
+          message: status?.error?.data?.error,
+          code: status?.error?.status,
+        });
       }
     });
 
