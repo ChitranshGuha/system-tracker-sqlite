@@ -630,6 +630,7 @@ ipcMain.on('stop-logging', () => {
   clearInterval(idleInterval);
   stopScreenshotCapture();
   stats = initialStats;
+  store.reset('stats');
 });
 
 ipcMain.handle('get-initial-stats', async () => {

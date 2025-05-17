@@ -130,7 +130,9 @@ function ActivityLogger() {
     if (isLogging && typeof window !== 'undefined' && window.electronAPI) {
       window.electronAPI.stopLogging();
       setIsLogging(false);
+      setStats(initialStats);
       localStorage.setItem('isLogging', JSON.stringify(false));
+      setClearStats(true);
     }
   };
 
