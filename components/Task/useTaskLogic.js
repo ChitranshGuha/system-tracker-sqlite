@@ -111,9 +111,7 @@ const useTaskLogic = (
             appWebsites: stats?.appWebsites || [],
             appWebsiteDetails: stats?.appWebsiteDetails,
           });
-          socket.on('/project/task/activity/update', (response) =>
-            console.log('Activity socket updated ::', response)
-          );
+          socket.on('/project/task/activity/update', () => {});
         } else {
           console.error('Socket is not connected!');
         }

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/constants';
+import moment from 'moment';
 
 export function activityActions(
   authToken,
@@ -114,12 +115,19 @@ export function hardResetApp(authToken, payload) {
   };
 }
 
-export function trackedHourDetails(authToken, payload) {
+export function fetchTrackingTimeDetails(authToken, payload) {
   return async () => {
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_BASE_URL}/employee/project/tracked-hours`,
-        payload,
+        {
+          ...payload,
+          entityType: 'MEMBER',
+          durationType: 'DAY',
+          data: 'HOURS',
+          startDate: moment().format('YYYY-MM-DD'),
+          endDate: moment().format('YYYY-MM-DD'),
+        },
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -130,6 +138,7 @@ export function trackedHourDetails(authToken, payload) {
 
       return {
         success: true,
+        data: res?.data,
       };
     } catch (error) {
       return {

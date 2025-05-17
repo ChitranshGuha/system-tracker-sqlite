@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   FiMousePointer,
@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fi';
 import { IoSpeedometerOutline } from 'react-icons/io5';
 import { BsKeyboard } from 'react-icons/bs';
-import { X } from 'lucide-react';
+import { ClockAlert, Hourglass, X } from 'lucide-react';
 import Task from './Task/Task';
 import PastActivities from './PastActivities';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
@@ -17,7 +17,9 @@ import io from 'socket.io-client';
 import InternetSpeedTracker from './InternetSpeedTracker';
 import AppUsage from './AppUsage';
 import { BASE_URL, IS_PRODUCTION, TRACKER_VERSION } from '../utils/constants';
-import HardReset from './HardReset';
+import { fetchTrackingTimeDetails } from '../redux/activity/activityActions';
+import { getSystemTimezone } from '../utils/helpers';
+import SlidingTimeDisplay from './SlidingTimeDisplay';
 
 function ActivityLogger({
   onLogout,
@@ -114,6 +116,66 @@ function ActivityLogger({
     const value = e.target.value;
     setOwnerId(value);
     localStorage.setItem('ownerId', value);
+  };
+
+  // Tracked hours details
+
+  const [animate, setAnimate] = useState(false);
+  const [trackedHourDetails, setTrackedHourDetails] = useState({
+    trackedHourInSeconds: 0,
+    idleTime: 1,
+  });
+
+  useEffect(() => {
+    let trackedHourTimeout;
+    let trackedHourInterval;
+
+    if (authToken && ownerId && activityInterval) {
+      const trackedHourDetailApiCall = () =>
+        dispatch(
+          fetchTrackingTimeDetails(authToken, {
+            ownerId,
+            timezone: getSystemTimezone(),
+          })
+        ).then((res) => {
+          const newSeconds =
+            res?.data?.data?.length === 0
+              ? 0
+              : res?.data?.data?.[0]?.dates?.[1]?.totalTime;
+
+          setTrackedHourDetails((prev) => {
+            if (prev.trackedHourInSeconds !== newSeconds) {
+              setAnimate(true);
+              setTimeout(() => setAnimate(false), 300);
+            }
+
+            return {
+              idleTime: 1,
+              trackedHourInSeconds: newSeconds,
+            };
+          });
+        });
+
+      trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
+
+      if (isLogging) {
+        trackedHourInterval = setInterval(
+          trackedHourDetailApiCall,
+          (activityInterval || 1) * 1000 * 60
+        );
+      }
+    }
+
+    return () => {
+      clearTimeout(trackedHourTimeout);
+      clearInterval(trackedHourInterval);
+    };
+  }, [authToken, ownerId, activityInterval, isLogging]);
+
+  const formatTrackedTime = (seconds) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h}h ${m}m`;
   };
 
   return (
@@ -268,9 +330,9 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <FiClock className="text-red-600 text-xl sm:text-2xl" />
+                    <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-red-800">
-                      {stats.idleTime}
+                      {trackedHourDetails.idleTime}
                     </p>
                   </div>
                   <p className="text-sm text-red-600 font-medium">
@@ -295,20 +357,21 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-br from-emerald-100 to-green-200 p-4 sm:p-6 rounded-xl shadow shadow-emerald-200 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <FiActivity className="text-emerald-600 text-xl sm:text-2xl" />
-                    <p className="text-2xl sm:text-3xl font-bold text-green-900">
-                      {stats.lastActive || '--'}
-                    </p>
+                    <Hourglass className="text-emerald-600 !h-6 !w-6" />
+                    <SlidingTimeDisplay
+                      seconds={trackedHourDetails.trackedHourInSeconds}
+                      animate={animate}
+                    />
                   </div>
                   <p className="text-sm text-emerald-700 font-semibold">
-                    Last Active
+                    Active Time
                   </p>
                 </div>
               </div>
 
               {/* Status Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                {/* <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
                     <div className="flex items-center">
                       <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
@@ -318,21 +381,6 @@ function ActivityLogger({
                     </div>
                     <p className="text-base sm:text-lg font-bold text-indigo-600">
                       {stats.lastActive || '--'}
-                    </p>
-                  </div>
-                </div> */}
-
-                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                    <div className="flex items-center">
-                      <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
-                      <p className="text-base sm:text-lg font-medium text-gray-700">
-                        Activity Interval
-                      </p>
-                    </div>
-                    <p className="text-base sm:text-lg font-bold text-indigo-600">
-                      {activityInterval}{' '}
-                      {activityInterval <= 1 ? 'minute' : 'minutes'}
                     </p>
                   </div>
                 </div>
