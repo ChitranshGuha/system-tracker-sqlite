@@ -139,9 +139,12 @@ function ActivityLogger({
           })
         ).then((res) => {
           const newSeconds =
-            res?.data?.data?.length === 0
+            res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.totalTime;
+          const idleTime = Math.floor(
+            (res?.data?.data?.length === 0
               ? 0
-              : res?.data?.data?.[0]?.dates?.[1]?.totalTime;
+              : res?.data?.data?.[0]?.idleTime) / 60
+          );
 
           setTrackedHourDetails((prev) => {
             if (prev.trackedHourInSeconds !== newSeconds) {
@@ -150,7 +153,7 @@ function ActivityLogger({
             }
 
             return {
-              idleTime: 1,
+              idleTime,
               trackedHourInSeconds: newSeconds,
             };
           });
