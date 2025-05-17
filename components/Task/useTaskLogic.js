@@ -34,7 +34,6 @@ const useTaskLogic = (
     clickCount: 0,
     scrollCount: 0,
     keyCount: 0,
-    idleTime: 0,
     accumulatedText: [],
     appWebsiteDetails: [],
   };
@@ -148,7 +147,6 @@ const useTaskLogic = (
         mouseClick: +updatedStats?.clickCount - +lastStats.clickCount,
         scroll: +updatedStats?.scrollCount - +lastStats.scrollCount,
         keystroke: +updatedStats?.keyCount - +lastStats.keyCount,
-        idleTime: (+updatedStats?.idleTime - +lastStats.idleTime) * 60,
         keyPressed: updatedStats?.accumulatedText?.slice(
           lastStats?.accumulatedText?.length
         ),
@@ -163,7 +161,6 @@ const useTaskLogic = (
         clickCount: +updatedStats?.clickCount,
         scrollCount: +updatedStats?.scrollCount,
         keyCount: +updatedStats?.keyCount,
-        idleTime: +updatedStats?.idleTime,
         accumulatedText: updatedStats?.accumulatedText,
         appWebsiteDetails: updatedStats?.appWebsiteDetails,
       };
@@ -321,7 +318,6 @@ const useTaskLogic = (
       mouseClick: +stats?.clickCount - +lastStats.clickCount,
       scroll: +stats?.scrollCount - +lastStats.scrollCount,
       keystroke: +stats?.keyCount - +lastStats.keyCount,
-      idleTime: (+stats?.idleTime - +lastStats.idleTime) * 60,
       keyPressed: stats?.accumulatedText?.slice(
         lastStats?.accumulatedText?.length
       ),
@@ -337,7 +333,6 @@ const useTaskLogic = (
       scroll: stats?.scrollCount,
       keystroke: stats?.keyCount,
       keyPressed: stats?.accumulatedText,
-      idleTime: stats?.idleTime * 60,
       trackerVersion: TRACKER_VERSION,
       ipAddress,
       appWebsites: stats?.appWebsites,
@@ -450,7 +445,6 @@ const useTaskLogic = (
               clickCount: +updatedStats?.clickCount,
               scrollCount: +updatedStats?.scrollCount,
               keyCount: +updatedStats?.keyCount,
-              idleTime: +updatedStats?.idleTime,
               accumulatedText: updatedStats?.accumulatedText,
               appWebsiteDetails: updatedStats?.appWebsiteDetails,
             };

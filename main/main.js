@@ -40,11 +40,8 @@ let scrollCount = 0;
 let keyCount = 0;
 let accumulatedText = '';
 
-// Idle time
+// Last Activity time
 let lastActivityTime = Date.now();
-let lastIdleCheckTime = Date.now();
-let accumulatedIdleTime = 0;
-let idleInterval;
 
 let ownerId = null;
 let authToken = null;
@@ -61,7 +58,6 @@ let initialStats = {
   clickCount: 0,
   scrollCount: 0,
   keyCount: 0,
-  idleTime: 0,
   accumulatedText: '',
   lastActive: '',
   appWebsites: [],
@@ -126,8 +122,6 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
 
 ipcMain.on('app-offline', () => {
   isOffline = true;
-  clearInterval(idleInterval);
-  idleInterval = null;
 
   if (screenshotInterval) {
     clearInterval(screenshotInterval);
@@ -331,14 +325,7 @@ async function getActiveWindowInfo() {
 async function updateStats(isActivity = false) {
   const currentTime = Date.now();
 
-  if (!isActivity) {
-    // Calculate idle time since last check
-    const idleTime = Math.floor((currentTime - lastIdleCheckTime) / 60000); // Convert to minutes
-    accumulatedIdleTime += idleTime;
-    lastIdleCheckTime = currentTime; // Update last idle check time
-  } else {
-    // Reset last idle check time when there's activity
-    lastIdleCheckTime = currentTime;
+  if (isActivity) {
     lastActivityTime = currentTime;
   }
 
@@ -366,7 +353,6 @@ async function updateStats(isActivity = false) {
     clickCount,
     scrollCount,
     keyCount,
-    idleTime: accumulatedIdleTime,
     accumulatedText,
     lastActive: moment(lastActivityTime).format('hh:mm:ss A'),
     appWebsites,
@@ -375,19 +361,6 @@ async function updateStats(isActivity = false) {
 
   mainWindow.webContents.send('update-stats', stats);
   saveStats(stats);
-
-  // Clear existing interval and start a new one
-  clearInterval(idleInterval);
-  startIdleTracking();
-}
-
-// Function to start idle tracking
-function startIdleTracking() {
-  idleInterval = setInterval(() => {
-    if (isLogging) {
-      updateStats();
-    }
-  }, 60000); // Check every minute
 }
 
 // Set up global keyboard listener
@@ -574,13 +547,10 @@ ipcMain.handle('start-logging', async () => {
   scrollCount = 0;
   keyCount = 0;
   accumulatedText = '';
-  accumulatedIdleTime = 0;
   lastActivityTime = Date.now();
-  lastIdleCheckTime = Date.now();
   lastActiveWindow = null;
   appWebsites = [];
   appWebsiteDetails = [];
-  startIdleTracking();
   await startScreenshotCapture();
 });
 
@@ -595,13 +565,10 @@ ipcMain.handle('restart-logging', async () => {
   scrollCount = savedStats.scrollCount;
   keyCount = savedStats.keyCount;
   accumulatedText = savedStats.accumulatedText;
-  accumulatedIdleTime = savedStats.idleTime;
   lastActivityTime = Date.now();
-  lastIdleCheckTime = Date.now();
   lastActiveWindow = await getActiveWindowInfo();
   appWebsites = savedStats.appWebsites;
   appWebsiteDetails = savedStats.appWebsiteDetails;
-  startIdleTracking();
   await startScreenshotCapture();
 });
 
@@ -627,7 +594,6 @@ ipcMain.handle('get-location', async () => {
 
 ipcMain.on('stop-logging', () => {
   isLogging = false;
-  clearInterval(idleInterval);
   stopScreenshotCapture();
   stats = initialStats;
   store.reset('stats');
@@ -648,7 +614,6 @@ async function loadStats() {
     clickCount = stats.clickCount;
     scrollCount = stats.scrollCount;
     keyCount = stats.keyCount;
-    accumulatedIdleTime = stats.idleTime;
     accumulatedText = stats.accumulatedText;
     lastActivityTime = Date.now();
     appWebsites = stats.appWebsites;
