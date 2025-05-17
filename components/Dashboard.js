@@ -143,7 +143,7 @@ function ActivityLogger({
           const idleTime = Math.floor(
             (res?.data?.data?.length === 0
               ? 0
-              : res?.data?.data?.[0]?.idleTime) / 60
+              : res?.data?.data?.[0]?.idleTime || 0) / 60
           );
 
           setTrackedHourDetails((prev) => {
