@@ -123,7 +123,7 @@ function ActivityLogger({
   const [animate, setAnimate] = useState(false);
   const [trackedHourDetails, setTrackedHourDetails] = useState({
     trackedHourInSeconds: 0,
-    idleTime: 1,
+    idleTime: 0,
   });
 
   useEffect(() => {
