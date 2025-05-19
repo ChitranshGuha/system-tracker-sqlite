@@ -130,7 +130,7 @@ function ActivityLogger({
     let trackedHourTimeout;
     let trackedHourInterval;
 
-    if (authToken && ownerId && activityInterval) {
+    if (authToken && ownerId) {
       const trackedHourDetailApiCall = () =>
         dispatch(
           fetchTrackingTimeDetails(authToken, {
@@ -161,7 +161,7 @@ function ActivityLogger({
 
       trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
 
-      if (isLogging) {
+      if (isLogging && activityInterval) {
         trackedHourInterval = setInterval(
           trackedHourDetailApiCall,
           (activityInterval || 1) * 1000 * 60
@@ -174,12 +174,6 @@ function ActivityLogger({
       clearInterval(trackedHourInterval);
     };
   }, [authToken, ownerId, activityInterval, isLogging]);
-
-  const formatTrackedTime = (seconds) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h}h ${m}m`;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
