@@ -330,7 +330,7 @@ const useTaskLogic = (
     const payload = {
       ownerId,
       mouseClick: stats?.clickCount,
-      scroll: stats?.scrollCount,
+      scroll: stats?.scrollCount || 0,
       keystroke: stats?.keyCount,
       keyPressed: stats?.accumulatedText,
       trackerVersion: TRACKER_VERSION,

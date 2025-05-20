@@ -276,31 +276,44 @@ async function createWindow() {
   // }
 }
 
-app.on('ready', createWindow);
+const gotTheLock = app.requestSingleInstanceLock();
 
-app.on('window-all-closed', () => {
-  if (screenshotInterval) {
-    clearInterval(screenshotInterval);
-    screenshotInterval = null;
-  }
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
 
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+  app.on('ready', createWindow);
 
-app.on('will-quit', () => {
-  if (screenshotInterval) {
-    clearInterval(screenshotInterval);
-    screenshotInterval = null;
-  }
-});
+  app.on('window-all-closed', () => {
+    if (screenshotInterval) {
+      clearInterval(screenshotInterval);
+      screenshotInterval = null;
+    }
 
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+
+  app.on('will-quit', () => {
+    if (screenshotInterval) {
+      clearInterval(screenshotInterval);
+      screenshotInterval = null;
+    }
+  });
+
+  app.on('activate', () => {
+    if (mainWindow === null) {
+      createWindow();
+    }
+  });
+}
 
 async function getActiveWindowInfo() {
   try {
@@ -562,7 +575,7 @@ ipcMain.handle('restart-logging', async () => {
 
   isLogging = true;
   clickCount = savedStats.clickCount;
-  scrollCount = savedStats.scrollCount;
+  scrollCount = savedStats.scrollCount || 0;
   keyCount = savedStats.keyCount;
   accumulatedText = savedStats.accumulatedText;
   lastActivityTime = Date.now();
@@ -612,7 +625,7 @@ async function loadStats() {
   if (savedStats) {
     stats = savedStats;
     clickCount = stats.clickCount;
-    scrollCount = stats.scrollCount;
+    scrollCount = stats.scrollCount || 0;
     keyCount = stats.keyCount;
     accumulatedText = stats.accumulatedText;
     lastActivityTime = Date.now();
