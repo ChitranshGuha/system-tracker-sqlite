@@ -345,7 +345,7 @@ const useTaskLogic = (
         'end',
         {
           ...payload,
-          projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
+          projectTaskActivityDetailId: String(projectTaskActivityDetailIdRef.current || ""),
           ...activityDifference,
         },
         true

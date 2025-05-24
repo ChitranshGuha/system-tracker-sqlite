@@ -6,7 +6,8 @@ const {
   powerMonitor,
   dialog,
 } = require('electron');
-const store = require('electron-settings');
+// const store = require('electron-settings');
+const { captureAndSaveScreenshot } = require('./screenshot');
 const path = require('path');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
 const moment = require('moment');
@@ -32,6 +33,7 @@ let screenshotInterval;
 let captureIntervalMinutes;
 let activityIntervalMinutes;
 let activitySpeedLocationInterval;
+let isUploadingScreenshot = false;
 // let activityReportInterval;
 
 // Activities
@@ -66,37 +68,108 @@ let initialStats = {
 
 let stats = initialStats;
 
+//for Database
+const { db } = require('./db');
+const fs = require('fs');
+const FormData = require('form-data');
+const { setCurrentSessionId } = require('./db');
+const { createSession } = require('./db');
+let currentSessionId=null;
+
+async function initializeAppConfig() {
+  global.appConfig = {
+    authToken: await getConfig('authToken'),
+    ownerId: await getConfig('ownerId'),
+    projectTaskActivityId: await getConfig('projectTaskActivityId'),
+  };
+}
+function setConfig(key, value) {
+  const stmt = db.prepare(`
+    INSERT INTO config (key, value)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `);
+  stmt.run(key, String(value));
+}
+
+
+function getConfig(key) {
+  const row = db.prepare(`
+    SELECT value
+      FROM config
+     WHERE key = ?
+  `).get(key);
+
+  if (!row) return null;
+
+  // if you know some values are JSON, parse them, otherwise return raw string
+  try {
+    return JSON.parse(row.value);
+  } catch {
+    return row.value;
+  }
+}
+
 ipcMain.on('set-user-data', async (event, data) => {
   try {
-    authToken = data.authToken;
-    if (authToken) {
-      await store.set('authToken', authToken);
+    if (data.authToken) {
+      authToken = data.authToken;
+      console.log('Setting AuthToken to:', authToken);
+      setConfig('authToken', authToken);
+    }
+    
+    if (data.ownerId) {
+      ownerId = data.ownerId;
+      console.log('Setting ownerId to:', ownerId);
+      setConfig('ownerId', ownerId);
+    }
+    
+    if (data.projectTaskActivityId) {
+      projectTaskActivityId = data.projectTaskActivityId;
+      console.log('Setting projectTaskActivityId to:', projectTaskActivityId);
+      setConfig('projectTaskActivityId', projectTaskActivityId);
+    }
+
+    if (authToken && ownerId) {
       await fetchCaptureInterval();
     }
-  } catch (error) {
-    console.error('Failed to set user data:', error);
-    event.reply('set-user-data-error', {
-      success: false,
-      error: error.message,
-    });
+  } catch (err) {
+    console.error('Failed to set user data:', err);
   }
 });
 
-ipcMain.handle('set-activity-data', async (event, data) => {
+ipcMain.handle('set-activity-data', async (_event, data) => {
   try {
-    ownerId = data.ownerId;
-    projectTaskActivityId = data.projectTaskActivityId;
+    const insertStmt = db.prepare(`
+      INSERT INTO stats (
+        sessionId,
+        clickCount,
+        scrollCount,
+        keyCount,
+        accumulatedText,
+        lastActive,
+        appWebsites,
+        appWebsiteDetails
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-    await store.set('ownerId', ownerId);
-    await store.set('projectTaskActivityId', projectTaskActivityId);
+    insertStmt.run(
+      data.sessionId,
+      data.clickCount || 0,
+      data.scrollCount || 0,
+      data.keyCount || 0,
+      data.accumulatedText || '',
+      data.lastActive || '',
+      JSON.stringify(data.appWebsites || []),
+      JSON.stringify(data.appWebsiteDetails || [])
+    );
 
     return { success: true };
-  } catch (error) {
-    console.error('Failed to set activity data:', error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    console.error('Error inserting activity data into SQLite:', err);
+    return { success: false, error: err.message };
   }
 });
-
 // Function to fetch capture interval from API
 ipcMain.on('fetch-capture-interval', async (event) => {
   event.sender.send('capture-interval', captureIntervalMinutes);
@@ -113,10 +186,6 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
     activitySpeedLocationInterval
   );
 });
-
-// ipcMain.on('fetch-activity-report-interval', async (event) => {
-//   event.sender.send('activity-report-interval', activityReportInterval);
-// });
 
 // Offline & Online - Logic
 
@@ -169,6 +238,7 @@ function showOfflineDialog() {
 }
 
 async function fetchCaptureInterval() {
+  authToken = authToken || await getConfig('authToken');
   try {
     const response = await axios.post(
       `${API_BASE_URL}/employee/auth/configuration/get`,
@@ -192,30 +262,21 @@ async function fetchCaptureInterval() {
     // 3) Speed location interval
     activitySpeedLocationInterval =
       response?.data?.data?.internetSpeedIntervalInSeconds;
-
-    // 4) Report Iinterval
-    // activityReportInterval =
-    //   response?.data?.data?.activityReportIntervalInSeconds;
-
+      
     if (mainWindow) {
       mainWindow.webContents.send(
         'capture-interval',
         captureIntervalMinutes?.toFixed(1) || 5
       );
       mainWindow.webContents.send(
-        'acitivity-interval',
+        'activity-interval',
         activityIntervalMinutes || 1
       );
       mainWindow.webContents.send(
         'activity-speed-location-interval',
         +activitySpeedLocationInterval || 2000
       );
-      // mainWindow.webContents.send(
-      //   'activity-report-interval',
-      //   +activityReportInterval || 900
-      // );
-    }
-
+     }
     return captureIntervalMinutes;
   } catch (error) {
     console.error('Error fetching capture interval:', error);
@@ -231,6 +292,7 @@ async function createWindow() {
     showOfflineDialog();
     return;
   }
+  await initializeAppConfig();
 
   const isDev = await import('electron-is-dev').then(
     (module) => module.default
@@ -248,7 +310,6 @@ async function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
-
   mainWindow.loadURL(
     isDev
       ? 'http://localhost:3000'
@@ -259,12 +320,12 @@ async function createWindow() {
     mainWindow = null;
   });
 
-  const storeToken = await store.get('authToken');
+  const storeToken = getConfig('authToken');
 
   if (storeToken) {
     authToken = storeToken;
     await fetchCaptureInterval();
-    await loadStats();
+    stats =  loadStats();
   }
 
   setTimeout(() => {
@@ -275,9 +336,7 @@ async function createWindow() {
   mainWindow.webContents.openDevTools();
   // }
 }
-
 const gotTheLock = app.requestSingleInstanceLock();
-
 if (!gotTheLock) {
   app.quit();
 } else {
@@ -287,9 +346,7 @@ if (!gotTheLock) {
       mainWindow.focus();
     }
   });
-
   app.on('ready', createWindow);
-
   app.on('window-all-closed', () => {
     if (screenshotInterval) {
       clearInterval(screenshotInterval);
@@ -308,13 +365,12 @@ if (!gotTheLock) {
     }
   });
 
-  app.on('activate', () => {
+    app.on('activate', () => {
     if (mainWindow === null) {
       createWindow();
     }
   });
 }
-
 async function getActiveWindowInfo() {
   try {
     const { activeWindow } = await import('get-windows');
@@ -333,7 +389,6 @@ async function getActiveWindowInfo() {
   }
   return null;
 }
-
 // Function to update and send stats
 async function updateStats(isActivity = false) {
   const currentTime = Date.now();
@@ -363,6 +418,7 @@ async function updateStats(isActivity = false) {
   }
 
   stats = {
+    sessionId:currentSessionId,
     clickCount,
     scrollCount,
     keyCount,
@@ -375,7 +431,6 @@ async function updateStats(isActivity = false) {
   mainWindow.webContents.send('update-stats', stats);
   saveStats(stats);
 }
-
 // Set up global keyboard listener
 const keyboardListener = new GlobalKeyboardListener();
 keyboardListener.addListener((e) => {
@@ -399,9 +454,7 @@ keyboardListener.addListener((e) => {
     updateStats(true);
   }
 });
-
 // Set up scroll events
-
 async function getScrollTracker() {
   const isDev = await import('electron-is-dev').then(
     (module) => module.default
@@ -465,78 +518,7 @@ async function getScrollTracker() {
     });
   }
 }
-
 getScrollTracker();
-
-// Function to capture and save screenshot
-async function captureAndSaveScreenshot() {
-  try {
-    const sources = await desktopCapturer.getSources({
-      types: ['screen'],
-      thumbnailSize: { width: 1920, height: 1080 },
-    });
-    const primaryDisplay = sources[0];
-
-    if (primaryDisplay) {
-      const screenshotBuffer = primaryDisplay.thumbnail.toPNG();
-      const fileName = `Screenshot_${moment().format(
-        'YYYY-MM-DD_HH-mm-ss'
-      )}.png`;
-
-      const screenshotBlob = new Blob([screenshotBuffer], {
-        type: 'image/png',
-      });
-
-      const file = new File([screenshotBlob], fileName, { type: 'image/png' });
-
-      const formData = new FormData();
-      formData.append('files', file);
-
-      authToken = authToken || (await store.get('authToken'));
-      ownerId = ownerId || (await store.get('ownerId'));
-      projectTaskActivityId =
-        projectTaskActivityId || (await store.get('projectTaskActivityId'));
-
-      if (!ownerId || !authToken) {
-        throw new Error('ownerId or authToken not set');
-      }
-      formData.append('ownerId', ownerId);
-
-      const response = await axios.post(
-        `${API_BASE_URL}/employee/media/add`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      const mediaId = await response?.data?.data?.[0]?.id;
-
-      const payload = {
-        ownerId,
-        projectTaskActivityId,
-        mediaId,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      };
-
-      await axios.post(
-        `${API_BASE_URL}/employee/project/project/task/activity/screenshot/add`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-    }
-  } catch (error) {
-    console.error('Error capturing or uploading screenshot:', error);
-  }
-}
-// Function to start screenshot capture
 async function startScreenshotCapture() {
   if (screenshotInterval) {
     stopScreenshotCapture();
@@ -555,6 +537,8 @@ function stopScreenshotCapture() {
 
 // IPC handlers
 ipcMain.handle('start-logging', async () => {
+  currentSessionId = createSession();
+  setCurrentSessionId(currentSessionId); 
   isLogging = true;
   clickCount = 0;
   scrollCount = 0;
@@ -567,11 +551,16 @@ ipcMain.handle('start-logging', async () => {
   await startScreenshotCapture();
 });
 
-ipcMain.handle('restart-logging', async () => {
-  authToken = await store.get('authToken');
-  ownerId = await store.get('ownerId');
-  projectTaskActivityId = await store.get('projectTaskActivityId');
-  const savedStats = await store.get('stats');
+const { getStatsBySessionId } = require('./db');
+ipcMain.handle('restart-logging', async (event, sessionId) => {
+  currentSessionId = sessionId;
+  setCurrentSessionId(currentSessionId);
+
+  authToken = await getConfig('authToken');
+  ownerId = await getConfig('ownerId');
+  projectTaskActivityId = await getConfig('projectTaskActivityId');
+
+  const savedStats = getStatsBySessionId(sessionId);
 
   isLogging = true;
   clickCount = savedStats.clickCount;
@@ -584,11 +573,19 @@ ipcMain.handle('restart-logging', async () => {
   appWebsiteDetails = savedStats.appWebsiteDetails;
   await startScreenshotCapture();
 });
-
-ipcMain.handle('clear-store-stats', async () => {
-  await store.set('stats', initialStats);
+ipcMain.handle('clear-store-stats', (event, sessionId) => {
+  const stmt = db.prepare(`
+    UPDATE stats
+    SET
+      clickCount = 0,
+      scrollCount = 0,
+      keyCount = 0,
+      accumulatedText = '',
+      lastActive = ''
+    WHERE sessionId = ?
+  `);
+  stmt.run(sessionId);
 });
-
 ipcMain.handle('get-location', async () => {
   let location = null;
   try {
@@ -604,36 +601,81 @@ ipcMain.handle('get-location', async () => {
 
   return location;
 });
+const { clearStats } = require('./db');
 
 ipcMain.on('stop-logging', () => {
   isLogging = false;
   stopScreenshotCapture();
   stats = initialStats;
-  store.reset('stats');
+  clearStats();
 });
 
-ipcMain.handle('get-initial-stats', async () => {
-  return stats;
-});
+ipcMain.handle('get-initial-stats', () => {
+  const row = db.prepare(`
+    SELECT * FROM stats
+    ORDER BY timestamp DESC
+    LIMIT 1
+  `).get();
 
-function saveStats(stats) {
-  store.set('stats', stats);
-}
-
-async function loadStats() {
-  const savedStats = await store.get('stats');
-  if (savedStats) {
-    stats = savedStats;
-    clickCount = stats.clickCount;
-    scrollCount = stats.scrollCount || 0;
-    keyCount = stats.keyCount;
-    accumulatedText = stats.accumulatedText;
-    lastActivityTime = Date.now();
-    appWebsites = stats.appWebsites;
-    appWebsiteDetails = stats.appWebsiteDetails;
-  } else {
-    stats = initialStats;
+  if (!row) {
+    return {
+      clickCount: 0,
+      scrollCount: 0,
+      keyCount: 0,
+      accumulatedText: '',
+      lastActive: null,
+      appWebsites: {},
+      appWebsiteDetails: {}
+    };
   }
+
+  return {
+    clickCount: row.clickCount,
+    scrollCount: row.scrollCount,
+    keyCount: row.keyCount,
+    accumulatedText: row.accumulatedText,
+    lastActive: row.lastActive,
+    appWebsites: row.appWebsites ? JSON.parse(row.appWebsites) : {},
+    appWebsiteDetails: row.appWebsiteDetails ? JSON.parse(row.appWebsiteDetails) : {}
+  };
+});
+function saveStats(stats) {
+  const sessionId = stats.sessionId || currentSessionId || 'unknown';
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO stats (
+      sessionId, clickCount, scrollCount, keyCount, accumulatedText, lastActive, appWebsites, appWebsiteDetails
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  stmt.run(
+    stats.sessionId,
+    stats.clickCount,
+    stats.scrollCount,
+    stats.keyCount,
+    stats.accumulatedText,
+    new Date().toISOString(),
+    JSON.stringify(stats.appWebsites),
+    JSON.stringify(stats.appWebsiteDetails)
+  );
+}
+function loadStats() {
+  const row = db.prepare(`
+    SELECT * FROM stats
+    ORDER BY timestamp DESC
+    LIMIT 1
+  `).get();
+
+  if (!row) return initialStats;
+
+  return {
+    sessionId: row.sessionId,
+    clickCount: row.clickCount,
+    scrollCount: row.scrollCount,
+    keyCount: row.keyCount,
+    accumulatedText: row.accumulatedText,
+    lastActive: row.lastActive,
+    appWebsites: row.appWebsites ? JSON.parse(row.appWebsites) : [],
+    appWebsiteDetails: row.appWebsiteDetails ? JSON.parse(row.appWebsiteDetails) : []
+  };
 }
 
 async function clearRendererStorage() {
@@ -642,7 +684,7 @@ async function clearRendererStorage() {
       await mainWindow.webContents.session.clearStorageData({
         storages: ['localStorage'],
       });
-      await store.reset();
+      await clearRendererStorage();
     } catch (error) {
       console.error('Error clearing storage:', error);
     }

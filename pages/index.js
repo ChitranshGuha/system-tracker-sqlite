@@ -42,12 +42,20 @@ function ActivityLogger() {
   }, []);
 
   useEffect(() => {
-    if (authToken !== null) {
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
+  if (authToken !== null) {
+    setIsLoggedIn(true);
+
+    const ownerId = localStorage.getItem('ownerId'); // assuming you store this
+    if (ownerId && typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.sendUserData({
+        authToken,
+        ownerId,
+      });
     }
-  }, [authToken]);
+  } else {
+    setIsLoggedIn(false);
+  }
+}, [authToken]);
 
   const initialStats = {
     clickCount: 0,
@@ -85,28 +93,26 @@ function ActivityLogger() {
 
   const handleLogout = () => {
     stopLogging();
-    window.electronAPI.sendUserData({ authToken: null });
+    window.electronAPI.sendUserData({ authToken: null, ownerId: null });
     window.electronAPI.clearStoreStats();
     setStats(initialStats);
     dispatch(logOutEmployee());
   };
 
   useEffect(() => {
-    const handleStatsUpdate = (stats) => {
-      setStats(stats);
-    };
+  const handleStatsUpdate = (stats) => setStats(stats);
 
-    if (typeof window !== 'undefined' && window?.electronAPI) {
-      window?.electronAPI?.onUpdateStats(handleStatsUpdate);
-      window.electronAPI.getInitialStats().then(handleStatsUpdate);
+  if (window?.electronAPI) {
+    window.electronAPI.onUpdateStats(handleStatsUpdate);
+    window.electronAPI.getInitialStats().then(handleStatsUpdate);
+  }
+
+  return () => {
+    if (window?.electronAPI?.removeUpdateStatsListener) {
+      window.electronAPI.removeUpdateStatsListener(handleStatsUpdate);
     }
-
-    return () => {
-      if (typeof window !== 'undefined' && window.electronAPI) {
-        window?.electronAPI?.onUpdateStats(handleStatsUpdate);
-      }
-    };
-  }, []);
+  };
+}, []);
 
   const startLogging = () => {
     if (!isLogging && typeof window !== 'undefined' && window.electronAPI) {
