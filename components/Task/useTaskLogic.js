@@ -262,6 +262,11 @@ const useTaskLogic = (
         projectTaskName: tasks?.find((t) => t?.id === projectTaskId)?.name,
         description,
       };
+      window.electronAPI.sendSessionDetails({
+        projectName: projects.find((p) => p?.id === projectId)?.name,
+        projectTaskName: tasks?.find((t) => t?.id === projectTaskId)?.name,
+        description,
+      });
 
       setActiveSession(activeSessionObj);
       localStorage.setItem('activeSession', JSON.stringify(activeSessionObj));

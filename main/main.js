@@ -65,12 +65,39 @@ let initialStats = {
 };
 
 let stats = initialStats;
+let currentSessionId = null;
+const {db,setCurrentSessionId,createSession, getLastSession, updateSessionEndTime, updateSessionDetails, retainLastNSessions} = require('./db')
+function setAuth(value) {
+  const stmt = db.prepare(`
+    INSERT INTO auth (authToken)
+    VALUES (?)
+    ON CONFLICT(authToken) DO UPDATE SET authToken = excluded.authToken
+  `);
+  const storedValue = typeof value === 'string' ? value : JSON.stringify(value);
+  stmt.run(storedValue);
+}
+function setOwnerProject(ownerId, projectTaskActivityId) {
+  if (ownerId == null || projectTaskActivityId == null) {
+    return;
+  }
+  const stmt = db.prepare(`
+    INSERT INTO OwnerProject (ownerId, projectTaskActivityId)
+    VALUES (?, ?)
+    ON CONFLICT(ownerId) DO UPDATE SET projectTaskActivityId = excluded.projectTaskActivityId
+  `);
+  stmt.run(ownerId, projectTaskActivityId);
+}
 
+ipcMain.on('send-session-details', (event, data) => {
+  updateSessionDetails(data); // You’ll define this in db.js
+});
 ipcMain.on('set-user-data', async (event, data) => {
   try {
     authToken = data.authToken;
     if (authToken) {
       await store.set('authToken', authToken);
+      console.log("setting authToken to:",authToken);
+      setAuth(authToken);
       await fetchCaptureInterval();
     }
   } catch (error) {
@@ -88,8 +115,10 @@ ipcMain.handle('set-activity-data', async (event, data) => {
     projectTaskActivityId = data.projectTaskActivityId;
 
     await store.set('ownerId', ownerId);
+    console.log("setting ownerId to:",ownerId);
     await store.set('projectTaskActivityId', projectTaskActivityId);
-
+    console.log("setting projectTaskActivityId to:", projectTaskActivityId);
+    setOwnerProject(ownerId,projectTaskActivityId);
     return { success: true };
   } catch (error) {
     console.error('Failed to set activity data:', error);
@@ -564,6 +593,8 @@ ipcMain.handle('start-logging', async () => {
   lastActiveWindow = null;
   appWebsites = [];
   appWebsiteDetails = [];
+  currentSessionId=createSession();
+  setCurrentSessionId(currentSessionId);
   await startScreenshotCapture();
 });
 
@@ -582,6 +613,7 @@ ipcMain.handle('restart-logging', async () => {
   lastActiveWindow = await getActiveWindowInfo();
   appWebsites = savedStats.appWebsites;
   appWebsiteDetails = savedStats.appWebsiteDetails;
+  currentSessionId=getLastSession();
   await startScreenshotCapture();
 });
 
@@ -607,6 +639,9 @@ ipcMain.handle('get-location', async () => {
 
 ipcMain.on('stop-logging', () => {
   isLogging = false;
+  updateSessionEndTime(currentSessionId);
+  currentSessionId=null;
+  retainLastNSessions(5);
   stopScreenshotCapture();
   stats = initialStats;
   store.reset('stats');

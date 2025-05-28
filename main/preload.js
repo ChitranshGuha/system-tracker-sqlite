@@ -40,4 +40,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   //   ipcRenderer.on('activity-report-interval', (_, value) => callback(value));
   // },
   getInitialStats: () => ipcRenderer.invoke('get-initial-stats'),
+  sendSessionDetails: (data) => ipcRenderer.send('send-session-details', data),
 });
