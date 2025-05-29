@@ -23,6 +23,12 @@ export function activityActions(authToken, activityType, payload, isDetail) {
               id: response?.data?.data?.id,
             }
           : {}),
+        ...(activityType === 'end'
+          ? {
+              totalTime: response?.data?.data?.totalTime,
+              idleTime: response?.data?.data?.idleTime,
+            }
+          : {}),
       };
     } catch (error) {
       return {

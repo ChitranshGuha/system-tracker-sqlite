@@ -25,6 +25,7 @@ const Task = ({
   endedActivityRestart,
   setEndedActivityRestart,
   setIsLoading,
+  updateTrackedHourDetails,
 }) => {
   const projects = useSelector((state) => state?.employee?.projects?.list);
   const tasks = useSelector((state) => state?.employee?.tasks?.list);
@@ -55,6 +56,7 @@ const Task = ({
     endedActivityRestart,
     setEndedActivityRestart,
     setIsLoading,
+    updateTrackedHourDetails,
     setApiError
   );
 

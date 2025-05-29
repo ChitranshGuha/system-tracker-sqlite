@@ -515,6 +515,7 @@ async function captureAndSaveScreenshot() {
     console.error('Error capturing or uploading screenshot:', error);
   }
 }
+
 // Function to start screenshot capture
 async function startScreenshotCapture() {
   if (screenshotInterval) {

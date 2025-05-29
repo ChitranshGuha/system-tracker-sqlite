@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   FiMousePointer,
@@ -125,9 +125,36 @@ function ActivityLogger({
     idleTime: 0,
   });
 
+  const [updatedDetailsFromApi, setUpdatedDetailsFromApi] = useState(null);
+
+  const updateTrackedHourDetails = useCallback(
+    (newSeconds, idleTimeInSeconds) => {
+      setUpdatedDetailsFromApi({ newSeconds, idleTimeInSeconds });
+    },
+    [trackedHourDetails]
+  );
+
+  useEffect(() => {
+    if (updatedDetailsFromApi) {
+      setTrackedHourDetails(() => {
+        setAnimate(true);
+        setTimeout(() => setAnimate(false), 300);
+
+        return {
+          trackedHourInSeconds:
+            +trackedHourDetails?.trackedHourInSeconds +
+            (+updatedDetailsFromApi?.newSeconds ?? 0),
+          idleTime:
+            +trackedHourDetails?.idleTime +
+            (+updatedDetailsFromApi?.idleTimeInSeconds ?? 0),
+        };
+      });
+    }
+    setUpdatedDetailsFromApi(null);
+  }, [updatedDetailsFromApi]);
+
   useEffect(() => {
     let trackedHourTimeout;
-    let trackedHourInterval;
 
     if (authToken && ownerId) {
       const trackedHourDetailApiCall = () =>
@@ -139,12 +166,8 @@ function ActivityLogger({
         ).then((res) => {
           const newSeconds =
             res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.totalTime;
-          const idleTime = Math.floor(
-            (res?.data?.data?.length === 0
-              ? 0
-              : res?.data?.data?.[0]?.idleTime || 0) / 60
-          );
-
+          const idleTime =
+            res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.idleTime;
           setTrackedHourDetails((prev) => {
             if (prev.trackedHourInSeconds !== newSeconds) {
               setAnimate(true);
@@ -159,20 +182,12 @@ function ActivityLogger({
         });
 
       trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
-
-      if (isLogging && activityInterval) {
-        trackedHourInterval = setInterval(
-          trackedHourDetailApiCall,
-          (activityInterval || 1) * 1000 * 60
-        );
-      }
     }
 
     return () => {
       clearTimeout(trackedHourTimeout);
-      clearInterval(trackedHourInterval);
     };
-  }, [authToken, ownerId, activityInterval, isLogging]);
+  }, [authToken, ownerId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
@@ -285,6 +300,7 @@ function ActivityLogger({
                 endedActivityRestart={endedActivityRestart}
                 setEndedActivityRestart={setEndedActivityRestart}
                 setIsLoading={setIsLoading}
+                updateTrackedHourDetails={updateTrackedHourDetails}
               />
 
               {/* Stats Grid */}
@@ -327,7 +343,7 @@ function ActivityLogger({
                   <div className="flex items-center justify-between mb-2">
                     <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-red-800">
-                      {trackedHourDetails.idleTime}
+                      {Math.floor(+trackedHourDetails.idleTime ?? 0) / 60}
                     </p>
                   </div>
                   <p className="text-sm text-red-600 font-medium">

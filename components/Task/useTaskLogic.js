@@ -23,6 +23,7 @@ const useTaskLogic = (
   endedActivityRestart,
   setEndedActivityRestart,
   setIsLoading,
+  updateTrackedHourDetails,
   setApiError
 ) => {
   const dispatch = useDispatch();
@@ -177,6 +178,8 @@ const useTaskLogic = (
       dispatch(activityActions(authToken, 'end', stopUserData, true))
         .then((status) => {
           if (status?.success) {
+            updateTrackedHourDetails(status?.totalTime, status?.idleTime);
+
             setProjectTaskActivityDetailId(null);
             localStorage.removeItem('projectTaskActivityDetailId');
           } else {
