@@ -8,4 +8,4 @@ export const API_BASE_URL = `${BASE_URL}/api`;
 
 export const TRACKER_VERSION = '1.0.7';
 
-export const DEFAULT_SCREENSHOT_TYPE = 'BACKGROUND';
+export const DEFAULT_SCREENSHOT_TYPE = 'SCREENSHOT';

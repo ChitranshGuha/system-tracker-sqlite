@@ -32,7 +32,7 @@ let mainWindow;
 let isLogging = false;
 let screenshotInterval;
 
-const DEFAULT_SCREENSHOT_TYPE = 'BACKGROUND';
+const DEFAULT_SCREENSHOT_TYPE = 'SCREENSHOT';
 let screenshotType = DEFAULT_SCREENSHOT_TYPE;
 
 let captureIntervalMinutes;
@@ -463,7 +463,6 @@ ipcMain.on('set-screenshot-type', (event, data) => {
 
 async function captureAndSaveScreenshot() {
   // SCREENSHOT , BACKGROUND, NO-SCREENSHOT, BLURRED-SCREENSHOT
-  console.log('screenshot type in capture screenshot', screenshotType);
   try {
     if (screenshotType === 'NO-SCREENSHOT') {
       return;
@@ -474,7 +473,7 @@ async function captureAndSaveScreenshot() {
       thumbnailSize: { width: 1920, height: 1080 },
     };
 
-    if (screenshotType === 'SCREENSHOT') {
+    if (screenshotType === 'BACKGROUND') {
       captureOptions.types = ['window'];
       captureOptions.thumbnailSize = { width: 1280, height: 720 };
     }
@@ -482,7 +481,7 @@ async function captureAndSaveScreenshot() {
     const sources = await desktopCapturer.getSources(captureOptions);
     let primaryDisplay;
 
-    if (screenshotType === 'SCREENSHOT') {
+    if (screenshotType === 'BACKGROUND') {
       primaryDisplay =
         sources.find((source) => source.name !== 'Entire Screen') || sources[0];
     } else {
