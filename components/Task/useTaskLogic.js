@@ -359,7 +359,9 @@ const useTaskLogic = (
         lastStatsRef.current = initialLastStats;
         dispatch(
           activityActions(authToken, 'end', {
-            ...payload,
+            ownerId,
+            trackerVersion: TRACKER_VERSION,
+            ipAddress,
             projectTaskActivityId,
           })
         ).then((status) => {
