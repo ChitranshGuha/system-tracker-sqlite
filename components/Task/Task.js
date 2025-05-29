@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import TaskForm from './TaskForm';
 import ActiveSession from './ActiveSession';
@@ -59,6 +59,15 @@ const Task = ({
     updateTrackedHourDetails,
     setApiError
   );
+
+  useEffect(() => {
+    if (projectId) {
+      const screenshotType = projects?.find((prj) => prj?.id === projectId)
+        ?.projectMember?.screenshotMode;
+      localStorage.setItem('screenshotType', screenshotType);
+      window.electronAPI.sendScreenshotType?.(screenshotType);
+    }
+  }, [projectId]);
 
   return (
     <>

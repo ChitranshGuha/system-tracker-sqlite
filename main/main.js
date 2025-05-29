@@ -31,7 +31,10 @@ let mainWindow;
 // Renderer Data
 let isLogging = false;
 let screenshotInterval;
-let screenshotType = 'SCREENSHOT';
+
+const DEFAULT_SCREENSHOT_TYPE = 'BACKGROUND';
+let screenshotType = DEFAULT_SCREENSHOT_TYPE;
+
 let captureIntervalMinutes;
 let activityIntervalMinutes;
 let activitySpeedLocationInterval;
@@ -454,15 +457,17 @@ async function getScrollTracker() {
 getScrollTracker();
 
 // Function to capture and save screenshot
+ipcMain.on('set-screenshot-type', (event, data) => {
+  screenshotType = data || DEFAULT_SCREENSHOT_TYPE;
+});
+
 async function captureAndSaveScreenshot() {
   // SCREENSHOT , BACKGROUND, NO-SCREENSHOT, BLURRED-SCREENSHOT
+  console.log('screenshot type in capture screenshot', screenshotType);
   try {
-    console.log('Screenshot type with no ss type', screenshotType);
     if (screenshotType === 'NO-SCREENSHOT') {
       return;
     }
-
-    console.log('Screenshot type without no ss type', screenshotType);
 
     let captureOptions = {
       types: ['screen'],

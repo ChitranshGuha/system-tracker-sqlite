@@ -17,6 +17,7 @@ import { API_BASE_URL, TRACKER_VERSION } from '../utils/constants';
 import { DOMAIN_TYPE } from '../utils/constants';
 import AppUpdater from '../components/AppUpdater';
 import { Download } from 'lucide-react';
+import { DEFAULT_SCREENSHOT_TYPE } from '../utils/constants';
 
 function ActivityLogger() {
   const dispatch = useDispatch();
@@ -179,6 +180,17 @@ function ActivityLogger() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window.electronAPI === 'undefined') return;
+
+    const screenshotType = localStorage.getItem('screenshotType');
+    if (screenshotType) {
+      window.electronAPI.sendScreenshotType?.(
+        screenshotType || DEFAULT_SCREENSHOT_TYPE
+      );
+    }
+  }, [isLogging]);
 
   const [domainId, setDomainId] = useState(null);
 

@@ -4,6 +4,7 @@ import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions
 import { activityActions } from '../../redux/activity/activityActions';
 import { TRACKER_VERSION } from '../../utils/constants';
 import { getSpeed, getSystemTimezone } from '../../utils/helpers';
+import { DEFAULT_SCREENSHOT_TYPE } from '../../utils/constants';
 
 const useTaskLogic = (
   ownerId,
@@ -385,6 +386,9 @@ const useTaskLogic = (
             localStorage.removeItem('activeSession');
             localStorage.removeItem('projectTaskId');
             localStorage.removeItem('projectTaskActivityId');
+            localStorage.removeItem('screenshotType');
+            window.electronAPI.sendScreenshotType?.(DEFAULT_SCREENSHOT_TYPE);
+
             stopLogging();
             const userData = {
               ownerId: null,

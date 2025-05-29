@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeListener('suspend', callback),
 
   // Renderer's Data
+  sendScreenshotType: (data) => ipcRenderer.send('set-screenshot-type', data),
 
   sendUserData: (data) => {
     ipcRenderer.send('set-user-data', data);
