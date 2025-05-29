@@ -10,7 +10,7 @@ const store = require('electron-settings');
 const path = require('path');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
 const moment = require('moment');
-
+const fs = require('fs');
 const { spawn } = require('child_process');
 
 // API
@@ -45,7 +45,6 @@ let lastActivityTime = Date.now();
 
 let ownerId = null;
 let authToken = null;
-let projectTaskActivityId = null;
 
 // Active window tracking
 let lastActiveWindow = null;
@@ -66,7 +65,7 @@ let initialStats = {
 
 let stats = initialStats;
 let currentSessionId = null;
-const {db,setCurrentSessionId,createSession, getLastSession, updateSessionEndTime, updateSessionDetails, retainLastNSessions} = require('./db')
+const {db,setCurrentSessionId,createSession, getLastSession, updateSessionEndTime, updateSessionDetails, retainLastNSessions, saveGeoLocation, saveScreenshotRecord, saveStatsDb} = require('./db')
 function setAuth(value) {
   const stmt = db.prepare(`
     INSERT INTO auth (authToken)
@@ -76,20 +75,24 @@ function setAuth(value) {
   const storedValue = typeof value === 'string' ? value : JSON.stringify(value);
   stmt.run(storedValue);
 }
-function setOwnerProject(ownerId, projectTaskActivityId) {
-  if (ownerId == null || projectTaskActivityId == null) {
+function setOwnerProject(ownerId) {
+  if (ownerId == null) {
     return;
   }
   const stmt = db.prepare(`
-    INSERT INTO OwnerProject (ownerId, projectTaskActivityId)
-    VALUES (?, ?)
-    ON CONFLICT(ownerId) DO UPDATE SET projectTaskActivityId = excluded.projectTaskActivityId
+    INSERT INTO Owner (ownerId)
+    VALUES (?)
+    ON CONFLICT(ownerId) DO UPDATE SET ownerId = excluded.ownerId
   `);
-  stmt.run(ownerId, projectTaskActivityId);
+  stmt.run(ownerId);
 }
 
-ipcMain.on('send-session-details', (event, data) => {
-  updateSessionDetails(data); // You’ll define this in db.js
+ipcMain.on('send-session-details', async (event, data) => {
+  try {
+    await updateSessionDetails(data);
+  } catch (err) {
+    console.error('Error updating session details:', err);
+  }
 });
 ipcMain.on('set-user-data', async (event, data) => {
   try {
@@ -112,13 +115,9 @@ ipcMain.on('set-user-data', async (event, data) => {
 ipcMain.handle('set-activity-data', async (event, data) => {
   try {
     ownerId = data.ownerId;
-    projectTaskActivityId = data.projectTaskActivityId;
-
     await store.set('ownerId', ownerId);
     console.log("setting ownerId to:",ownerId);
-    await store.set('projectTaskActivityId', projectTaskActivityId);
-    console.log("setting projectTaskActivityId to:", projectTaskActivityId);
-    setOwnerProject(ownerId,projectTaskActivityId);
+    setOwnerProject(ownerId);
     return { success: true };
   } catch (error) {
     console.error('Failed to set activity data:', error);
@@ -508,14 +507,24 @@ async function captureAndSaveScreenshot() {
 
     if (primaryDisplay) {
       const screenshotBuffer = primaryDisplay.thumbnail.toPNG();
-      const fileName = `Screenshot_${moment().format(
-        'YYYY-MM-DD_HH-mm-ss'
-      )}.png`;
+      const fileName = `Screenshot_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
 
-      const screenshotBlob = new Blob([screenshotBuffer], {
-        type: 'image/png',
-      });
+      // Save locally
+      const screenshotsDir = path.join(__dirname, 'screenshots');
+      if (!fs.existsSync(screenshotsDir)) {
+        fs.mkdirSync(screenshotsDir);
+      }
 
+      const filePath = path.join(screenshotsDir, fileName);
+      fs.writeFileSync(filePath, screenshotBuffer);
+
+      // Save record to DB
+      if (currentSessionId) {
+        saveScreenshotRecord(fileName, filePath);
+      }
+
+      // Upload logic (your existing code)
+      const screenshotBlob = new Blob([screenshotBuffer], { type: 'image/png' });
       const file = new File([screenshotBlob], fileName, { type: 'image/png' });
 
       const formData = new FormData();
@@ -523,12 +532,11 @@ async function captureAndSaveScreenshot() {
 
       authToken = authToken || (await store.get('authToken'));
       ownerId = ownerId || (await store.get('ownerId'));
-      projectTaskActivityId =
-        projectTaskActivityId || (await store.get('projectTaskActivityId'));
 
       if (!ownerId || !authToken) {
         throw new Error('ownerId or authToken not set');
       }
+
       formData.append('ownerId', ownerId);
 
       const response = await axios.post(
@@ -546,13 +554,12 @@ async function captureAndSaveScreenshot() {
 
       const payload = {
         ownerId,
-        projectTaskActivityId,
         mediaId,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
       await axios.post(
-        `${API_BASE_URL}/employee/project/project/task/activity/screenshot/add`,
+        `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add`,
         payload,
         {
           headers: {
@@ -593,15 +600,18 @@ ipcMain.handle('start-logging', async () => {
   lastActiveWindow = null;
   appWebsites = [];
   appWebsiteDetails = [];
-  currentSessionId=createSession();
-  setCurrentSessionId(currentSessionId);
+
+  const sessionId = createSession();
+  currentSessionId=sessionId;
+  console.log('aagai value main me, ab dalenge set me [sessionId]:', sessionId);
+  console.log('currentSessionId:',currentSessionId);
+  setCurrentSessionId(sessionId);
   await startScreenshotCapture();
 });
 
 ipcMain.handle('restart-logging', async () => {
   authToken = await store.get('authToken');
   ownerId = await store.get('ownerId');
-  projectTaskActivityId = await store.get('projectTaskActivityId');
   const savedStats = await store.get('stats');
 
   isLogging = true;
@@ -613,7 +623,12 @@ ipcMain.handle('restart-logging', async () => {
   lastActiveWindow = await getActiveWindowInfo();
   appWebsites = savedStats.appWebsites;
   appWebsiteDetails = savedStats.appWebsiteDetails;
-  currentSessionId=getLastSession();
+
+  // const sessionId = getLastSession(); // <- use local var
+  // currentSessionId=sessionId;
+  // console.log('RESTART->aagai value main me, ab dalenge set me [sessionId]:', sessionId);
+  console.log('RESTART->currentSessionId:',currentSessionId);
+  setCurrentSessionId(currentSessionId);     // <- update db.js
   await startScreenshotCapture();
 });
 
@@ -630,6 +645,7 @@ ipcMain.handle('get-location', async () => {
       longitude: response.data.lon,
       city: `${response.data.city}, ${response.data.country}`,
     };
+    saveGeoLocation(location);
   } catch (error) {
     console.error('Failed to fetch location:', error.message);
   }
@@ -643,6 +659,7 @@ ipcMain.on('stop-logging', () => {
   currentSessionId=null;
   retainLastNSessions(5);
   stopScreenshotCapture();
+  saveStatsDb(clickCount,scrollCount,keyCount,accumulatedText,appWebsites,appWebsiteDetails);
   stats = initialStats;
   store.reset('stats');
 });
