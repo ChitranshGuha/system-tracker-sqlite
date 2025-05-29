@@ -7,6 +7,8 @@ main/screenshots
 /.pnp
 .pnp.js
 
+main/db.sqlite
+main/screenshots
 # Testing
 /coverage
 
