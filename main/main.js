@@ -32,7 +32,6 @@ let screenshotInterval;
 let captureIntervalMinutes;
 let activityIntervalMinutes;
 let activitySpeedLocationInterval;
-// let activityReportInterval;
 
 // Activities
 let clickCount = 0;
@@ -109,10 +108,6 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
   );
 });
 
-// ipcMain.on('fetch-activity-report-interval', async (event) => {
-//   event.sender.send('activity-report-interval', activityReportInterval);
-// });
-
 // Offline & Online - Logic
 
 ipcMain.on('app-offline', () => {
@@ -188,10 +183,6 @@ async function fetchCaptureInterval() {
     activitySpeedLocationInterval =
       response?.data?.data?.internetSpeedIntervalInSeconds;
 
-    // 4) Report Iinterval
-    // activityReportInterval =
-    //   response?.data?.data?.activityReportIntervalInSeconds;
-
     if (mainWindow) {
       mainWindow.webContents.send(
         'capture-interval',
@@ -205,10 +196,6 @@ async function fetchCaptureInterval() {
         'activity-speed-location-interval',
         +activitySpeedLocationInterval || 2000
       );
-      // mainWindow.webContents.send(
-      //   'activity-report-interval',
-      //   +activityReportInterval || 900
-      // );
     }
 
     return captureIntervalMinutes;
