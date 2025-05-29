@@ -45,7 +45,6 @@ let lastActivityTime = Date.now();
 
 let ownerId = null;
 let authToken = null;
-let projectTaskActivityId = null;
 
 // Active window tracking
 let lastActiveWindow = null;
@@ -85,11 +84,7 @@ ipcMain.on('set-user-data', async (event, data) => {
 ipcMain.handle('set-activity-data', async (event, data) => {
   try {
     ownerId = data.ownerId;
-    projectTaskActivityId = data.projectTaskActivityId;
-
     await store.set('ownerId', ownerId);
-    await store.set('projectTaskActivityId', projectTaskActivityId);
-
     return { success: true };
   } catch (error) {
     console.error('Failed to set activity data:', error);
@@ -494,8 +489,6 @@ async function captureAndSaveScreenshot() {
 
       authToken = authToken || (await store.get('authToken'));
       ownerId = ownerId || (await store.get('ownerId'));
-      projectTaskActivityId =
-        projectTaskActivityId || (await store.get('projectTaskActivityId'));
 
       if (!ownerId || !authToken) {
         throw new Error('ownerId or authToken not set');
@@ -517,13 +510,12 @@ async function captureAndSaveScreenshot() {
 
       const payload = {
         ownerId,
-        projectTaskActivityId,
         mediaId,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
       await axios.post(
-        `${API_BASE_URL}/employee/project/project/task/activity/screenshot/add`,
+        `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add`,
         payload,
         {
           headers: {
@@ -570,7 +562,6 @@ ipcMain.handle('start-logging', async () => {
 ipcMain.handle('restart-logging', async () => {
   authToken = await store.get('authToken');
   ownerId = await store.get('ownerId');
-  projectTaskActivityId = await store.get('projectTaskActivityId');
   const savedStats = await store.get('stats');
 
   isLogging = true;

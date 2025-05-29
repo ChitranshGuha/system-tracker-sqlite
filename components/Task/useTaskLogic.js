@@ -274,7 +274,6 @@ const useTaskLogic = (
 
           const userData = {
             ownerId,
-            projectTaskActivityId: status?.id,
           };
           window.electronAPI.sendActivityData(userData);
           startLogging();
@@ -387,7 +386,6 @@ const useTaskLogic = (
             stopLogging();
             const userData = {
               ownerId: null,
-              projectTaskActivityId: null,
             };
             window.electronAPI.sendActivityData(userData);
           } else {
@@ -530,7 +528,6 @@ const useTaskLogic = (
 
                       const userData = {
                         ownerId,
-                        projectTaskActivityId: status?.id,
                       };
                       window.electronAPI.sendActivityData(userData);
                       startLogging();

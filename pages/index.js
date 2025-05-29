@@ -163,9 +163,6 @@ function ActivityLogger() {
                     setIsLoading(true);
                     const response = await window.electronAPI.sendActivityData({
                       ownerId: localStorage.getItem('ownerId'),
-                      projectTaskActivityId: localStorage.getItem(
-                        'projectTaskActivityId'
-                      ),
                     });
 
                     if (response?.success) {
