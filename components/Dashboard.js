@@ -343,7 +343,7 @@ function ActivityLogger({
                   <div className="flex items-center justify-between mb-2">
                     <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-red-800">
-                      {Math.floor(+trackedHourDetails.idleTime ?? 0) / 60}
+                      {Math.floor((+trackedHourDetails.idleTime ?? 0) / 60)}
                     </p>
                   </div>
                   <p className="text-sm text-red-600 font-medium">

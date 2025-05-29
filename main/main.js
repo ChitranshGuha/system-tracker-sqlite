@@ -6,6 +6,8 @@ const {
   powerMonitor,
   dialog,
 } = require('electron');
+
+const sharp = require('sharp');
 const store = require('electron-settings');
 const path = require('path');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
@@ -29,6 +31,7 @@ let mainWindow;
 // Renderer Data
 let isLogging = false;
 let screenshotInterval;
+let screenshotType = 'SCREENSHOT';
 let captureIntervalMinutes;
 let activityIntervalMinutes;
 let activitySpeedLocationInterval;
@@ -452,18 +455,64 @@ getScrollTracker();
 
 // Function to capture and save screenshot
 async function captureAndSaveScreenshot() {
+  // SCREENSHOT , BACKGROUND, NO-SCREENSHOT, BLURRED-SCREENSHOT
   try {
-    const sources = await desktopCapturer.getSources({
+    console.log('Screenshot type with no ss type', screenshotType);
+    if (screenshotType === 'NO-SCREENSHOT') {
+      return;
+    }
+
+    console.log('Screenshot type without no ss type', screenshotType);
+
+    let captureOptions = {
       types: ['screen'],
       thumbnailSize: { width: 1920, height: 1080 },
-    });
-    const primaryDisplay = sources[0];
+    };
+
+    if (screenshotType === 'SCREENSHOT') {
+      captureOptions.types = ['window'];
+      captureOptions.thumbnailSize = { width: 1280, height: 720 };
+    }
+
+    const sources = await desktopCapturer.getSources(captureOptions);
+    let primaryDisplay;
+
+    if (screenshotType === 'SCREENSHOT') {
+      primaryDisplay =
+        sources.find((source) => source.name !== 'Entire Screen') || sources[0];
+    } else {
+      primaryDisplay = sources[0];
+    }
 
     if (primaryDisplay) {
-      const screenshotBuffer = primaryDisplay.thumbnail.toPNG();
-      const fileName = `Screenshot_${moment().format(
-        'YYYY-MM-DD_HH-mm-ss'
-      )}.png`;
+      let screenshotBuffer = primaryDisplay.thumbnail.toPNG();
+
+      if (screenshotType === 'BLURRED-SCREENSHOT') {
+        try {
+          screenshotBuffer = await sharp(screenshotBuffer)
+            .blur(10)
+            .png()
+            .toBuffer();
+        } catch (blurError) {
+          console.warn(
+            'Blur effect failed, using original screenshot:',
+            blurError
+          );
+        }
+      }
+
+      let fileName;
+
+      switch (screenshotType) {
+        case 'BLURRED-SCREENSHOT':
+          fileName = `Blurred_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
+          break;
+        case 'BACKGROUND':
+          fileName = `Background_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
+          break;
+        default:
+          fileName = `Screenshot_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
+      }
 
       const screenshotBlob = new Blob([screenshotBuffer], {
         type: 'image/png',
