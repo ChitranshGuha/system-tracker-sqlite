@@ -12,7 +12,7 @@ export function activityActions(
   return async () => {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/employee/project/project/task/activity${isDetail ? '/detail' : ''}/${activityType}`,
+        `${API_BASE_URL}/employee${isDetail ? '/v2' : ''}/project/project/task/activity${isDetail ? '/detail' : ''}/${activityType}`,
         // `${API_BASE_URL}/employee/project/project/task/activity${isDetail ? (isReport ? '/report' : '/detail') : ''}/${activityType}`,
         payload,
         {

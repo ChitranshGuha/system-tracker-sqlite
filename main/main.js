@@ -385,7 +385,7 @@ keyboardListener.addListener((e) => {
         accumulatedText +=
           e.name === 'SPACE'
             ? ' '
-            : e.name.length === 1
+            : e.name?.length === 1
               ? e.name?.toLowerCase()
               : '';
       }

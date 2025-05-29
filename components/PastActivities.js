@@ -48,7 +48,7 @@ export default function PastActivities({
 
   const getLineChartData = () => {
     return pastActivities
-      .slice(0, 5)
+      ?.slice(0, 5)
       .map((activity) => activity[selectedMetric])
       .reverse();
   };
@@ -83,7 +83,8 @@ export default function PastActivities({
         show: false,
       },
       title: {
-        text: selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1),
+        text:
+          selectedMetric?.charAt(0)?.toUpperCase() + selectedMetric?.slice(1),
         style: {
           fontSize: '12px',
           fontWeight: 600,
@@ -118,7 +119,7 @@ export default function PastActivities({
       y: {
         title: {
           formatter: () =>
-            selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1),
+            selectedMetric?.charAt(0)?.toUpperCase() + selectedMetric?.slice(1),
         },
       },
       style: {

@@ -252,7 +252,6 @@ function ActivityLogger() {
             isLogging={isLogging}
             captureInterval={captureInterval}
             activityInterval={activityInterval}
-            // activityReportInterval={activityReportInterval}
             activityLocationInterval={activityLocationInterval}
             authToken={authToken}
             endedActivityRestart={endedActivityRestart}

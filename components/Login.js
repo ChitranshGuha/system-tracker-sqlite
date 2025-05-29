@@ -28,7 +28,7 @@ export default function LoginForm({ onLogin, domainId }) {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors)?.length === 0;
   };
 
   function getOperatingSystem() {

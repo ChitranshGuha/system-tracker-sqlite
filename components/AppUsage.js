@@ -91,7 +91,7 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
   }, [activeTab]);
 
   useEffect(() => {
-    if (appUsages && appUsages.length > 0) {
+    if (appUsages && appUsages?.length > 0) {
       setAppUsagesData(appUsages);
     }
   }, [appUsages]);
@@ -144,8 +144,8 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = sortedData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const currentItems = sortedData?.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedData?.length / itemsPerPage);
 
   const chartData = {
     options: {
@@ -156,7 +156,7 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
         },
       },
       xaxis: {
-        categories: sortedData.slice(0, 5).map((app) => app.name),
+        categories: sortedData?.slice(0, 5).map((app) => app.name),
       },
       colors: ['#6366F1'],
       plotOptions: {
@@ -177,13 +177,13 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
     series: [
       {
         name: 'Duration',
-        data: sortedData.slice(0, 5).map((app) => app.duration),
+        data: sortedData?.slice(0, 5).map((app) => app.duration),
       },
     ],
   };
 
   const calculateSummary = () => {
-    if (!sortedData.length)
+    if (!sortedData?.length)
       return {
         totalApps: 0,
         totalDuration: 0,
@@ -191,25 +191,25 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
         mostUsed: null,
       };
 
-    const totalDuration = sortedData.reduce(
+    const totalDuration = sortedData?.reduce(
       (sum, app) => sum + (app.duration || 0),
       0
     );
-    const totalSessions = sortedData.reduce(
+    const totalSessions = sortedData?.reduce(
       (sum, app) => sum + (app.sessions || 0),
       0
     );
 
     let mostUsed = null;
-    if (sortedData.length > 0) {
-      mostUsed = sortedData.reduce(
+    if (sortedData?.length > 0) {
+      mostUsed = sortedData?.reduce(
         (max, app) => (!max || app.duration > max.duration ? app : max),
         null
       );
     }
 
     return {
-      totalApps: sortedData.length,
+      totalApps: sortedData?.length,
       totalDuration,
       totalSessions,
       mostUsed,
@@ -467,7 +467,7 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
               </tr>
             ))}
 
-            {currentItems.length === 0 && (
+            {currentItems?.length === 0 && (
               <tr>
                 <td
                   colSpan={5}
@@ -482,7 +482,7 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
       </div>
 
       {/* Pagination */}
-      {sortedData.length > itemsPerPage && (
+      {sortedData?.length > itemsPerPage && (
         <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-4">
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
@@ -490,11 +490,11 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
                 Showing{' '}
                 <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
                 <span className="font-medium">
-                  {indexOfLastItem > sortedData.length
-                    ? sortedData.length
+                  {indexOfLastItem > sortedData?.length
+                    ? sortedData?.length
                     : indexOfLastItem}
                 </span>{' '}
-                of <span className="font-medium">{sortedData.length}</span>{' '}
+                of <span className="font-medium">{sortedData?.length}</span>{' '}
                 results
               </p>
             </div>

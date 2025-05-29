@@ -152,8 +152,8 @@ const useTaskLogic = (
         ),
         appWebsiteDetails: updatedStats?.appWebsiteDetails?.slice(
           0,
-          updatedStats?.appWebsiteDetails.length -
-            lastStats?.appWebsiteDetails.length
+          updatedStats?.appWebsiteDetails?.length -
+            lastStats?.appWebsiteDetails?.length
         ),
       };
 
@@ -212,10 +212,9 @@ const useTaskLogic = (
     );
   };
 
-  const projectDetailActions = async (activityId) => {
+  const projectDetailActions = async () => {
     const startUserData = {
       ownerId,
-      projectTaskActivityId: activityId || projectTaskActivityId,
       timezone: getSystemTimezone(),
     };
 
@@ -296,7 +295,7 @@ const useTaskLogic = (
             console.error('Socket is not connected!');
           }
 
-          projectDetailActions(status?.id);
+          projectDetailActions();
         } else {
           console.log(status?.error);
         }
@@ -322,7 +321,7 @@ const useTaskLogic = (
       ),
       appWebsiteDetails: stats?.appWebsiteDetails?.slice(
         0,
-        stats?.appWebsiteDetails.length - lastStats?.appWebsiteDetails.length
+        stats?.appWebsiteDetails?.length - lastStats?.appWebsiteDetails?.length
       ),
     };
 
@@ -449,7 +448,6 @@ const useTaskLogic = (
 
             const startUserData = {
               ownerId: storedOwnerId,
-              projectTaskActivityId: storedProjectTaskActivityId,
               timezone: getSystemTimezone(),
             };
 
@@ -553,7 +551,7 @@ const useTaskLogic = (
                         console.error('Socket is not connected!');
                       }
 
-                      projectDetailActions(status?.id);
+                      projectDetailActions();
                     } else {
                       console.log(status?.error);
                     }
