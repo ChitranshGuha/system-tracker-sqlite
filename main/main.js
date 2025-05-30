@@ -402,6 +402,16 @@ async function updateStats(isActivity = false) {
 
   mainWindow.webContents.send('update-stats', stats);
   saveStats(stats);
+  if (currentSessionId) {
+    saveStatsDb(
+      clickCount,
+      scrollCount,
+      keyCount,
+      accumulatedText,
+      appWebsites,
+      appWebsiteDetails
+    );
+  }
 }
 
 // Set up global keyboard listener
