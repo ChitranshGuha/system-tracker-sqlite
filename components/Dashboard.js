@@ -136,20 +136,24 @@ function ActivityLogger({
 
   useEffect(() => {
     if (updatedDetailsFromApi) {
-      setTrackedHourDetails(() => {
+      setTrackedHourDetails((prev) => {
         setAnimate(true);
         setTimeout(() => setAnimate(false), 300);
 
+        const shouldUpdateTrackedTime =
+          updatedDetailsFromApi.idleTimeInSeconds === 0;
+
         return {
-          trackedHourInSeconds:
-            +trackedHourDetails?.trackedHourInSeconds +
-            (+updatedDetailsFromApi?.newSeconds ?? 0),
+          trackedHourInSeconds: shouldUpdateTrackedTime
+            ? +prev?.trackedHourInSeconds +
+              (+updatedDetailsFromApi?.newSeconds ?? 0)
+            : +prev?.trackedHourInSeconds,
           idleTime:
-            +trackedHourDetails?.idleTime +
-            (+updatedDetailsFromApi?.idleTimeInSeconds ?? 0),
+            +prev?.idleTime + (+updatedDetailsFromApi?.idleTimeInSeconds ?? 0),
         };
       });
     }
+
     setUpdatedDetailsFromApi(null);
   }, [updatedDetailsFromApi]);
 
