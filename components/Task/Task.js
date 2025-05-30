@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import TaskForm from './TaskForm';
 import ActiveSession from './ActiveSession';
 import ActionButtons from './ActionButtons';
 import useTaskLogic from './useTaskLogic';
 import HardReset from '../HardReset';
 import ApiErrorLogger from '../ApiErrorLogger';
+import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
+import { FolderSync } from 'lucide-react';
 
 const Task = ({
   startLogging,
@@ -27,6 +29,8 @@ const Task = ({
   setIsLoading,
   updateTrackedHourDetails,
 }) => {
+  const dispatch = useDispatch();
+
   const projects = useSelector((state) => state?.employee?.projects?.list);
   const tasks = useSelector((state) => state?.employee?.tasks?.list);
   const [apiError, setApiError] = useState(null);
@@ -69,6 +73,17 @@ const Task = ({
     }
   }, [projectId]);
 
+  const onSyncProject = () => {
+    dispatch(
+      gettingEmployeeActionsList(
+        authToken,
+        'employee/project/project/list',
+        'projects',
+        { ownerId }
+      )
+    );
+  };
+
   return (
     <>
       {apiError ? (
@@ -83,6 +98,17 @@ const Task = ({
           ownerId={ownerId}
           authToken={authToken}
         />
+
+        {!isLogging && (
+          <button
+            onClick={onSyncProject}
+            className="absolute top-6 right-20 flex items-center justify-center p-3 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all duration-800 hover:scale-105"
+            aria-label="Sync Projects"
+            title="Sync Projects"
+          >
+            <FolderSync className="size-6" />
+          </button>
+        )}
 
         <form
           onSubmit={handleFormSubmit}
