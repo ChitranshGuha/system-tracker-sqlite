@@ -171,26 +171,45 @@ function saveScreenshotRecord(fileName, filePath) {
   `);
   stmt.run(currentSessionId, fileName, filePath);
 }
-function saveStatsDb(click, scroll, key, actext, appweb, appwebdetail) {
+function saveStatsDb(clickCount, scrollCount, keyCount, accumulatedText, appWebsites, appWebsiteDetails) {
   const stmt = db.prepare(`
     INSERT INTO stats (
-      sessionId, clickCount, scrollCount, keyCount,
-      accumulatedText, appWebsites, appWebsiteDetails
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      sessionId,
+      clickCount,
+      scrollCount,
+      keyCount,
+      accumulatedText,
+      appWebsites,
+      appWebsiteDetails
+    ) VALUES (
+      @sessionId,
+      @clickCount,
+      @scrollCount,
+      @keyCount,
+      @accumulatedText,
+      @appWebsites,
+      @appWebsiteDetails
+    )
+    ON CONFLICT(sessionId) DO UPDATE SET
+      clickCount = excluded.clickCount,
+      scrollCount = excluded.scrollCount,
+      keyCount = excluded.keyCount,
+      accumulatedText = excluded.accumulatedText,
+      appWebsites = excluded.appWebsites,
+      appWebsiteDetails = excluded.appWebsiteDetails
   `);
-  const appwebStr = JSON.stringify(appweb || []);
-  const appwebdetailStr = JSON.stringify(appwebdetail || []);
 
-  stmt.run(
-    currentSessionId,
-    Number(click) || 0,
-    Number(scroll) || 0,
-    Number(key) || 0,
-    String(actext || ''),
-    appwebStr,
-    appwebdetailStr
-  );
+  stmt.run({
+    sessionId: currentSessionId,
+    clickCount,
+    scrollCount,
+    keyCount,
+    accumulatedText,
+    appWebsites: JSON.stringify(appWebsites),
+    appWebsiteDetails: JSON.stringify(appWebsiteDetails),
+  });
 }
+
 module.exports = {
     db,
     setCurrentSessionId,
@@ -203,6 +222,3 @@ module.exports = {
     saveScreenshotRecord,
     saveStatsDb
 };
-// function getCurrentSessionId() {
-//   return currentSessionId;
-// }
