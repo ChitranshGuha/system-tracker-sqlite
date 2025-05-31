@@ -33,6 +33,7 @@ let isLogging = false;
 let screenshotInterval;
 
 const DEFAULT_SCREENSHOT_TYPE = 'SCREENSHOT';
+const DEFAULT_CAPTURE_INTERVAL = 10;
 let screenshotType = DEFAULT_SCREENSHOT_TYPE;
 
 let captureIntervalMinutes;
@@ -99,7 +100,10 @@ ipcMain.handle('set-activity-data', async (event, data) => {
 
 // Function to fetch capture interval from API
 ipcMain.on('fetch-capture-interval', async (event) => {
-  event.sender.send('capture-interval', captureIntervalMinutes);
+  event.sender.send(
+    'capture-interval',
+    captureIntervalMinutes || DEFAULT_CAPTURE_INTERVAL
+  );
 });
 
 // Function to fetch activity interval from API
@@ -192,7 +196,7 @@ async function fetchCaptureInterval() {
     if (mainWindow) {
       mainWindow.webContents.send(
         'capture-interval',
-        captureIntervalMinutes?.toFixed(1) || 5
+        captureIntervalMinutes?.toFixed(1) || DEFAULT_CAPTURE_INTERVAL
       );
       mainWindow.webContents.send(
         'acitivity-interval',
@@ -577,7 +581,7 @@ async function startScreenshotCapture() {
 
   screenshotInterval = setInterval(
     captureAndSaveScreenshot,
-    captureIntervalMinutes * 60 * 1000
+    (captureIntervalMinutes || DEFAULT_CAPTURE_INTERVAL) * 60 * 1000
   );
 }
 
