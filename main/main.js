@@ -34,6 +34,8 @@ let screenshotInterval;
 
 const DEFAULT_SCREENSHOT_TYPE = 'SCREENSHOT';
 const DEFAULT_CAPTURE_INTERVAL = 10;
+const DEFAULT_ACTIVITY_INTERVAL = 1;
+const DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL = 1800;
 let screenshotType = DEFAULT_SCREENSHOT_TYPE;
 
 let captureIntervalMinutes;
@@ -108,13 +110,16 @@ ipcMain.on('fetch-capture-interval', async (event) => {
 
 // Function to fetch activity interval from API
 ipcMain.on('fetch-activity-interval', async (event) => {
-  event.sender.send('activity-interval', activityIntervalMinutes);
+  event.sender.send(
+    'activity-interval',
+    activityIntervalMinutes || DEFAULT_ACTIVITY_INTERVAL
+  );
 });
 
 ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
   event.sender.send(
     'activity-speed-location-interval',
-    activitySpeedLocationInterval
+    activitySpeedLocationInterval || DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL
   );
 });
 
@@ -200,11 +205,12 @@ async function fetchCaptureInterval() {
       );
       mainWindow.webContents.send(
         'acitivity-interval',
-        activityIntervalMinutes || 1
+        activityIntervalMinutes || DEFAULT_ACTIVITY_INTERVAL
       );
       mainWindow.webContents.send(
         'activity-speed-location-interval',
-        +activitySpeedLocationInterval || 2000
+        +activitySpeedLocationInterval ||
+          DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL
       );
     }
 
