@@ -17,6 +17,7 @@ const { spawn } = require('child_process');
 // API
 const { default: axios } = require('axios');
 const dns = require('dns');
+const { getSystemTimezone } = require('../utils/helpers');
 
 const IS_PRODUCTION = false;
 const API_BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infoware.xyz/api`;
@@ -128,8 +129,84 @@ ipcMain.on('app-offline', () => {
   isOffline = true;
 });
 
-ipcMain.on('app-online', () => {
+ipcMain.on('app-online', async () => {
   isOffline = false;
+  const authToken = await store.get('authToken');
+  // API with payload
+  const payload = {
+    // note - all date time should be in UTC only
+    ownerId: ownerId || (await store.get('ownerId')),
+    projectTaskActivityDetails: [
+      {
+        projectTaskActivityId: '14da6433-7521-4b19-9822-03bac92f380d', // from store
+        description: 'description12', // from store
+        timezone: getSystemTimezone(),
+        latitude: 'offline',
+        longitude: 'offline',
+        speed: 'offline',
+        city: 'offline',
+        mouseClick: 12, // from store
+        keystroke: 23, // from store
+        keyPressed: 'test1', // from store
+        scroll: 45, // from store
+        appWebsites: 'test1', // frome store - make sure to use JSON.stringify()
+        appWebsiteDetails: 'test2', // frome store - make sure to use JSON.stringify()
+        trackerVersion: 'test3', // from store
+        ipAddress: 'offline',
+        operatingSystem: 'MAC', // from store
+        startTime: '2025-06-09T10:41:31.394Z',
+        endTime: '2025-06-09T10:42:30.394Z',
+      },
+      {
+        projectTaskActivityId: '14da6433-7521-4b19-9822-03bac92f380d', // from store
+        description: 'description12', // from store
+        timezone: getSystemTimezone(),
+        latitude: 'offline',
+        longitude: 'offline',
+        speed: 'offline',
+        city: 'offline',
+        mouseClick: 12, // from store
+        keystroke: 23, // from store
+        keyPressed: 'test1', // from store
+        scroll: 45, // from store
+        appWebsites: 'test1', // frome store - make sure to use JSON.stringify()
+        appWebsiteDetails: 'test2', // frome store - make sure to use JSON.stringify()
+        trackerVersion: 'test3', // from store
+        ipAddress: 'offline',
+        operatingSystem: 'MAC', // from store
+        startTime: '2025-06-09T10:41:31.394Z',
+        endTime: '2025-06-09T10:42:30.394Z',
+      },
+    ],
+  };
+
+  const apiDetailsUpload = await axios.post(
+    `${API_BASE_URL}/employee/v2/project/project/task/activity/detail/add/bulk`,
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+
+  const screenshotPayload = {
+    timezone: getSystemTimezone(),
+    mediaId: '66140924-b03c-41aa-8a37-3fa387cdf438',
+    createdAt: '2025-06-07T02:18:30.167Z', // from store,
+  };
+
+  const apiScreenshotsUpload = await axios.post(
+    `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add/bulk`,
+    screenshotPayload,
+    {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
 });
 
 ipcMain.on('exit-app', () => {
