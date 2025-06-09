@@ -218,6 +218,7 @@ const useTaskLogic = (
       } else {
         const offlineActivityData = {
           ownerId,
+          projectTaskActivityId,
           trackerVersion: TRACKER_VERSION,
           ipAddress,
           appWebsites: updatedStats?.appWebsites || [],
