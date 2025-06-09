@@ -71,7 +71,100 @@ let initialStats = {
 };
 
 let stats = initialStats;
+const Database = require('better-sqlite3');
+const db = new Database(path.join(app.getPath('userData'), 'data.db'));
+let offlineIntervalStartTime = null;
+let offlineIntervalEndTime = null;
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS offlineStats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ownerId TEXT,
+    projectTaskActivityId TEXT,
+    trackerVersion TEXT,
+    ipAddress TEXT,
+    appWebsites TEXT,
+    mouseClick INTEGER,
+    scroll INTEGER,
+    keystroke INTEGER,
+    keyPressed TEXT,
+    appWebsiteDetails TEXT,
+    intervalStartTime TEXT,
+    intervalEndTime TEXT
+  )
+`).run();
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS offlineScreenshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    authToken TEXT,
+    ownerId TEXT,
+    screenshotTakenTime TEXT,
+    fileName TEXT,
+    screenshotBlob BLOB
+  )
+`).run();
+async function syncOfflineData() {
+  const statsRows = db.prepare('SELECT * FROM offlineStats').all();
+  for (const row of statsRows) {
+    try {
+      const payload = {
+        ...row,
+        appWebsites: row.appWebsites ? JSON.parse(row.appWebsites) : [],
+        appWebsiteDetails: row.appWebsiteDetails ? JSON.parse(row.appWebsiteDetails) : [],
+      };
+      // await axios.post('YOUR_STATS_API_URL', payload);
+      console.log("offline stats gone from db");
+      db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id);
+    } catch (err) {
+      console.error('Failed to sync stats row:', err);
+      break;
+    }
+  }
+  const screenshotRows = db.prepare('SELECT * FROM offlineScreenshots').all();
+  for (const row of screenshotRows) {
+  try {
+    const screenshotBlob = new Blob([row.screenshotBlob], { type: 'image/png' });
+    const file = new File([screenshotBlob], row.fileName, { type: 'image/png' });
 
+    const formData = new FormData();
+    formData.append('files', file);
+    formData.append('ownerId', row.ownerId);
+
+    const response = await axios.post(
+      `${API_BASE_URL}/employee/media/add`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${row.authToken}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    const mediaId = response?.data?.data?.[0]?.id;
+
+    const payload = {
+      ownerId: row.ownerId,
+      mediaId,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+
+    await axios.post(
+      `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${row.authToken}`,
+        },
+      }
+    );
+    console.log("offline stats gone from db");
+    db.prepare('DELETE FROM offlineScreenshots WHERE id = ?').run(row.id);
+  } catch (err) {
+    console.error('Failed to sync screenshot row:', err);
+    break;
+  }
+}
+}
 ipcMain.on('set-user-data', async (event, data) => {
   try {
     authToken = data.authToken;
@@ -126,10 +219,22 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
 
 ipcMain.on('app-offline', () => {
   isOffline = true;
+  offlineIntervalStartTime = new Date().toISOString();
 });
 
 ipcMain.on('app-online', () => {
   isOffline = false;
+  if (offlineIntervalEndTime) {
+    db.prepare(`
+      UPDATE offlineStats
+      SET intervalEndTime = ?
+      WHERE intervalEndTime IS NULL OR intervalEndTime = ''
+      ORDER BY id DESC LIMIT 1
+    `).run(new Date().toISOString());
+  }
+  offlineIntervalStartTime = null;
+  offlineIntervalEndTime = null;
+  syncOfflineData();
 });
 
 ipcMain.on('exit-app', () => {
@@ -138,7 +243,42 @@ ipcMain.on('exit-app', () => {
 
 ipcMain.handle('offline-activity-data', async (event, data) => {
   if (isOffline) {
-    console.log('activity data', data);
+    // Use the current offlineIntervalStartTime as start, and now as end
+    const intervalStart = offlineIntervalStartTime || new Date().toISOString();
+    const intervalEnd = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO offlineStats (
+        ownerId,
+        projectTaskActivityId,
+        trackerVersion,
+        ipAddress,
+        appWebsites,
+        mouseClick,
+        scroll,
+        keystroke,
+        keyPressed,
+        appWebsiteDetails,
+        intervalStartTime,
+        intervalEndTime
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.ownerId,
+      data.projectTaskActivityId,
+      data.trackerVersion,
+      data.ipAddress,
+      JSON.stringify(data.appWebsites),
+      data.mouseClick,
+      data.scroll,
+      data.keystroke,
+      data.keyPressed,
+      JSON.stringify(data.appWebsiteDetails),
+      intervalStart,
+      intervalEnd
+    );
+    console.log("offline stats updated");
+    // Prepare for next interval
+    offlineIntervalStartTime = intervalEnd;
   }
 });
 
@@ -478,7 +618,7 @@ ipcMain.on('set-screenshot-type', (event, data) => {
 });
 
 async function captureAndSaveScreenshot() {
-  // SCREENSHOT , BACKGROUND, NO-SCREENSHOT, BLURRED-SCREENSHOT
+  // SCREENSHOT, BACKGROUND, NO-SCREENSHOT, BLURRED-SCREENSHOT
   try {
     if (screenshotType === 'NO-SCREENSHOT') {
       return;
@@ -522,7 +662,6 @@ async function captureAndSaveScreenshot() {
       }
 
       let fileName;
-
       switch (screenshotType) {
         case 'BLURRED-SCREENSHOT':
           fileName = `Blurred_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
@@ -551,34 +690,56 @@ async function captureAndSaveScreenshot() {
       }
       formData.append('ownerId', ownerId);
 
-      const response = await axios.post(
-        `${API_BASE_URL}/employee/media/add`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'multipart/form-data',
-          },
+      if (isOffline) {
+        try {
+          db.prepare(`
+            INSERT INTO offlineScreenshots (
+              authToken,
+              ownerId,
+              screenshotTakenTime,
+              fileName,
+              screenshotBlob
+            ) VALUES (?, ?, ?, ?)
+          `).run(
+            authToken,
+            ownerId,
+            new Date().toISOString(),
+            fileName,
+            screenshotBuffer // screenshotBuffer is a Buffer, suitable for BLOB
+          );
+        } catch (err) {
+          console.error('Failed to save screenshot offline:', err);
         }
-      );
+      } else {
+        const response = await axios.post(
+          `${API_BASE_URL}/employee/media/add`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
 
-      const mediaId = await response?.data?.data?.[0]?.id;
+        const mediaId = await response?.data?.data?.[0]?.id;
 
-      const payload = {
-        ownerId,
-        mediaId,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      };
+        const payload = {
+          ownerId,
+          mediaId,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
 
-      await axios.post(
-        `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+        await axios.post(
+          `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+      }
     }
   } catch (error) {
     console.error('Error capturing or uploading screenshot:', error);
