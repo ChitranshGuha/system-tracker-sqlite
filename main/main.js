@@ -4,7 +4,6 @@ const {
   ipcMain,
   desktopCapturer,
   powerMonitor,
-  dialog,
 } = require('electron');
 
 const sharp = require('sharp');
@@ -127,26 +126,19 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
 
 ipcMain.on('app-offline', () => {
   isOffline = true;
+});
 
-  if (screenshotInterval) {
-    clearInterval(screenshotInterval);
-    screenshotInterval = null;
-  }
-
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
-  }
-  mainWindow.focus();
-  mainWindow.show();
+ipcMain.on('app-online', () => {
+  isOffline = false;
 });
 
 ipcMain.on('exit-app', () => {
   app.quit();
 });
 
-powerMonitor.on('suspend', () => {
-  if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.send('suspend');
+ipcMain.handle('offline-activity-data', async (event, data) => {
+  if (isOffline) {
+    console.log('activity data', data);
   }
 });
 
@@ -164,71 +156,95 @@ function checkInternetConnection() {
   });
 }
 
-function showOfflineDialog() {
-  dialog.showErrorBox(
-    'No Internet Connection 🔌',
-    `This application requires an internet connection to track activities.\nPlease connect to the internet and try again.`
-  );
-
-  app.quit();
-}
-
 async function fetchCaptureInterval() {
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/employee/auth/configuration/get`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+  if (isOffline) {
+    const intervals = await store.get('intervals');
 
     // 1) Screenshot capture interval
-    captureIntervalMinutes =
-      response?.data?.data?.screenshotIntervalInSeconds / 60;
+    captureIntervalMinutes = intervals.captureIntervalMinutes;
 
     // 2) Activity interval
-    activityIntervalMinutes =
-      response?.data?.data?.activityDetailIntervalInSeconds / 60;
+    activityIntervalMinutes = intervals.activityIntervalMinutes;
 
     // 3) Speed location interval
-    activitySpeedLocationInterval =
-      response?.data?.data?.internetSpeedIntervalInSeconds;
+    activitySpeedLocationInterval = +intervals.activitySpeedLocationInterval;
 
     if (mainWindow) {
       mainWindow.webContents.send(
         'capture-interval',
-        captureIntervalMinutes?.toFixed(1) || DEFAULT_CAPTURE_INTERVAL
+        intervals.captureIntervalMinutes
       );
       mainWindow.webContents.send(
         'acitivity-interval',
-        activityIntervalMinutes || DEFAULT_ACTIVITY_INTERVAL
+        intervals.activityIntervalMinutes
       );
       mainWindow.webContents.send(
         'activity-speed-location-interval',
-        +activitySpeedLocationInterval ||
-          DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL
+        +intervals.activitySpeedLocationInterval
       );
     }
+  } else {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/employee/auth/configuration/get`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    return captureIntervalMinutes;
-  } catch (error) {
-    console.error('Error fetching capture interval:', error);
-    return null;
+      // 1) Screenshot capture interval
+      captureIntervalMinutes =
+        response?.data?.data?.screenshotIntervalInSeconds / 60;
+
+      // 2) Activity interval
+      activityIntervalMinutes =
+        response?.data?.data?.activityDetailIntervalInSeconds / 60;
+
+      // 3) Speed location interval
+      activitySpeedLocationInterval =
+        response?.data?.data?.internetSpeedIntervalInSeconds;
+
+      if (mainWindow) {
+        mainWindow.webContents.send(
+          'capture-interval',
+          captureIntervalMinutes?.toFixed(1) || DEFAULT_CAPTURE_INTERVAL
+        );
+        mainWindow.webContents.send(
+          'acitivity-interval',
+          activityIntervalMinutes || DEFAULT_ACTIVITY_INTERVAL
+        );
+        mainWindow.webContents.send(
+          'activity-speed-location-interval',
+          +activitySpeedLocationInterval ||
+            DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL
+        );
+      }
+
+      store.set('intervals', {
+        captureIntervalMinutes:
+          captureIntervalMinutes?.toFixed(1) || DEFAULT_CAPTURE_INTERVAL,
+        activityIntervalMinutes:
+          activityIntervalMinutes || DEFAULT_ACTIVITY_INTERVAL,
+        activitySpeedLocationInterval:
+          +activitySpeedLocationInterval ||
+          DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL,
+      });
+
+      return captureIntervalMinutes;
+    } catch (error) {
+      console.error('Error fetching capture interval:', error);
+      return null;
+    }
   }
 }
 
 // Create main application window
 async function createWindow() {
-  const isOnline = await checkInternetConnection();
-
-  if (!isOnline) {
-    showOfflineDialog();
-    return;
-  }
+  await checkInternetConnection();
 
   const isDev = await import('electron-is-dev').then(
     (module) => module.default
@@ -377,7 +393,7 @@ async function updateStats(isActivity = false) {
 // Set up global keyboard listener
 const keyboardListener = new GlobalKeyboardListener();
 keyboardListener.addListener((e) => {
-  if (!isOffline && isLogging && !mainWindow.isFocused()) {
+  if (isLogging && !mainWindow.isFocused()) {
     if (e.name === 'MOUSE LEFT' || e.name === 'MOUSE RIGHT') {
       if (e.state === 'UP') {
         clickCount++;
@@ -419,12 +435,7 @@ async function getScrollTracker() {
     child.stdout.on('data', (data) => {
       const message = data.toString().trim();
 
-      if (
-        message === 'scrolled' &&
-        !isOffline &&
-        isLogging &&
-        !mainWindow.isFocused()
-      ) {
+      if (message === 'scrolled' && isLogging && !mainWindow.isFocused()) {
         scrollCount++;
         updateStats(true);
       }
@@ -443,12 +454,7 @@ async function getScrollTracker() {
     child.stdout.on('data', (data) => {
       const message = data.toString().trim();
 
-      if (
-        message === 'scrolled' &&
-        !isOffline &&
-        isLogging &&
-        !mainWindow.isFocused()
-      ) {
+      if (message === 'scrolled' && isLogging && !mainWindow.isFocused()) {
         scrollCount++;
         updateStats(true);
       }

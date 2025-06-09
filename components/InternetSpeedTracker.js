@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSpeed } from '../utils/helpers';
 
-export default function InternetSpeedTracker({ socket, interval }) {
+export default function InternetSpeedTracker({ isOnline, socket, interval }) {
+  if (!isOnline) {
+    return <span className={`text-red-600`}>Offline</span>;
+  }
+
   const [speed, setSpeed] = useState(null);
   const [speedClass, setSpeedClass] = useState('');
 

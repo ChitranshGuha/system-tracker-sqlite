@@ -1,84 +1,47 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { WifiOff } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { getInternetConnectionStatus } from '../redux/employee/employeeActions';
 
 const AppWrapper = ({ children }) => {
+  const dispatch = useDispatch();
+
   const [online, setOnline] = useState(true);
-  const [countdown, setCountdown] = useState(3);
-  const [startCountdown, setStartCountdown] = useState(false);
-  const timerRef = useRef(null);
 
   const isElectron = typeof window !== 'undefined' && window.electronAPI;
 
-  useEffect(() => {
-    const handleOffline = () => {
-      setOnline(false);
-      setStartCountdown(true);
+  const handleInternetState = (state) => {
+    const isOnline = state?.toLowerCase() === 'online';
+    dispatch(getInternetConnectionStatus(Boolean(isOnline)));
 
-      if (isElectron) {
-        window.electronAPI.notifyOffline?.();
-      }
-    };
+    setOnline(Boolean(isOnline));
+
+    if (isElectron) {
+      window.electronAPI?.[isOnline ? 'notifyOnline' : 'notifyOffline']?.();
+    }
+  };
+
+  useEffect(() => {
+    const handleOffline = handleInternetState.bind(null, 'offline');
+    const handleOnline = handleInternetState.bind(null, 'online');
 
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
 
     if (!navigator.onLine) handleOffline();
+    else handleOnline();
 
     return () => {
       window.removeEventListener('offline', handleOffline);
-
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      window.removeEventListener('online', handleOnline);
     };
   }, [isElectron]);
 
-  useEffect(() => {
-    const handleSuspend = () => {
-      setOnline(false);
-      setStartCountdown(true);
-      if (isElectron) {
-        window.electronAPI.notifyOffline?.();
-      }
-    };
-
-    if (isElectron && window.electronAPI?.onSuspend) {
-      window.electronAPI.onSuspend?.(handleSuspend);
-    }
-
-    return () => {
-      if (isElectron && window.electronAPI?.removeSuspendListener) {
-        window.electronAPI.removeSuspendListener?.(handleSuspend);
-      }
-    };
-  }, [isElectron]);
-
-  useEffect(() => {
-    if (!startCountdown) return;
-
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-
-          if (isElectron) {
-            window.electronAPI.exitApp?.();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [startCountdown, isElectron]);
-
-  if (!online) {
+  if (
+    !online &&
+    (!localStorage.getItem('employeeAuthToken') ||
+      !localStorage.getItem('projectTaskActivityId'))
+  ) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-4">
         <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-lg border border-blue-100">
@@ -107,8 +70,7 @@ const AppWrapper = ({ children }) => {
               </h2>
 
               <p className="text-gray-600 text-center mb-8">
-                We're having trouble connecting to the network. Please wait
-                while we attempt to reconnect.
+                You need internet connection to start your tracking.
               </p>
 
               <div className="flex justify-center space-x-1 mb-6">
@@ -118,48 +80,6 @@ const AppWrapper = ({ children }) => {
                     className={`h-6 w-1.5 rounded-full ${i === 0 ? 'bg-red-500' : 'bg-gray-200'}`}
                   />
                 ))}
-              </div>
-
-              <div className="flex flex-col items-center justify-center mb-8">
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="#f1f5f9"
-                      strokeWidth="8"
-                    />
-
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="none"
-                      stroke="#f43f5e"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeDasharray="251.2"
-                      transform="rotate(-90 50 50)"
-                      style={{
-                        animation: 'countdown-circle 3s linear forwards',
-                      }}
-                    />
-                  </svg>
-
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-gray-800">
-                      {countdown}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="text-gray-500 text-sm mt-2">
-                  App will close in{' '}
-                  <span className="font-bold text-red-500">{countdown}</span>{' '}
-                  seconds
-                </p>
               </div>
             </div>
           </div>

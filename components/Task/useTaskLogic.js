@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
 import { activityActions } from '../../redux/activity/activityActions';
 import { TRACKER_VERSION } from '../../utils/constants';
@@ -28,6 +28,11 @@ const useTaskLogic = (
   setApiError
 ) => {
   const dispatch = useDispatch();
+  const isOnline = useSelector(
+    (state) => state.employee.internetConnectionStatus
+  );
+  const workspaces = useSelector((state) => state?.employee?.workspaces?.list);
+
   const activityIntervalRef = useRef(null);
   const statsRef = useRef(stats);
   const projectTaskActivityDetailIdRef = useRef(stats);
@@ -138,9 +143,11 @@ const useTaskLogic = (
   };
 
   const startStopActivityDetailHandler = async (startUserData) => {
-    const ipAddress = await getIpAddress();
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    let ipAddress = 'Offline';
+    if (isOnline) {
+      ipAddress = await getIpAddress();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
 
     const dispatchStartStop = () => {
       const updatedStats = statsRef.current;
@@ -167,43 +174,57 @@ const useTaskLogic = (
         appWebsiteDetails: updatedStats?.appWebsiteDetails,
       };
 
-      const stopUserData = {
-        ownerId,
-        projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
-        trackerVersion: TRACKER_VERSION,
-        ipAddress,
-        appWebsites: updatedStats?.appWebsites || [],
-        ...activityDifference,
-      };
+      if (isOnline) {
+        const stopUserData = {
+          ownerId,
+          projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
+          trackerVersion: TRACKER_VERSION,
+          ipAddress,
+          appWebsites: updatedStats?.appWebsites || [],
+          ...activityDifference,
+        };
 
-      dispatch(activityActions(authToken, 'end', stopUserData, true))
-        .then((status) => {
-          if (status?.success) {
-            updateTrackedHourDetails(status?.totalTime, status?.idleTime);
+        dispatch(activityActions(authToken, 'end', stopUserData, true))
+          .then((status) => {
+            if (status?.success) {
+              updateTrackedHourDetails(status?.totalTime, status?.idleTime);
 
-            setProjectTaskActivityDetailId(null);
-            localStorage.removeItem('projectTaskActivityDetailId');
-          } else {
-            console.log(status?.error);
-          }
-        })
-        .catch((error) => {
-          console.log('End failed:', error);
-        })
-        .finally(() => {
-          dispatch(activityActions(authToken, 'start', startUserData, true))
-            .then((status) => {
-              if (status?.success) {
-                setProjectTaskActivityDetailId(status?.id);
-                localStorage.setItem('projectTaskActivityDetailId', status?.id);
-              } else {
-                console.log(status?.error);
-              }
-            })
-            .catch((error) => {
-              console.log('Start failed:', error);
-            });
-        });
+              setProjectTaskActivityDetailId(null);
+              localStorage.removeItem('projectTaskActivityDetailId');
+            } else {
+              console.log(status?.error);
+            }
+          })
+          .catch((error) => {
+            console.log('End failed:', error);
+          })
+          .finally(() => {
+            dispatch(activityActions(authToken, 'start', startUserData, true))
+              .then((status) => {
+                if (status?.success) {
+                  setProjectTaskActivityDetailId(status?.id);
+                  localStorage.setItem(
+                    'projectTaskActivityDetailId',
+                    status?.id
+                  );
+                } else {
+                  console.log(status?.error);
+                }
+              })
+              .catch((error) => {
+                console.log('Start failed:', error);
+              });
+          });
+      } else {
+        const offlineActivityData = {
+          ownerId,
+          trackerVersion: TRACKER_VERSION,
+          ipAddress,
+          appWebsites: updatedStats?.appWebsites || [],
+          ...activityDifference,
+        };
+        window.electronAPI.sendOfflineActivityData?.(offlineActivityData);
+      }
     };
 
     if (activityIntervalRef.current) {
@@ -264,6 +285,8 @@ const useTaskLogic = (
         projectName: projects.find((p) => p?.id === projectId)?.name,
         projectTaskName: tasks?.find((t) => t?.id === projectTaskId)?.name,
         description,
+        workspaceName: workspaces?.find((w) => w.ownerId === ownerId)
+          ?.workspaceName,
       };
 
       setActiveSession(activeSessionObj);
@@ -462,20 +485,22 @@ const useTaskLogic = (
 
             try {
               await startStopActivityDetailHandler(startUserData);
-              if (socket && authToken) {
-                let payload = {
-                  projectTaskId: storedProjectTaskId,
-                  description,
-                  timezone: getSystemTimezone(),
-                };
+              if (isOnline) {
+                if (socket && authToken) {
+                  let payload = {
+                    projectTaskId: storedProjectTaskId,
+                    description,
+                    timezone: getSystemTimezone(),
+                  };
 
-                socket.emit('/project/task/activity/start', payload);
-                socket.on('/project/task/activity/start', (response) => {
-                  const id = response?.data?.id;
-                  setEmployeeRealtimeProjectTaskActivityId(id);
-                });
-              } else {
-                console.error('Socket is not connected!');
+                  socket.emit('/project/task/activity/start', payload);
+                  socket.on('/project/task/activity/start', (response) => {
+                    const id = response?.data?.id;
+                    setEmployeeRealtimeProjectTaskActivityId(id);
+                  });
+                } else {
+                  console.error('Socket is not connected!');
+                }
               }
             } catch (error) {
               console.error('Error in start activity handler:', error);
@@ -495,7 +520,7 @@ const useTaskLogic = (
         activityIntervalRef.current = null;
       }
     };
-  }, [authToken, socket]);
+  }, [authToken, socket, isOnline]);
 
   useEffect(() => {
     if (endedActivityRestart) {

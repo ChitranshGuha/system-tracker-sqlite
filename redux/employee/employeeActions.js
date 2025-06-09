@@ -1,9 +1,21 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../utils/constants';
-import { GET_APPUSAGES_LIST } from '../types';
+import { GET_APPUSAGES_LIST, GET_INTERNET_CONNECTION_STATUS } from '../types';
+
+export function getInternetConnectionStatus(isOnline) {
+  return {
+    type: GET_INTERNET_CONNECTION_STATUS,
+    isOnline,
+  };
+}
 
 export function gettingEmployeeActionsList(authToken, apiRoute, key, payload) {
   return async (dispatch) => {
+    if (!navigator.onLine) {
+      console.warn('You are offline. Skipping API call:', apiRoute);
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${API_BASE_URL}/${apiRoute}`,
@@ -37,6 +49,11 @@ export function getEmployeeActionsList(data, count, type, key) {
 
 export function gettingAppUsages(authToken, payload) {
   return async (dispatch) => {
+    if (!navigator.onLine) {
+      console.warn('You are offline. Skipping API call:');
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${API_BASE_URL}/employee/project/appWebsiteDetailsUsage/list`,

@@ -30,6 +30,9 @@ const Task = ({
   updateTrackedHourDetails,
 }) => {
   const dispatch = useDispatch();
+  const isOnline = useSelector(
+    (state) => state.employee.internetConnectionStatus
+  );
 
   const projects = useSelector((state) => state?.employee?.projects?.list);
   const tasks = useSelector((state) => state?.employee?.tasks?.list);
@@ -91,15 +94,17 @@ const Task = ({
       ) : null}
 
       <div className="mb-6 sm:mb-8 relative">
-        <HardReset
-          stopLoggingHandler={stopLoggingHandler}
-          isLogging={isLogging}
-          setIsLoading={setIsLoading}
-          ownerId={ownerId}
-          authToken={authToken}
-        />
+        {isOnline && (
+          <HardReset
+            stopLoggingHandler={stopLoggingHandler}
+            isLogging={isLogging}
+            setIsLoading={setIsLoading}
+            ownerId={ownerId}
+            authToken={authToken}
+          />
+        )}
 
-        {!isLogging && (
+        {!isLogging && isOnline && (
           <button
             onClick={onSyncProject}
             className="absolute top-6 right-20 flex items-center justify-center p-3 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all duration-800 hover:scale-105"
@@ -138,6 +143,7 @@ const Task = ({
             />
           )}
           <ActionButtons
+            isOnline={isOnline}
             isLogging={isLogging}
             handleFormSubmit={handleFormSubmit}
             stopLoggingHandler={stopLoggingHandler}

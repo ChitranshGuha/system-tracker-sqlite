@@ -11,10 +11,17 @@ const initialState = {
   tasks: initObj,
   activities: initObj,
   appUsages: initObj,
+  internetConnectionStatus: false,
 };
 
 export default function employeeReducer(state = initialState, action) {
   switch (action.type) {
+    case type.GET_INTERNET_CONNECTION_STATUS:
+      return {
+        ...state,
+        internetConnectionStatus: action.isOnline,
+      };
+
     case type.GET_WORKSPACES_LIST:
       return {
         ...state,

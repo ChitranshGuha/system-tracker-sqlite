@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiFolder, FiList, FiFileText } from 'react-icons/fi';
 
 const ActiveSession = ({ activeSession }) => {

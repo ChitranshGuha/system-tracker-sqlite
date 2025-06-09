@@ -36,22 +36,27 @@ function ActivityLogger({
   setIsLoading,
 }) {
   const dispatch = useDispatch();
+  const isOnline = useSelector(
+    (state) => state.employee.internetConnectionStatus
+  );
 
   const [ownerId, setOwnerId] = useState(null);
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    dispatch(
-      gettingEmployeeActionsList(
-        authToken,
-        'employee/auth/workspace/list',
-        'workspaces'
-      )
-    );
-  }, []);
+    if (!isLogging) {
+      dispatch(
+        gettingEmployeeActionsList(
+          authToken,
+          'employee/auth/workspace/list',
+          'workspaces'
+        )
+      );
+    }
+  }, [isLogging]);
 
   useEffect(() => {
-    if (ownerId && authToken) {
+    if (ownerId && authToken && isOnline) {
       const socketInstance = io(
         `${BASE_URL}/employee?token=${authToken}&ownerId=${ownerId}`
       );
@@ -70,7 +75,7 @@ function ActivityLogger({
         socketInstance.disconnect();
       };
     }
-  }, [ownerId, authToken]);
+  }, [ownerId, authToken, isOnline]);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showCannotLogoutModal, setShowCannotLogoutModal] = useState(false);
@@ -111,6 +116,8 @@ function ActivityLogger({
     }
   }, []);
 
+  console.log(activeSession);
+
   const handleWorkspaceSelection = (e) => {
     const value = e.target.value;
     setOwnerId(value);
@@ -135,7 +142,7 @@ function ActivityLogger({
   );
 
   useEffect(() => {
-    if (updatedDetailsFromApi) {
+    if (updatedDetailsFromApi && isOnline) {
       setTrackedHourDetails((prev) => {
         setAnimate(true);
         setTimeout(() => setAnimate(false), 300);
@@ -155,12 +162,12 @@ function ActivityLogger({
     }
 
     setUpdatedDetailsFromApi(null);
-  }, [updatedDetailsFromApi]);
+  }, [updatedDetailsFromApi, isOnline]);
 
   useEffect(() => {
     let trackedHourTimeout;
 
-    if (authToken && ownerId) {
+    if (authToken && ownerId && isOnline) {
       const trackedHourDetailApiCall = () =>
         dispatch(
           fetchTrackingTimeDetails(authToken, {
@@ -189,9 +196,9 @@ function ActivityLogger({
     }
 
     return () => {
-      clearTimeout(trackedHourTimeout);
+      if (trackedHourTimeout) clearTimeout(trackedHourTimeout);
     };
-  }, [authToken, ownerId]);
+  }, [authToken, ownerId, isOnline]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
@@ -213,18 +220,24 @@ function ActivityLogger({
 
           <div className="flex items-center space-x-4">
             {ownerId ? (
-              <select
-                value={ownerId}
-                disabled={isLogging}
-                onChange={handleWorkspaceSelection}
-                className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
-              >
-                {workspaces.map((workspace) => (
-                  <option key={workspace.ownerId} value={workspace.ownerId}>
-                    {workspace.workspaceName}
-                  </option>
-                ))}
-              </select>
+              isLogging ? (
+                <div className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg  block p-2.5">
+                  {activeSession?.workspaceName}
+                </div>
+              ) : (
+                <select
+                  value={ownerId}
+                  disabled={isLogging}
+                  onChange={handleWorkspaceSelection}
+                  className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                >
+                  {workspaces.map((workspace) => (
+                    <option key={workspace.ownerId} value={workspace.ownerId}>
+                      {workspace.workspaceName}
+                    </option>
+                  ))}
+                </select>
+              )
             ) : null}
             <div
               className="relative w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer"
@@ -343,17 +356,19 @@ function ActivityLogger({
                   <p className="text-sm text-purple-700 font-medium">Scrolls</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-2">
-                    <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
-                    <p className="text-2xl sm:text-3xl font-bold text-red-800">
-                      {Math.floor((+trackedHourDetails.idleTime ?? 0) / 60)}
+                {isOnline ? (
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
+                      <p className="text-2xl sm:text-3xl font-bold text-red-800">
+                        {Math.floor((+trackedHourDetails.idleTime ?? 0) / 60)}
+                      </p>
+                    </div>
+                    <p className="text-sm text-red-600 font-medium">
+                      Idle Time (min)
                     </p>
                   </div>
-                  <p className="text-sm text-red-600 font-medium">
-                    Idle Time (min)
-                  </p>
-                </div>
+                ) : null}
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
@@ -362,6 +377,8 @@ function ActivityLogger({
                       <InternetSpeedTracker
                         socket={socket}
                         interval={activityLocationInterval}
+                        isOnline={isOnline}
+                        key={isOnline}
                       />
                     </p>
                   </div>
@@ -370,18 +387,20 @@ function ActivityLogger({
                   </p>
                 </div>
 
-                <div className="bg-gradient-to-br from-emerald-100 to-green-200 p-4 sm:p-6 rounded-xl shadow shadow-emerald-200 hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-2">
-                    <Hourglass className="text-emerald-600 !h-6 !w-6" />
-                    <SlidingTimeDisplay
-                      seconds={trackedHourDetails.trackedHourInSeconds}
-                      animate={animate}
-                    />
+                {isOnline ? (
+                  <div className="bg-gradient-to-br from-emerald-100 to-green-200 p-4 sm:p-6 rounded-xl shadow shadow-emerald-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <Hourglass className="text-emerald-600 !h-6 !w-6" />
+                      <SlidingTimeDisplay
+                        seconds={trackedHourDetails.trackedHourInSeconds}
+                        animate={animate}
+                      />
+                    </div>
+                    <p className="text-sm text-emerald-700 font-semibold">
+                      Active Time
+                    </p>
                   </div>
-                  <p className="text-sm text-emerald-700 font-semibold">
-                    Active Time
-                  </p>
-                </div>
+                ) : null}
               </div>
 
               {/* Status Cards */}

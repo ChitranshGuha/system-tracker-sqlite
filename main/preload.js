@@ -1,20 +1,27 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // exit app
+  exitApp: () => ipcRenderer.send('exit-app'),
+
   // Internet Connection
   notifyOffline: () => ipcRenderer.send('app-offline'),
-  exitApp: () => ipcRenderer.send('exit-app'),
+  notifyOnline: () => ipcRenderer.send('app-online'),
+
   onSuspend: (callback) => ipcRenderer.on('suspend', callback),
   removeSuspendListener: (callback) =>
     ipcRenderer.removeListener('suspend', callback),
 
   // Renderer's Data
   sendScreenshotType: (data) => ipcRenderer.send('set-screenshot-type', data),
-
   sendUserData: (data) => {
     ipcRenderer.send('set-user-data', data);
   },
   sendActivityData: (data) => ipcRenderer.invoke('set-activity-data', data),
+  sendOfflineActivityData: (data) =>
+    ipcRenderer.invoke('offline-activity-data', data),
+
+  getInitialStats: () => ipcRenderer.invoke('get-initial-stats'),
   startLogging: () => ipcRenderer.invoke('start-logging'),
   clearStoreStats: () => ipcRenderer.invoke('clear-store-stats'),
   restartLogging: () => ipcRenderer.invoke('restart-logging'),
@@ -22,6 +29,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   stopLogging: () => ipcRenderer.send('stop-logging'),
   onUpdateStats: (callback) =>
     ipcRenderer.on('update-stats', (_, value) => callback(value)),
+
+  // Interval's data
   getCaptureInterval: (callback) => {
     ipcRenderer.send('fetch-capture-interval');
     ipcRenderer.on('capture-interval', (_, value) => callback(value));
@@ -36,5 +45,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback(value)
     );
   },
-  getInitialStats: () => ipcRenderer.invoke('get-initial-stats'),
 });
