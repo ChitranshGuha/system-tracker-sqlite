@@ -71,6 +71,9 @@ let initialStats = {
 };
 
 let stats = initialStats;
+
+// Offline Database and syncing
+
 const Database = require('better-sqlite3');
 const db = new Database(path.join(app.getPath('userData'), 'data.db'));
 let offlineIntervalStartTime = null;
@@ -107,74 +110,110 @@ db.prepare(
 `
 ).run();
 async function syncOfflineData() {
+  const authToken = await store.get('authToken');
+  const projectTaskActivityId = await store.get('projectTaskActivityId');
+
+  // Sync offline stats
   const statsRows = db.prepare('SELECT * FROM offlineStats').all();
   for (const row of statsRows) {
     try {
       const payload = {
-        ...row,
-        appWebsites: row.appWebsites ? JSON.parse(row.appWebsites) : [],
-        appWebsiteDetails: row.appWebsiteDetails
-          ? JSON.parse(row.appWebsiteDetails)
-          : [],
-      };
-      // await axios.post('YOUR_STATS_API_URL', payload);
-      console.log('offline stats gone from db');
-      db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id);
-    } catch (err) {
-      console.error('Failed to sync stats row:', err);
-      break;
-    }
-  }
-  const screenshotRows = db.prepare('SELECT * FROM offlineScreenshots').all();
-  for (const row of screenshotRows) {
-    try {
-      const screenshotBlob = new Blob([row.screenshotBlob], {
-        type: 'image/png',
-      });
-      const file = new File([screenshotBlob], row.fileName, {
-        type: 'image/png',
-      });
-
-      const formData = new FormData();
-      formData.append('files', file);
-      formData.append('ownerId', row.ownerId);
-
-      const response = await axios.post(
-        `${API_BASE_URL}/employee/media/add`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${row.authToken}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      const mediaId = response?.data?.data?.[0]?.id;
-
-      const payload = {
         ownerId: row.ownerId,
-        mediaId,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        projectTaskActivityDetails: [
+          {
+            projectTaskActivityId:
+              row.projectTaskActivityId || projectTaskActivityId,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            mouseClick: row.mouseClick ?? 0,
+            keystroke: row.keystroke ?? 0,
+            keyPressed: row.keyPressed ?? '',
+            scroll: row.scroll ?? 0,
+            appWebsites: row.appWebsites
+              ? JSON.stringify(JSON.parse(row.appWebsites))
+              : '[]',
+            appWebsiteDetails: row.appWebsiteDetails
+              ? JSON.stringify(JSON.parse(row.appWebsiteDetails))
+              : '[]',
+            trackerVersion: row.trackerVersion,
+            ipAddress: row.ipAddress ?? 'offline',
+            startTime: row.intervalStartTime ?? '',
+            endTime: row.intervalEndTime ?? '',
+          },
+        ],
       };
 
-      await axios.post(
-        `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add`,
+      const offlineActivityDetails = await axios.post(
+        `${API_BASE_URL}/employee/v2/project/project/task/activity/detail/add/bulk`,
         payload,
         {
           headers: {
-            Authorization: `Bearer ${row.authToken}`,
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
           },
         }
       );
-      console.log('offline stats gone from db');
-      db.prepare('DELETE FROM offlineScreenshots WHERE id = ?').run(row.id);
+
+      console.log(offlineActivityDetails);
+      // Remove synced row
+      db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id);
     } catch (err) {
-      console.error('Failed to sync screenshot row:', err);
-      break;
+      console.error('Failed to sync stats row:', err);
     }
   }
+  // Sync offline screenshots
+  // const screenshotRows = db.prepare('SELECT * FROM offlineScreenshots').all();
+  // if (screenshotRows.length > 0) {
+  //   try {
+  //     // 1. Upload image files
+  //     const formData = new FormData();
+  //     for (const row of screenshotRows) {
+  //       const blob = new Blob([row.screenshotBlob], { type: 'image/png' });
+  //       const file = new File([blob], row.fileName, { type: 'image/png' });
+  //       formData.append('files', file);
+  //     }
+  //     formData.append('ownerId', screenshotRows[0].ownerId);
+
+  //     const uploadRes = await axios.post(
+  //       `${API_BASE_URL}/employee/media/add`,
+  //       formData,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${authToken}`,
+  //           'Content-Type': 'multipart/form-data',
+  //         },
+  //       }
+  //     );
+  //     // 2. Prepare metadata payload
+  //     const mediaIds = uploadRes.data.data.map((item) => item.id);
+  //     const screenshotPayload = screenshotRows.map((row, idx) => ({
+  //       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  //       mediaId: mediaIds[idx],
+  //       createdAt: row.screenshotTakenTime,
+  //     }));
+
+  //     // 3. Bulk upload metadata
+  //     await axios.post(
+  //       `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add/bulk`,
+  //       screenshotPayload,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${authToken}`,
+  //           'Content-Type': 'application/json',
+  //         },
+  //       }
+  //     );
+
+  //     // 4. Cleanup
+  //     for (const row of screenshotRows) {
+  //       db.prepare('DELETE FROM offlineScreenshots WHERE id = ?').run(row.id);
+  //     }
+  //     console.log('Offline screenshots removed.');
+  //   } catch (err) {
+  //     console.error('Failed to sync screenshot rows:', err);
+  //   }
+  // }
 }
+
 ipcMain.on('set-user-data', async (event, data) => {
   try {
     authToken = data.authToken;
@@ -234,95 +273,19 @@ ipcMain.on('app-offline', () => {
 
 ipcMain.on('app-online', async () => {
   isOffline = false;
-  if (offlineIntervalEndTime) {
-    db.prepare(
-      `
-      UPDATE offlineStats
-      SET intervalEndTime = ?
-      WHERE intervalEndTime IS NULL OR intervalEndTime = ''
-      ORDER BY id DESC LIMIT 1
+
+  db.prepare(
     `
-    ).run(new Date().toISOString());
-  }
+    UPDATE offlineStats
+    SET intervalEndTime = ?
+    WHERE intervalEndTime IS NULL OR intervalEndTime = ''
+    ORDER BY id DESC LIMIT 1
+  `
+  ).run(new Date().toISOString());
+
   offlineIntervalStartTime = null;
   offlineIntervalEndTime = null;
   syncOfflineData();
-  const authToken = await store.get('authToken');
-  // API with payload
-  const payload = {
-    // note - all date time should be in UTC only
-    ownerId: ownerId || (await store.get('ownerId')),
-    projectTaskActivityDetails: [
-      {
-        projectTaskActivityId: '14da6433-7521-4b19-9822-03bac92f380d', // from store
-        description: 'description12', // from store
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        latitude: 'offline',
-        longitude: 'offline',
-        speed: 'offline',
-        city: 'offline',
-        mouseClick: 12, // from store
-        keystroke: 23, // from store
-        keyPressed: 'test1', // from store
-        scroll: 45, // from store
-        appWebsites: 'test1', // frome store - make sure to use JSON.stringify()
-        appWebsiteDetails: 'test2', // frome store - make sure to use JSON.stringify()
-        trackerVersion: 'test3', // from store
-        ipAddress: 'offline',
-        operatingSystem: 'MAC', // from store
-        startTime: '2025-06-09T10:41:31.394Z',
-        endTime: '2025-06-09T10:42:30.394Z',
-      },
-      {
-        projectTaskActivityId: '14da6433-7521-4b19-9822-03bac92f380d', // from store
-        description: 'description12', // from store
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        latitude: 'offline',
-        longitude: 'offline',
-        speed: 'offline',
-        city: 'offline',
-        mouseClick: 12, // from store
-        keystroke: 23, // from store
-        keyPressed: 'test1', // from store
-        scroll: 45, // from store
-        appWebsites: 'test1', // frome store - make sure to use JSON.stringify()
-        appWebsiteDetails: 'test2', // frome store - make sure to use JSON.stringify()
-        trackerVersion: 'test3', // from store
-        ipAddress: 'offline',
-        operatingSystem: 'MAC', // from store
-        startTime: '2025-06-09T10:41:31.394Z',
-        endTime: '2025-06-09T10:42:30.394Z',
-      },
-    ],
-  };
-
-  const apiDetailsUpload = await axios.post(
-    `${API_BASE_URL}/employee/v2/project/project/task/activity/detail/add/bulk`,
-    payload,
-    {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-
-  const screenshotPayload = {
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    mediaId: '66140924-b03c-41aa-8a37-3fa387cdf438',
-    createdAt: '2025-06-07T02:18:30.167Z', // from store,
-  };
-
-  const apiScreenshotsUpload = await axios.post(
-    `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add/bulk`,
-    screenshotPayload,
-    {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
 });
 
 ipcMain.on('exit-app', () => {
