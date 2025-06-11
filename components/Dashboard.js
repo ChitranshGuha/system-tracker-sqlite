@@ -116,8 +116,6 @@ function ActivityLogger({
     }
   }, []);
 
-  console.log(activeSession);
-
   const handleWorkspaceSelection = (e) => {
     const value = e.target.value;
     setOwnerId(value);

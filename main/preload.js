@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('set-user-data', data);
   },
   sendActivityData: (data) => ipcRenderer.invoke('set-activity-data', data),
+
   sendOfflineActivityData: (data) =>
     ipcRenderer.invoke('offline-activity-data', data),
 

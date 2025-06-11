@@ -215,10 +215,10 @@ function ActivityTracker({ isOnline }) {
   }
 
   useEffect(() => {
-    if (!localStorage.getItem('employeeAuthToken')) {
+    if (!localStorage.getItem('employeeAuthToken') && isOnline) {
       fetchDomainId();
     }
-  }, []);
+  }, [isOnline]);
 
   useEffect(() => {
     if (domainId) {

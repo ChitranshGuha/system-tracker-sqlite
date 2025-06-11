@@ -34,6 +34,7 @@ const useTaskLogic = (
   const workspaces = useSelector((state) => state?.employee?.workspaces?.list);
 
   const activityIntervalRef = useRef(null);
+  const intervalStartTimeRef = useRef(null);
   const statsRef = useRef(stats);
   const projectTaskActivityDetailIdRef = useRef(stats);
 
@@ -119,7 +120,7 @@ const useTaskLogic = (
           });
           socket.on('/project/task/activity/update', () => {});
         } else {
-          console.error('Socket is not connected!');
+          console.error('Socket f not connected!');
         }
       }
       setActivityLength(stats?.appWebsiteDetails?.length);
@@ -203,6 +204,8 @@ const useTaskLogic = (
               .then((status) => {
                 if (status?.success) {
                   setProjectTaskActivityDetailId(status?.id);
+                  intervalStartTimeRef.current = Date.now();
+
                   localStorage.setItem(
                     'projectTaskActivityDetailId',
                     status?.id
@@ -218,15 +221,48 @@ const useTaskLogic = (
       } else {
         const offlineActivityData = {
           ownerId,
-          projectTaskActivityId,
+          projectTaskActivityId:
+            projectTaskActivityId ||
+            localStorage.getItem('projectTaskActivityId'),
+
           trackerVersion: TRACKER_VERSION,
           ipAddress,
           appWebsites: updatedStats?.appWebsites || [],
           ...activityDifference,
+          startTime: new Date(intervalStartTimeRef.current).toISOString(),
+          endTime: new Date().toISOString(),
         };
+
         window.electronAPI.sendOfflineActivityData?.(offlineActivityData);
+        intervalStartTimeRef.current = Date.now();
       }
     };
+
+    if (!isOnline && intervalStartTimeRef.current) {
+      const bufferTimeInSeconds = 2000;
+      const currentTime = Date.now();
+      const intervalDuration = (activityInterval || 1) * 1000 * 60;
+      const elapsedTime = currentTime - intervalStartTimeRef.current;
+      const remainingTime =
+        intervalDuration - elapsedTime + bufferTimeInSeconds;
+
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          intervalStartTimeRef.current = Date.now() + bufferTimeInSeconds;
+
+          if (activityIntervalRef.current) {
+            clearInterval(activityIntervalRef.current);
+          }
+
+          activityIntervalRef.current = setInterval(
+            dispatchStartStop,
+            (activityInterval || 1) * 1000 * 60
+          );
+        }, remainingTime);
+
+        return;
+      }
+    }
 
     if (activityIntervalRef.current) {
       clearInterval(activityIntervalRef.current);
@@ -247,6 +283,7 @@ const useTaskLogic = (
     dispatch(activityActions(authToken, 'start', startUserData, true)).then(
       (status) => {
         if (status?.success) {
+          intervalStartTimeRef.current = Date.now();
           setProjectTaskActivityDetailId(status?.id);
           localStorage.setItem('projectTaskActivityDetailId', status?.id);
         } else {
@@ -381,6 +418,8 @@ const useTaskLogic = (
         setProjectTaskActivityDetailId(null);
         localStorage.removeItem('projectTaskActivityDetailId');
         lastStatsRef.current = initialLastStats;
+        intervalStartTimeRef.current = null;
+
         dispatch(
           activityActions(authToken, 'end', {
             ownerId,
@@ -603,6 +642,8 @@ const useTaskLogic = (
           }
         }
       }
+    } else if (!endedActivityRestart) {
+      intervalStartTimeRef.current = Date.now();
     }
   }, [endedActivityRestart, authToken, socket]);
 

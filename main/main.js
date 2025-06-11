@@ -76,8 +76,6 @@ let stats = initialStats;
 
 const Database = require('better-sqlite3');
 const db = new Database(path.join(app.getPath('userData'), 'data.db'));
-let offlineIntervalStartTime = null;
-let offlineIntervalEndTime = null;
 
 db.prepare(
   `
@@ -114,27 +112,26 @@ db.prepare(
 
 async function syncOfflineData() {
   const authToken = await store.get('authToken');
-  const projectTaskActivityId = await store.get('projectTaskActivityId');
 
   // Sync offline stats
   const statsRows = db.prepare('SELECT * FROM offlineStats').all();
 
-  const projectTaskActivityDetails = statsRows.map((row) => ({
-    projectTaskActivityId: row.projectTaskActivityId || projectTaskActivityId,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    mouseClick: row.mouseClick ?? 0,
-    keystroke: row.keystroke ?? 0,
-    keyPressed: row.keyPressed ?? '',
-    scroll: row.scroll ?? 0,
-    appWebsites: row.appWebsites || [],
-    appWebsiteDetails: row.appWebsiteDetails || [],
-    trackerVersion: row.trackerVersion,
-    ipAddress: row.ipAddress ?? 'offline',
-    startTime: row.intervalStartTime ?? '',
-    endTime: row.intervalEndTime ?? '',
-  }));
+  if (statsRows && statsRows?.length > 0) {
+    const projectTaskActivityDetails = statsRows.map((row) => ({
+      projectTaskActivityId: row.projectTaskActivityId,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      mouseClick: row.mouseClick ?? 0,
+      keystroke: row.keystroke ?? 0,
+      keyPressed: row.keyPressed ?? '',
+      scroll: row.scroll ?? 0,
+      appWebsites: row.appWebsites || [],
+      appWebsiteDetails: row.appWebsiteDetails || [],
+      trackerVersion: row.trackerVersion,
+      ipAddress: row.ipAddress ?? 'offline',
+      startTime: row.intervalStartTime ?? '',
+      endTime: row.intervalEndTime ?? '',
+    }));
 
-  if (projectTaskActivityDetails.length > 0) {
     const payload = {
       ownerId:
         ownerId || (await store.get('ownerId')) || statsRows?.[0]?.ownerId,
@@ -142,7 +139,7 @@ async function syncOfflineData() {
     };
 
     try {
-      const offlineActivityDetails = await axios.post(
+      await axios.post(
         `${API_BASE_URL}/employee/v2/project/project/task/activity/detail/add/bulk`,
         payload,
         {
@@ -158,63 +155,72 @@ async function syncOfflineData() {
         db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id)
       );
     } catch (err) {
+      // Remove synced row
       console.error('Failed to sync stats row:', err);
     }
   }
 
   // Sync offline screenshots
-  // const screenshotRows = db.prepare('SELECT * FROM offlineScreenshots').all();
-  // if (screenshotRows.length > 0) {
-  //   try {
-  //     // 1. Upload image files
-  //     const formData = new FormData();
-  //     for (const row of screenshotRows) {
-  //       const blob = new Blob([row.screenshotBlob], { type: 'image/png' });
-  //       const file = new File([blob], row.fileName, { type: 'image/png' });
-  //       formData.append('files', file);
-  //     }
-  //     formData.append('ownerId', screenshotRows[0].ownerId);
+  const screenshotRows = db.prepare('SELECT * FROM offlineScreenshots').all();
 
-  //     const uploadRes = await axios.post(
-  //       `${API_BASE_URL}/employee/media/add`,
-  //       formData,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${authToken}`,
-  //           'Content-Type': 'multipart/form-data',
-  //         },
-  //       }
-  //     );
+  if (screenshotRows && screenshotRows?.length > 0) {
+    try {
+      // 1. Prepare FormData with all files
+      const formData = new FormData();
+      screenshotRows.forEach((row) => {
+        const blob = new Blob([row.screenshotBlob], { type: 'image/png' });
+        const file = new File([blob], row.fileName, { type: 'image/png' });
+        formData.append('files', file);
+      });
+      formData.append('ownerId', screenshotRows[0].ownerId);
 
-  //     // 2. Prepare metadata payload
-  //     const mediaIds = uploadRes.data.data.map((item) => item.id);
-  //     const screenshotPayload = screenshotRows.map((row, idx) => ({
-  //       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  //       mediaId: mediaIds[idx],
-  //       createdAt: row.screenshotTakenTime,
-  //     }));
+      // 2. Upload all files in one request
+      const uploadRes = await axios.post(
+        `${API_BASE_URL}/employee/media/add`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
-  //     // 3. Bulk upload metadata
-  //     await axios.post(
-  //       `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add/bulk`,
-  //       screenshotPayload,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${authToken}`,
-  //           'Content-Type': 'application/json',
-  //         },
-  //       }
-  //     );
+      // 3. Prepare screenshot payload with mediaId and createdAt using index match
+      const mediaIds = uploadRes.data.data.map((item) => item.id);
+      const screenshotPayload = {
+        ownerId: String(
+          ownerId ||
+            (await store.get('ownerId')) ||
+            screenshotRows?.[0]?.ownerId
+        ),
+        projectTaskActivityScreenshots: screenshotRows.map((row, idx) => ({
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          mediaId: mediaIds[idx],
+          createdAt: new Date(row.screenshotTakenTime).toISOString(),
+        })),
+      };
 
-  //     // 4. Cleanup
-  //     for (const row of screenshotRows) {
-  //       db.prepare('DELETE FROM offlineScreenshots WHERE id = ?').run(row.id);
-  //     }
-  //     console.log('Offline screenshots removed.');
-  //   } catch (err) {
-  //     console.error('Failed to sync screenshot rows:', err);
-  //   }
-  // }
+      // 4. Bulk upload screenshot metadata
+      await axios.post(
+        `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add/bulk`,
+        screenshotPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      // 5. Delete synced screenshots from DB
+      screenshotRows.forEach((row) => {
+        db.prepare('DELETE FROM offlineScreenshots WHERE id = ?').run(row.id);
+      });
+    } catch (err) {
+      console.error('Failed to sync screenshot rows:', err);
+    }
+  }
 }
 
 ipcMain.on('set-user-data', async (event, data) => {
@@ -237,6 +243,7 @@ ipcMain.handle('set-activity-data', async (event, data) => {
   try {
     ownerId = data.ownerId;
     await store.set('ownerId', ownerId);
+
     return { success: true };
   } catch (error) {
     console.error('Failed to set activity data:', error);
@@ -271,7 +278,6 @@ ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
 
 ipcMain.on('app-offline', () => {
   isOffline = true;
-  offlineIntervalStartTime = new Date().toISOString();
 });
 
 ipcMain.on('app-online', async () => {
@@ -286,8 +292,6 @@ ipcMain.on('app-online', async () => {
   `
   ).run(new Date().toISOString());
 
-  offlineIntervalStartTime = null;
-  offlineIntervalEndTime = null;
   syncOfflineData();
 });
 
@@ -297,10 +301,6 @@ ipcMain.on('exit-app', () => {
 
 ipcMain.handle('offline-activity-data', async (event, data) => {
   if (isOffline) {
-    // Use the current offlineIntervalStartTime as start, and now as end
-    const intervalStart = offlineIntervalStartTime || new Date().toISOString();
-    const intervalEnd = new Date().toISOString();
-
     db.prepare(
       `
       INSERT INTO offlineStats (
@@ -329,12 +329,9 @@ ipcMain.handle('offline-activity-data', async (event, data) => {
       data.keystroke,
       data.keyPressed,
       JSON.stringify(data.appWebsiteDetails),
-      intervalStart,
-      intervalEnd
+      data.startTime,
+      data.endTime
     );
-
-    // Prepare for next interval
-    offlineIntervalStartTime = intervalEnd;
   }
 });
 
