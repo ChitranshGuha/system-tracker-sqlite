@@ -63,7 +63,7 @@
     "electron": "^33.0.2",
     "electron-builder": "^25.1.8",
     "electron-rebuild": "^3.2.9",
-    "next": "^15.0.2",
+    "next": "^15.3.3",
     "postcss": "^8.4.47",
     "prettier": "^3.4.2",
     "react": "^18.3.1",

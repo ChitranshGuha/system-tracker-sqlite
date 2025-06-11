@@ -154,6 +154,12 @@ async function syncOfflineData() {
       statsRows.forEach((row) =>
         db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id)
       );
+
+      // Reset sequence if table is empty
+      const screenshotsCount = db.prepare('SELECT COUNT(*) as count FROM offlineStats').get().count;
+      if (screenshotsCount === 0) {
+        db.prepare("DELETE FROM sqlite_sequence WHERE name='offlineStats'").run();
+      }     
     } catch (err) {
       // Remove synced row
       console.error('Failed to sync stats row:', err);
@@ -217,6 +223,12 @@ async function syncOfflineData() {
       screenshotRows.forEach((row) => {
         db.prepare('DELETE FROM offlineScreenshots WHERE id = ?').run(row.id);
       });
+
+      // Reset sequence if table is empty
+      const statsCount = db.prepare('SELECT COUNT(*) as count FROM offlineScreenshots').get().count;
+      if (statsCount === 0) {
+        db.prepare("DELETE FROM sqlite_sequence WHERE name='offlineScreenshots'").run();
+      }
     } catch (err) {
       console.error('Failed to sync screenshot rows:', err);
     }
