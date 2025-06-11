@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Internet Connection
   notifyOffline: () => ipcRenderer.send('app-offline'),
   notifyOnline: () => ipcRenderer.send('app-online'),
+  shouldNotRemoveTimer: () => ipcRenderer.invoke('should-nots-remove-timer'),
 
   onSuspend: (callback) => ipcRenderer.on('suspend', callback),
   removeSuspendListener: (callback) =>

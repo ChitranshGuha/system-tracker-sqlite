@@ -110,6 +110,12 @@ db.prepare(
 `
 ).run();
 
+let shouldNotRemoveTimer = false;
+
+ipcMain.handle('should-nots-remove-timer', async () => {
+  return shouldNotRemoveTimer;
+});
+
 async function syncOfflineData() {
   const authToken = await store.get('authToken');
 
@@ -117,6 +123,9 @@ async function syncOfflineData() {
   const statsRows = db.prepare('SELECT * FROM offlineStats').all();
 
   if (statsRows && statsRows?.length > 0) {
+    isSyncing = true;
+    shouldNotRemoveTimer = true;
+
     const projectTaskActivityDetails = statsRows.map((row) => ({
       projectTaskActivityId: row.projectTaskActivityId,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -124,8 +133,10 @@ async function syncOfflineData() {
       keystroke: row.keystroke ?? 0,
       keyPressed: row.keyPressed ?? '',
       scroll: row.scroll ?? 0,
-      appWebsites: row.appWebsites || [],
-      appWebsiteDetails: row.appWebsiteDetails || [],
+      appWebsites: row.appWebsites ? JSON.parse(row.appWebsites) : [],
+      appWebsiteDetails: row.appWebsiteDetails
+        ? JSON.parse(row.appWebsiteDetails)
+        : [],
       trackerVersion: row.trackerVersion,
       ipAddress: row.ipAddress ?? 'offline',
       startTime: row.intervalStartTime ?? '',
@@ -157,6 +168,8 @@ async function syncOfflineData() {
     } catch (err) {
       // Remove synced row
       console.error('Failed to sync stats row:', err);
+    } finally {
+      isSyncing = false;
     }
   }
 
@@ -292,7 +305,7 @@ ipcMain.on('app-online', async () => {
   `
   ).run(new Date().toISOString());
 
-  syncOfflineData();
+  await syncOfflineData();
 });
 
 ipcMain.on('exit-app', () => {
