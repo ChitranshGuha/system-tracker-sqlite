@@ -77,6 +77,7 @@ function ActivityTracker({ isOnline }) {
     window.electronAPI.clearStoreStats();
     setStats(initialStats);
     dispatch(logOutEmployee());
+    fetchDomainId();
   };
 
   useEffect(() => {
@@ -199,19 +200,23 @@ function ActivityTracker({ isOnline }) {
 
   const [domainId, setDomainId] = useState(null);
 
+  function fetchDomainId() {
+    fetch(`${API_BASE_URL}/employee/auth/domain/get`, {
+      method: 'POST',
+      body: JSON.stringify({ domainName: DOMAIN_TYPE }),
+      headers: {
+        'Content-type': 'Application/json',
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setDomainId(data?.data?.id);
+      });
+  }
+
   useEffect(() => {
     if (!localStorage.getItem('employeeAuthToken')) {
-      fetch(`${API_BASE_URL}/employee/auth/domain/get`, {
-        method: 'POST',
-        body: JSON.stringify({ domainName: DOMAIN_TYPE }),
-        headers: {
-          'Content-type': 'Application/json',
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setDomainId(data?.data?.id);
-        });
+      fetchDomainId();
     }
   }, []);
 

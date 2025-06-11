@@ -78,6 +78,7 @@ const Database = require('better-sqlite3');
 const db = new Database(path.join(app.getPath('userData'), 'data.db'));
 let offlineIntervalStartTime = null;
 let offlineIntervalEndTime = null;
+
 db.prepare(
   `
   CREATE TABLE IF NOT EXISTS offlineStats (
@@ -97,6 +98,7 @@ db.prepare(
   )
 `
 ).run();
+
 db.prepare(
   `
   CREATE TABLE IF NOT EXISTS offlineScreenshots (
@@ -109,39 +111,37 @@ db.prepare(
   )
 `
 ).run();
+
 async function syncOfflineData() {
   const authToken = await store.get('authToken');
   const projectTaskActivityId = await store.get('projectTaskActivityId');
 
   // Sync offline stats
   const statsRows = db.prepare('SELECT * FROM offlineStats').all();
-  for (const row of statsRows) {
-    try {
-      const payload = {
-        ownerId: row.ownerId,
-        projectTaskActivityDetails: [
-          {
-            projectTaskActivityId:
-              row.projectTaskActivityId || projectTaskActivityId,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            mouseClick: row.mouseClick ?? 0,
-            keystroke: row.keystroke ?? 0,
-            keyPressed: row.keyPressed ?? '',
-            scroll: row.scroll ?? 0,
-            appWebsites: row.appWebsites
-              ? JSON.stringify(JSON.parse(row.appWebsites))
-              : '[]',
-            appWebsiteDetails: row.appWebsiteDetails
-              ? JSON.stringify(JSON.parse(row.appWebsiteDetails))
-              : '[]',
-            trackerVersion: row.trackerVersion,
-            ipAddress: row.ipAddress ?? 'offline',
-            startTime: row.intervalStartTime ?? '',
-            endTime: row.intervalEndTime ?? '',
-          },
-        ],
-      };
 
+  const projectTaskActivityDetails = statsRows.map((row) => ({
+    projectTaskActivityId: row.projectTaskActivityId || projectTaskActivityId,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    mouseClick: row.mouseClick ?? 0,
+    keystroke: row.keystroke ?? 0,
+    keyPressed: row.keyPressed ?? '',
+    scroll: row.scroll ?? 0,
+    appWebsites: row.appWebsites || [],
+    appWebsiteDetails: row.appWebsiteDetails || [],
+    trackerVersion: row.trackerVersion,
+    ipAddress: row.ipAddress ?? 'offline',
+    startTime: row.intervalStartTime ?? '',
+    endTime: row.intervalEndTime ?? '',
+  }));
+
+  if (projectTaskActivityDetails.length > 0) {
+    const payload = {
+      ownerId:
+        ownerId || (await store.get('ownerId')) || statsRows?.[0]?.ownerId,
+      projectTaskActivityDetails,
+    };
+
+    try {
       const offlineActivityDetails = await axios.post(
         `${API_BASE_URL}/employee/v2/project/project/task/activity/detail/add/bulk`,
         payload,
@@ -153,13 +153,15 @@ async function syncOfflineData() {
         }
       );
 
-      console.log(offlineActivityDetails);
       // Remove synced row
-      db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id);
+      statsRows.forEach((row) =>
+        db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id)
+      );
     } catch (err) {
       console.error('Failed to sync stats row:', err);
     }
   }
+
   // Sync offline screenshots
   // const screenshotRows = db.prepare('SELECT * FROM offlineScreenshots').all();
   // if (screenshotRows.length > 0) {
@@ -183,6 +185,7 @@ async function syncOfflineData() {
   //         },
   //       }
   //     );
+
   //     // 2. Prepare metadata payload
   //     const mediaIds = uploadRes.data.data.map((item) => item.id);
   //     const screenshotPayload = screenshotRows.map((row, idx) => ({
@@ -329,7 +332,7 @@ ipcMain.handle('offline-activity-data', async (event, data) => {
       intervalStart,
       intervalEnd
     );
-    console.log('offline stats updated');
+
     // Prepare for next interval
     offlineIntervalStartTime = intervalEnd;
   }
@@ -753,7 +756,7 @@ async function captureAndSaveScreenshot() {
               screenshotTakenTime,
               fileName,
               screenshotBlob
-            ) VALUES (?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?)
           `
           ).run(
             authToken,
