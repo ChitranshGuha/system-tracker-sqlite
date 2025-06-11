@@ -156,8 +156,11 @@ function ActivityTracker({ isOnline }) {
 
           if (isOnline) {
             dispatch(getActivityEndStatus(storedAuthToken, payload)).then(
-              (data) => {
-                if (data?.data?.endTime) {
+              async (data) => {
+                const shouldNotRemoveTimer =
+                  await window.electronAPI.shouldNotRemoveTimer?.();
+
+                if (data?.data?.endTime || shouldNotRemoveTimer) {
                   window.electronAPI.startLogging();
                   setStats(initialStats);
                   setEndedActivityRestart(true);
