@@ -8,11 +8,14 @@
     "start": "next start && electron .",
     "electron-dev": "electron .",
     "format": "prettier --write .",
-    "build": "pyinstaller --onefile --name scroll_tracker main/scroll_tracker.py && next build && electron-builder",
+    "build": "npm run rebuild && pyinstaller --onefile --name scroll_tracker main/scroll_tracker.py && next build && electron-builder",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "build": {
     "appId": "com.infoware-logger.123",
+    "asarUnpack": [
+      "**/better-sqlite3/**"
+    ],
     "productName": "Activity Tracker - Digital Links",
     "directories": {
       "output": "dist",
