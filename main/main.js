@@ -106,7 +106,7 @@ db.prepare(
 
 let shouldNotRemoveTimer = false;
 
-ipcMain.handle('should-nots-remove-timer', async () => {
+ipcMain.handle('should-not-remove-timer', async () => {
   return shouldNotRemoveTimer;
 });
 
