@@ -191,6 +191,10 @@ function ActivityLogger({
         });
 
       trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
+      trackedHourTimeout = setTimeout(
+        trackedHourDetailApiCall,
+        (activityInterval || 1) * 60 * 1000 + 1000
+      );
     }
 
     return () => {
