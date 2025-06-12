@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notifyOffline: () => ipcRenderer.send('app-offline'),
   notifyOnline: () => ipcRenderer.send('app-online'),
   shouldNotRemoveTimer: () => ipcRenderer.invoke('should-nots-remove-timer'),
+  onSyncing: (callback) =>
+    ipcRenderer.on('sync-processing', (_, value) => callback(value)),
 
   onSuspend: (callback) => ipcRenderer.on('suspend', callback),
   removeSuspendListener: (callback) =>

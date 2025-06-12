@@ -1,10 +1,4 @@
-const {
-  app,
-  BrowserWindow,
-  ipcMain,
-  desktopCapturer,
-  powerMonitor,
-} = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
 
 const sharp = require('sharp');
 const store = require('electron-settings');
@@ -123,7 +117,7 @@ async function syncOfflineData() {
   const statsRows = db.prepare('SELECT * FROM offlineStats').all();
 
   if (statsRows && statsRows?.length > 0) {
-    isSyncing = true;
+    mainWindow.webContents.send('sync-processing', true);
     shouldNotRemoveTimer = true;
 
     const projectTaskActivityDetails = statsRows.map((row) => ({
@@ -167,15 +161,19 @@ async function syncOfflineData() {
       );
 
       // Reset sequence if table is empty
-      const screenshotsCount = db.prepare('SELECT COUNT(*) as count FROM offlineStats').get().count;
-      if (screenshotsCount === 0) {
-        db.prepare("DELETE FROM sqlite_sequence WHERE name='offlineStats'").run();
-      }     
+      const statsCount = db
+        .prepare('SELECT COUNT(*) as count FROM offlineStats')
+        .get().count;
+      if (statsCount === 0) {
+        db.prepare(
+          "DELETE FROM sqlite_sequence WHERE name='offlineStats'"
+        ).run();
+      }
     } catch (err) {
       // Remove synced row
       console.error('Failed to sync stats row:', err);
     } finally {
-      isSyncing = false;
+      mainWindow.webContents.send('sync-processing', false);
     }
   }
 
@@ -238,11 +236,14 @@ async function syncOfflineData() {
       });
 
       // Reset sequence if table is empty
-      const statsCount = db.prepare('SELECT COUNT(*) as count FROM offlineScreenshots').get().count;
-      if (statsCount === 0) {
-        db.prepare("DELETE FROM sqlite_sequence WHERE name='offlineScreenshots'").run();
+      const screenshotsCount = db
+        .prepare('SELECT COUNT(*) as count FROM offlineScreenshots')
+        .get().count;
+      if (screenshotsCount === 0) {
+        db.prepare(
+          "DELETE FROM sqlite_sequence WHERE name='offlineScreenshots'"
+        ).run();
       }
-      
     } catch (err) {
       console.error('Failed to sync screenshot rows:', err);
     }

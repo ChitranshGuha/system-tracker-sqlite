@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ActivityTracker from '../components/ActivityTracker/ActivityTracker';
 import { useSelector, useDispatch } from 'react-redux';
 import { getAuthDetails } from '../redux/auth/authActions';
@@ -10,11 +10,33 @@ const ActivityLogger = () => {
   );
   const dispatch = useDispatch();
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
   useEffect(() => {
     dispatch(getAuthDetails());
   }, []);
 
-  return <ActivityTracker isOnline={isOnline} />;
+  useEffect(() => {
+    const handleSyncingStatus = (status) => {
+      setIsSyncing(status);
+    };
+
+    if (typeof window !== 'undefined' && window?.electronAPI) {
+      window?.electronAPI?.onSyncing?.(handleSyncingStatus);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && window.electronAPI) {
+        window?.electronAPI?.onSyncing?.(handleSyncingStatus);
+      }
+    };
+  }, []);
+
+  return (
+    <SyncLoader isSyncing={isSyncing}>
+      <ActivityTracker isOnline={isOnline} />
+    </SyncLoader>
+  );
 };
 
 export default ActivityLogger;

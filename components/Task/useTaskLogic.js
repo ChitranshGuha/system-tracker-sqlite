@@ -178,7 +178,9 @@ const useTaskLogic = (
       if (isOnline) {
         const stopUserData = {
           ownerId,
-          projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
+          projectTaskActivityDetailId:
+            projectTaskActivityDetailIdRef.current ||
+            localStorage.getItem('projectTaskActivityDetailId'),
           trackerVersion: TRACKER_VERSION,
           ipAddress,
           appWebsites: updatedStats?.appWebsites || [],
