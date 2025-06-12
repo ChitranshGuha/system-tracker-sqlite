@@ -167,8 +167,8 @@ async function syncOfflineData() {
       );
 
       // Reset sequence if table is empty
-      const screenshotsCount = db.prepare('SELECT COUNT(*) as count FROM offlineStats').get().count;
-      if (screenshotsCount === 0) {
+      const statscount = db.prepare('SELECT COUNT(*) as count FROM offlineStats').get().count;
+      if (statscount === 0) {
         db.prepare("DELETE FROM sqlite_sequence WHERE name='offlineStats'").run();
       }     
     } catch (err) {
@@ -242,7 +242,7 @@ async function syncOfflineData() {
       if (statsCount === 0) {
         db.prepare("DELETE FROM sqlite_sequence WHERE name='offlineScreenshots'").run();
       }
-      
+
     } catch (err) {
       console.error('Failed to sync screenshot rows:', err);
     }
