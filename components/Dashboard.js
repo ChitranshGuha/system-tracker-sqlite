@@ -358,7 +358,7 @@ function ActivityLogger({
                   <p className="text-sm text-purple-700 font-medium">Scrolls</p>
                 </div>
 
-                {isOnline ? (
+                {/* {isOnline ? (
                   <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-2">
                       <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
@@ -370,7 +370,7 @@ function ActivityLogger({
                       Idle Time (min)
                     </p>
                   </div>
-                ) : null}
+                ) : null} */}
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
@@ -403,37 +403,30 @@ function ActivityLogger({
                     </p>
                   </div>
                 ) : null}
-              </div>
 
-              {/* Status Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                    <div className="flex items-center">
-                      <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
-                      <p className="text-base sm:text-lg font-medium text-gray-700">
-                        Last Active
-                      </p>
-                    </div>
-                    <p className="text-base sm:text-lg font-bold text-indigo-600">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <FiActivity className="text-purple-600 text-xl sm:text-2xl" />
+                    <p className="text-indigo-600 text-2xl sm:text-3xl font-bold">
                       {stats.lastActive || '--'}
                     </p>
                   </div>
+                  <p className="text-sm text-purple-600 font-medium">
+                    Last Active
+                  </p>
                 </div>
 
-                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                    <div className="flex items-center">
-                      <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
-                      <p className="text-base sm:text-lg font-medium text-gray-700">
-                        Capture Interval
-                      </p>
-                    </div>
-                    <p className="text-base sm:text-lg font-bold text-indigo-600">
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <FiClock className="text-orange-600 text-xl sm:text-2xl" />
+                    <p className="text-orange-800 text-2xl sm:text-3xl font-bold">
                       {captureInterval}{' '}
                       {captureInterval <= 1 ? 'minute' : 'minutes'}
                     </p>
                   </div>
+                  <p className="text-sm text-orange-600 font-medium">
+                    Capture Interval
+                  </p>
                 </div>
               </div>
 
