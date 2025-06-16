@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WifiOff } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { getInternetConnectionStatus } from '../redux/employee/employeeActions';
@@ -10,26 +10,69 @@ const AppWrapper = ({ children }) => {
 
   const isElectron = typeof window !== 'undefined' && window.electronAPI;
 
-  const handleInternetState = (state) => {
-    const isOnline = state?.toLowerCase() === 'online';
-    dispatch(getInternetConnectionStatus(Boolean(isOnline)));
+  const pollingInterval = useRef(null);
 
-    setOnline(Boolean(isOnline));
+  const checkRealInternet = async () => {
+    try {
+      const response = await fetch('https://httpstat.us/200', {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-store',
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
 
-    if (isElectron) {
-      window.electronAPI?.[isOnline ? 'notifyOnline' : 'notifyOffline']?.();
+  const handleInternetState = async (state) => {
+    let isOnline = state?.toLowerCase() === 'online';
+
+    if (isOnline) {
+      if (pollingInterval.current) return;
+
+      const checkUntilOnline = async () => {
+        const realInternet = await checkRealInternet();
+
+        if (realInternet) {
+          clearTimeout(pollingInterval.current);
+          pollingInterval.current = null;
+
+          dispatch(getInternetConnectionStatus(true));
+          setOnline(true);
+
+          if (isElectron) {
+            window.electronAPI?.notifyOnline?.();
+          }
+        } else {
+          pollingInterval.current = setTimeout(checkUntilOnline, 5000);
+        }
+      };
+
+      checkUntilOnline();
+    } else {
+      if (pollingInterval.current) {
+        clearTimeout(pollingInterval.current);
+        pollingInterval.current = null;
+      }
+
+      dispatch(getInternetConnectionStatus(false));
+      setOnline(false);
+
+      if (isElectron) {
+        window.electronAPI?.notifyOffline?.();
+      }
     }
   };
 
   useEffect(() => {
-    const handleOffline = handleInternetState.bind(null, 'offline');
-    const handleOnline = handleInternetState.bind(null, 'online');
+    const handleOffline = () => handleInternetState('offline');
+    const handleOnline = () => handleInternetState('online');
 
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
 
-    if (!navigator.onLine) handleOffline();
-    else handleOnline();
+    handleInternetState(navigator.onLine ? 'online' : 'offline');
 
     return () => {
       window.removeEventListener('offline', handleOffline);

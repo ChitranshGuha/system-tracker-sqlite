@@ -241,7 +241,7 @@ const useTaskLogic = (
     };
 
     if (!isOnline && intervalStartTimeRef.current) {
-      const bufferTimeInSeconds = 2000;
+      const bufferTimeInSeconds = 5000;
       const currentTime = Date.now();
       const intervalDuration = (activityInterval || 1) * 1000 * 60;
       const elapsedTime = currentTime - intervalStartTimeRef.current;

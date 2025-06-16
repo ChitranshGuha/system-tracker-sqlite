@@ -77,7 +77,9 @@ function ActivityTracker({ isOnline }) {
     window.electronAPI.clearStoreStats();
     setStats(initialStats);
     dispatch(logOutEmployee());
-    fetchDomainId();
+    if (isOnline) {
+      fetchDomainId();
+    }
   };
 
   useEffect(() => {
