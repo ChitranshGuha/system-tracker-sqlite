@@ -416,7 +416,7 @@ function ActivityLogger({
                   </p>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                {/* <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
                     <FiClock className="text-orange-600 text-xl sm:text-2xl" />
                     <p className="text-orange-800 text-2xl sm:text-3xl font-bold">
@@ -427,7 +427,7 @@ function ActivityLogger({
                   <p className="text-sm text-orange-600 font-medium">
                     Capture Interval
                   </p>
-                </div>
+                </div> */}
               </div>
 
               {/* Keys Pressed Section */}

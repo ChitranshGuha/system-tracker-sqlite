@@ -282,17 +282,23 @@ const useTaskLogic = (
       timezone: getSystemTimezone(),
     };
 
-    dispatch(activityActions(authToken, 'start', startUserData, true)).then(
-      (status) => {
-        if (status?.success) {
-          intervalStartTimeRef.current = Date.now();
-          setProjectTaskActivityDetailId(status?.id);
-          localStorage.setItem('projectTaskActivityDetailId', status?.id);
-        } else {
-          console.log(status?.error);
-        }
+    try {
+      const status = await dispatch(
+        activityActions(authToken, 'start', startUserData, true)
+      );
+
+      if (status?.success) {
+        intervalStartTimeRef.current = Date.now();
+        setProjectTaskActivityDetailId(status?.id);
+        localStorage.setItem('projectTaskActivityDetailId', status?.id);
+      } else {
+        console.log('Start activity failed:', status?.error);
       }
-    );
+    } catch (error) {
+      console.error('Error dispatching activity start:', error);
+    } finally {
+      setIsLoading(false);
+    }
 
     startStopActivityDetailHandler(startUserData);
   };
@@ -367,8 +373,6 @@ const useTaskLogic = (
           console.log(status?.error);
         }
       });
-
-      setIsLoading(false);
     }
   };
 
@@ -404,79 +408,90 @@ const useTaskLogic = (
       appWebsiteDetails: stats?.appWebsiteDetails,
     };
 
-    dispatch(
-      activityActions(
-        authToken,
-        'end',
-        {
-          ...payload,
-          projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
-          ...activityDifference,
-        },
-        true
-      )
-    ).then((status) => {
-      if (status?.success) {
+    try {
+      const endActivityDetail = await dispatch(
+        activityActions(
+          authToken,
+          'end',
+          {
+            ...payload,
+            projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
+            ...activityDifference,
+          },
+          true
+        )
+      );
+
+      if (endActivityDetail?.success) {
         setProjectTaskActivityDetailId(null);
         localStorage.removeItem('projectTaskActivityDetailId');
         lastStatsRef.current = initialLastStats;
         intervalStartTimeRef.current = null;
 
-        dispatch(
+        const endMainActivity = await dispatch(
           activityActions(authToken, 'end', {
             ownerId,
             trackerVersion: TRACKER_VERSION,
             ipAddress,
             projectTaskActivityId,
           })
-        ).then((status) => {
-          if (status?.success) {
-            if (socket) {
-              socket.emit('/project/task/activity/end', {
-                employeeRealtimeProjectTaskActivityId,
-              });
-              socket.on('/project/task/activity/end', () => {
-                setEmployeeRealtimeProjectTaskActivityId(null);
-              });
-            } else {
-              console.error('Socket is not connected!');
-            }
+        );
 
-            clearInterval(activityIntervalRef.current);
-            activityIntervalRef.current = null;
-
-            setProjectId('');
-            setProjectTaskId('');
-            setProjectTaskActivityId(null);
-            setDescription('');
-            setActiveSession(null);
-            localStorage.removeItem('activeSession');
-            localStorage.removeItem('projectTaskId');
-            localStorage.removeItem('projectTaskActivityId');
-            localStorage.removeItem('screenshotType');
-            window.electronAPI.sendScreenshotType?.(DEFAULT_SCREENSHOT_TYPE);
-
-            stopLogging();
-            const userData = {
-              ownerId: null,
-            };
-            window.electronAPI.sendActivityData(userData);
-          } else {
-            setApiError({
-              message: status?.error?.data?.error,
-              code: status?.error?.status,
+        if (endMainActivity?.success) {
+          if (socket) {
+            socket.emit('/project/task/activity/end', {
+              employeeRealtimeProjectTaskActivityId,
             });
+
+            socket.on('/project/task/activity/end', () => {
+              setEmployeeRealtimeProjectTaskActivityId(null);
+            });
+          } else {
+            console.error('Socket is not connected!');
           }
-        });
+
+          clearInterval(activityIntervalRef.current);
+          activityIntervalRef.current = null;
+
+          setProjectId('');
+          setProjectTaskId('');
+          setProjectTaskActivityId(null);
+          setDescription('');
+          setActiveSession(null);
+
+          localStorage.removeItem('activeSession');
+          localStorage.removeItem('projectTaskId');
+          localStorage.removeItem('projectTaskActivityId');
+          localStorage.removeItem('screenshotType');
+
+          window.electronAPI.sendScreenshotType?.(DEFAULT_SCREENSHOT_TYPE);
+
+          stopLogging();
+
+          const userData = {
+            ownerId: null,
+          };
+          window.electronAPI.sendActivityData(userData);
+        } else {
+          setApiError({
+            message: endMainActivity?.error?.data?.error,
+            code: endMainActivity?.error?.status,
+          });
+        }
       } else {
         setApiError({
-          message: status?.error?.data?.error,
-          code: status?.error?.status,
+          message: endActivityDetail?.error?.data?.error,
+          code: endActivityDetail?.error?.status,
         });
       }
-    });
-
-    setIsLoading(false);
+    } catch (error) {
+      setApiError({
+        message: error?.error?.data?.error,
+        code: error?.error?.status,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -505,7 +520,9 @@ const useTaskLogic = (
           storedProjectTaskActivityDetailId
         ) {
           const fetchData = async () => {
-            setIsLoading(true);
+            if (isOnline) {
+              setIsLoading(true);
+            }
 
             setProjectTaskActivityId(storedProjectTaskActivityId);
             projectTaskActivityDetailIdRef.current =
@@ -546,8 +563,6 @@ const useTaskLogic = (
               }
             } catch (error) {
               console.error('Error in start activity handler:', error);
-            } finally {
-              setIsLoading(false);
             }
           };
 
@@ -581,6 +596,8 @@ const useTaskLogic = (
         if (storedIsLogging) {
           if (storedOwnerId && storedProjectTaskId) {
             const fetchData = async () => {
+              setIsLoading(true);
+
               try {
                 const geoLocation = await window.electronAPI.getGeoLocation();
                 const speed = await getSpeed();

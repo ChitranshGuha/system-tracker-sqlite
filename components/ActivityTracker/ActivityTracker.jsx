@@ -143,7 +143,6 @@ function ActivityTracker({ isOnline }) {
           };
 
           const restartOfflineLogging = async () => {
-            setIsLoading(true);
             const response = await window.electronAPI.sendActivityData({
               ownerId: localStorage.getItem('ownerId'),
             });
@@ -151,7 +150,6 @@ function ActivityTracker({ isOnline }) {
             if (response?.success) {
               window.electronAPI.restartLogging();
             }
-            setIsLoading(false);
           };
 
           if (isOnline) {
@@ -160,24 +158,30 @@ function ActivityTracker({ isOnline }) {
                 const shouldNotRemoveTimer =
                   await window.electronAPI.shouldNotRemoveTimer?.();
 
-                if (data?.data?.endTime || shouldNotRemoveTimer) {
+                if (
+                  data?.data?.endTime ||
+                  shouldNotRemoveTimer ||
+                  !localStorage.getItem('projectTaskActivityDetailId')
+                ) {
                   window.electronAPI.startLogging();
                   setStats(initialStats);
                   setEndedActivityRestart(true);
                 } else {
+                  setIsLoading(true);
+
                   dispatch(
                     removeActivityDetailTimeout(storedAuthToken, payload)
                   )
                     .then(async () => {
-                      restartOfflineLogging();
+                      await restartOfflineLogging();
                       setIsLoading(false);
                     })
                     .catch((error) => {
-                      setIsLoading(false);
                       console.error(
                         'Error removing activity detail timeout:',
                         error
                       );
+                      setIsLoading(false);
                     });
                 }
               }

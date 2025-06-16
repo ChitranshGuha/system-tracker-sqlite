@@ -1,4 +1,10 @@
-const { app, BrowserWindow, ipcMain, desktopCapturer } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  desktopCapturer,
+  powerMonitor,
+} = require('electron');
 
 const sharp = require('sharp');
 const store = require('electron-settings');
@@ -522,7 +528,16 @@ if (!gotTheLock) {
     }
   });
 
-  app.on('ready', createWindow);
+  app.on('ready', async () => {
+    await createWindow();
+
+    if (mainWindow) {
+      powerMonitor.on('suspend', () => {
+        console.log('went on sleep mode');
+        app.quit();
+      });
+    }
+  });
 
   app.on('window-all-closed', () => {
     if (screenshotInterval) {
