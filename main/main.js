@@ -4,6 +4,8 @@ const {
   ipcMain,
   desktopCapturer,
   powerMonitor,
+  Tray,
+  Menu,
 } = require('electron');
 
 const sharp = require('sharp');
@@ -26,6 +28,8 @@ let isOffline = false;
 
 // Electron Related
 let mainWindow;
+let tray;
+app.isQuiting = false;
 
 // Renderer Data
 let isLogging = false;
@@ -470,8 +474,6 @@ async function fetchCaptureInterval() {
 
 // Create main application window
 async function createWindow() {
-  await checkInternetConnection();
-
   const isDev = await import('electron-is-dev').then(
     (module) => module.default
   );
@@ -479,6 +481,7 @@ async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    show: false,
     simpleFullscreen: true,
     title: 'Activity Tracker - Digital Links',
     icon: path.join(__dirname, '..', 'build', 'icon.ico'),
@@ -495,25 +498,81 @@ async function createWindow() {
       : `file://${path.join(__dirname, '../out/index.html')}`
   );
 
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.setAlwaysOnTop(true);
+    mainWindow.setAlwaysOnTop(false);
+
+    startPostWindowTasks();
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  const storeToken = await store.get('authToken');
+  mainWindow.on('close', (event) => {
+    if (!app.isQuiting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+  });
 
-  if (storeToken) {
-    authToken = storeToken;
-    await fetchCaptureInterval();
-    await loadStats();
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
   }
+}
 
-  setTimeout(() => {
-    mainWindow.webContents.send('update-stats', stats);
-  }, 500);
+async function startPostWindowTasks() {
+  try {
+    await checkInternetConnection();
 
-  // if (isDev) {
-  mainWindow.webContents.openDevTools();
-  // }
+    const storeToken = await store.get('authToken');
+
+    if (storeToken) {
+      authToken = storeToken;
+      await fetchCaptureInterval();
+      await loadStats();
+
+      setTimeout(() => {
+        if (mainWindow?.webContents) {
+          mainWindow.webContents.send('update-stats', stats);
+        }
+      }, 500);
+    }
+  } catch (err) {
+    console.error('Post-launch tasks failed:', err);
+  }
+}
+
+function createTray() {
+  const iconPath = path.join(__dirname, '..', 'build', 'icon.ico');
+  tray = new Tray(iconPath);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show Tracker',
+      click: () => {
+        mainWindow.show();
+        mainWindow.focus();
+      },
+    },
+    {
+      label: 'Quit Tracker',
+      click: () => {
+        app.isQuiting = true;
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setToolTip('Activity Tracker - Digital Links');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('double-click', () => {
+    mainWindow.show();
+    mainWindow.focus();
+  });
 }
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -530,13 +589,18 @@ if (!gotTheLock) {
 
   app.on('ready', async () => {
     await createWindow();
+    createTray();
 
-    if (mainWindow) {
-      powerMonitor.on('suspend', () => {
-        console.log('went on sleep mode');
-        app.quit();
-      });
-    }
+    powerMonitor.on('suspend', () => {
+      mainWindow.webContents.send('windows-sleep-mode', true);
+    });
+
+    powerMonitor.on('resume', () => {
+      setTimeout(() => {
+        app.relaunch();
+        app.exit(0);
+      }, 1000);
+    });
   });
 
   app.on('window-all-closed', () => {

@@ -580,7 +580,7 @@ const useTaskLogic = (
   }, [authToken, socket, isOnline]);
 
   useEffect(() => {
-    if (endedActivityRestart) {
+    if (endedActivityRestart && isOnline) {
       if (typeof window !== 'undefined' && authToken !== null) {
         const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
         const storedOwnerId = localStorage.getItem('ownerId');
@@ -664,7 +664,7 @@ const useTaskLogic = (
     } else if (!endedActivityRestart) {
       intervalStartTimeRef.current = Date.now();
     }
-  }, [endedActivityRestart, authToken, socket]);
+  }, [endedActivityRestart, authToken, socket, isOnline]);
 
   return {
     projectId,

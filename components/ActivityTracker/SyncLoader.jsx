@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { Loader2, Shield, Activity, Camera, AlertTriangle } from 'lucide-react';
 

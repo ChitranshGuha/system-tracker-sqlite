@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { WifiOff } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { getInternetConnectionStatus } from '../redux/employee/employeeActions';
+import { BASE_URL } from '../utils/constants';
 
 const AppWrapper = ({ children }) => {
   const dispatch = useDispatch();
@@ -14,8 +15,17 @@ const AppWrapper = ({ children }) => {
 
   const checkRealInternet = async () => {
     try {
-      const response = await fetch('https://httpstat.us/200', {
-        method: 'GET',
+      const response = await fetch(`${BASE_URL}/test`, {
+        method: 'HEAD',
+        mode: 'cors',
+        cache: 'no-store',
+      });
+      if (response.ok) return true;
+    } catch {}
+
+    try {
+      const response = await fetch('https://api.github.com', {
+        method: 'HEAD',
         mode: 'cors',
         cache: 'no-store',
       });
@@ -73,6 +83,20 @@ const AppWrapper = ({ children }) => {
     window.addEventListener('online', handleOnline);
 
     handleInternetState(navigator.onLine ? 'online' : 'offline');
+
+    const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
+
+    const handleConnectionChange = () => {
+      console.log('Network connection changed:', connection?.effectiveType);
+      // handleInternetState('online');
+    };
+
+    if (connection) {
+      connection.addEventListener('change', handleConnectionChange);
+    }
 
     return () => {
       window.removeEventListener('offline', handleOffline);

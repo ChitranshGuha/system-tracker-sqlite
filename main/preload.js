@@ -10,10 +10,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   shouldNotRemoveTimer: () => ipcRenderer.invoke('should-not-remove-timer'),
   onSyncing: (callback) =>
     ipcRenderer.on('sync-processing', (_, value) => callback(value)),
+  removeSyncingListener: () =>
+    ipcRenderer.removeAllListeners('sync-processing'),
 
-  onSuspend: (callback) => ipcRenderer.on('suspend', callback),
-  removeSuspendListener: (callback) =>
-    ipcRenderer.removeListener('suspend', callback),
+  onSleepMode: (callback) =>
+    ipcRenderer.on('windows-sleep-mode', (_, value) => callback(value)),
+  removeSleepModeListeners: () =>
+    ipcRenderer.removeAllListeners('windows-sleep-mode'),
 
   // Renderer's Data
   sendScreenshotType: (data) => ipcRenderer.send('set-screenshot-type', data),
