@@ -144,7 +144,7 @@ const useTaskLogic = (
   };
 
   const startStopActivityDetailHandler = async (startUserData) => {
-    let ipAddress = 'Offline';
+    let ipAddress = 'offline';
     if (isOnline) {
       ipAddress = await getIpAddress();
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -379,7 +379,10 @@ const useTaskLogic = (
   const stopLoggingHandler = async () => {
     setIsLoading(true);
 
-    const ipAddress = await getIpAddress();
+    let ipAddress = 'offline';
+    if (isOnline) {
+      ipAddress = await getIpAddress();
+    }
 
     const lastStats = lastStatsRef.current;
 
