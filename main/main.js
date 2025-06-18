@@ -515,6 +515,7 @@ async function createWindow() {
     if (!app.isQuiting) {
       event.preventDefault();
       mainWindow.hide();
+      return false;
     }
   });
 
@@ -569,7 +570,7 @@ function createTray() {
   tray.setToolTip('Activity Tracker - Digital Links');
   tray.setContextMenu(contextMenu);
 
-  tray.on('double-click', () => {
+  tray.on('click', () => {
     mainWindow.show();
     mainWindow.focus();
   });
@@ -582,8 +583,22 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', () => {
     if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+      }
+
       mainWindow.focus();
+
+      if (process.platform === 'win32') {
+        mainWindow.setAlwaysOnTop(true);
+        mainWindow.setAlwaysOnTop(false);
+        mainWindow.showInactive();
+        mainWindow.show();
+      }
     }
   });
 
