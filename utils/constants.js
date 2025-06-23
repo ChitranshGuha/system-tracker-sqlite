@@ -6,6 +6,6 @@ export const BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infowa
 
 export const API_BASE_URL = `${BASE_URL}/api`;
 
-export const TRACKER_VERSION = '1.1.2';
+export const TRACKER_VERSION = '1.1.3';
 
 export const DEFAULT_SCREENSHOT_TYPE = 'SCREENSHOT';
