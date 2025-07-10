@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  FiMousePointer,
-  FiClock,
-  FiMove,
-  FiActivity,
-  FiPackage,
-} from 'react-icons/fi';
-import { IoSpeedometerOutline } from 'react-icons/io5';
-import { BsKeyboard } from 'react-icons/bs';
-import { ClockAlert, Hourglass, X } from 'lucide-react';
+  Hourglass,
+  X,
+  MousePointer,
+  Move,
+  Activity,
+  Package,
+  Keyboard,
+  Gauge,
+} from 'lucide-react';
 import Task from './Task/Task';
 import PastActivities from './PastActivities';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
@@ -212,10 +212,10 @@ function ActivityLogger({
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
                 Activity Logger
               </h1>
-              <FiActivity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
+              <Activity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
             </div>
             <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 shadow-sm">
-              <FiPackage className="h-4 w-4" />
+              <Package className="h-4 w-4" />
               <span>Current Version: {TRACKER_VERSION}</span>
             </div>
           </div>
@@ -326,7 +326,7 @@ function ActivityLogger({
               <div className="grid grid-cols-1 sm:grid-cols-2 xxl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <FiMousePointer className="text-blue-600 text-xl sm:text-2xl" />
+                    <MousePointer className="text-blue-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-blue-800">
                       {stats.clickCount}
                     </p>
@@ -338,7 +338,7 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
+                    <Keyboard className="text-green-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-green-800">
                       {stats.keyCount}
                     </p>
@@ -350,7 +350,7 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-br from-purple-100 to-pink-200 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <FiMove className="text-purple-700 text-xl sm:text-2xl" />
+                    <Move className="text-purple-700 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-pink-800">
                       {stats.scrollCount}
                     </p>
@@ -374,7 +374,7 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <IoSpeedometerOutline className="text-purple-600 text-xl sm:text-2xl" />
+                    <Gauge className="text-purple-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold">
                       <InternetSpeedTracker
                         socket={socket}
@@ -406,7 +406,7 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <FiActivity className="text-purple-600 text-xl sm:text-2xl" />
+                    <Activity className="text-purple-600 text-xl sm:text-2xl" />
                     <p className="text-indigo-600 text-2xl sm:text-3xl font-bold">
                       {stats.lastActive || '--'}
                     </p>
@@ -434,7 +434,7 @@ function ActivityLogger({
               {IS_PRODUCTION ? null : (
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
                   <div className="flex items-center mb-3">
-                    <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
+                    <Keyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
                     <h2 className="font-semibold text-gray-700 text-base sm:text-lg">
                       Keys pressed:
                     </h2>

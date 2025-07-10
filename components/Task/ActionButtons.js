@@ -1,4 +1,4 @@
-import { FiPlay, FiSquare } from 'react-icons/fi';
+import { Play, Square } from 'lucide-react';
 
 const ActionButtons = ({ isOnline, isLogging, stopLoggingHandler }) => {
   return (
@@ -20,7 +20,7 @@ const ActionButtons = ({ isOnline, isLogging, stopLoggingHandler }) => {
             : 'bg-green-600 hover:bg-green-700 hover:shadow-md'
         }`}
       >
-        <FiPlay className="text-xl" />
+        <Play className="text-xl" />
         <span>Start Logging</span>
       </button>
 
@@ -45,7 +45,7 @@ const ActionButtons = ({ isOnline, isLogging, stopLoggingHandler }) => {
             : 'bg-red-600 hover:bg-red-700 hover:shadow-md'
         }`}
       >
-        <FiSquare className="text-xl" />
+        <Square className="text-xl" />
         <span>Stop Logging</span>
       </button>
     </div>
