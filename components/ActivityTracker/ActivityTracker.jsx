@@ -229,7 +229,7 @@ function ActivityTracker({ isOnline }) {
   }, [authToken]);
 
   // Update Checker
-  const UPDATE_CHECKER_TIME = 5000;
+  const UPDATE_CHECKER_TIME = 60 * 60 * 1000;
   const [canCheckUpdate, setCanCheckUpdate] = useState(true);
 
   useEffect(() => {
