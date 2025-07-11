@@ -20,6 +20,11 @@ const { spawn } = require('child_process');
 const { default: axios } = require('axios');
 const dns = require('dns');
 
+// Command line functions for performance efficiency.
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+
 const IS_PRODUCTION = false;
 const API_BASE_URL = `https://webtracker${IS_PRODUCTION ? 'prod' : ''}.infoware.xyz/api`;
 
