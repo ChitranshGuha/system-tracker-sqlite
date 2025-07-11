@@ -36,7 +36,7 @@ const useTaskLogic = (
   const activityIntervalRef = useRef(null);
   const intervalStartTimeRef = useRef(null);
   const statsRef = useRef(stats);
-  const projectTaskActivityDetailIdRef = useRef(stats);
+  const projectTaskActivityDetailIdRef = useRef(null);
 
   const initialLastStats = {
     clickCount: 0,
@@ -100,9 +100,7 @@ const useTaskLogic = (
   }, [stats]);
 
   useEffect(() => {
-    if (projectTaskActivityDetailId)
-      projectTaskActivityDetailIdRef.current = projectTaskActivityDetailId;
-    else projectTaskActivityDetailIdRef.current = null;
+    projectTaskActivityDetailIdRef.current = projectTaskActivityDetailId;
   }, [projectTaskActivityDetailId]);
 
   useEffect(() => {
@@ -176,50 +174,55 @@ const useTaskLogic = (
       };
 
       if (isOnline) {
-        const stopUserData = {
-          ownerId,
-          projectTaskActivityDetailId:
-            projectTaskActivityDetailIdRef.current ||
-            localStorage.getItem('projectTaskActivityDetailId'),
-          trackerVersion: TRACKER_VERSION,
-          ipAddress,
-          appWebsites: updatedStats?.appWebsites || [],
-          ...activityDifference,
-        };
+        const currentActivityDetailId =
+          projectTaskActivityDetailIdRef.current ||
+          localStorage.getItem('projectTaskActivityDetailId');
 
-        dispatch(activityActions(authToken, 'end', stopUserData, true))
-          .then((status) => {
-            if (status?.success) {
-              updateTrackedHourDetails(status?.totalTime, status?.idleTime);
-
-              setProjectTaskActivityDetailId(null);
-              localStorage.removeItem('projectTaskActivityDetailId');
-            } else {
-              console.log(status?.error);
-            }
-          })
-          .catch((error) => {
-            console.log('End failed:', error);
-          })
-          .finally(() => {
-            dispatch(activityActions(authToken, 'start', startUserData, true))
+        const endActivityPromise = currentActivityDetailId
+          ? dispatch(
+              activityActions(
+                authToken,
+                'end',
+                {
+                  ownerId,
+                  projectTaskActivityDetailId: currentActivityDetailId,
+                  trackerVersion: TRACKER_VERSION,
+                  ipAddress,
+                  appWebsites: updatedStats?.appWebsites || [],
+                  ...activityDifference,
+                },
+                true
+              )
+            )
               .then((status) => {
                 if (status?.success) {
-                  setProjectTaskActivityDetailId(status?.id);
-                  intervalStartTimeRef.current = Date.now();
-
-                  localStorage.setItem(
-                    'projectTaskActivityDetailId',
-                    status?.id
-                  );
+                  updateTrackedHourDetails(status?.totalTime, status?.idleTime);
+                  setProjectTaskActivityDetailId(null);
+                  localStorage.removeItem('projectTaskActivityDetailId');
                 } else {
-                  console.log(status?.error);
+                  console.log('End activity error:', status?.error);
                 }
               })
               .catch((error) => {
-                console.log('Start failed:', error);
-              });
-          });
+                console.log('End failed:', error);
+              })
+          : Promise.resolve();
+
+        endActivityPromise.finally(() => {
+          dispatch(activityActions(authToken, 'start', startUserData, true))
+            .then((status) => {
+              if (status?.success) {
+                setProjectTaskActivityDetailId(status?.id);
+                intervalStartTimeRef.current = Date.now();
+                localStorage.setItem('projectTaskActivityDetailId', status?.id);
+              } else {
+                console.log('Start activity error:', status?.error);
+              }
+            })
+            .catch((error) => {
+              console.log('Start failed:', error);
+            });
+        });
       } else {
         const offlineActivityData = {
           ownerId,
@@ -412,79 +415,87 @@ const useTaskLogic = (
     };
 
     try {
-      const endActivityDetail = await dispatch(
-        activityActions(
-          authToken,
-          'end',
-          {
-            ...payload,
-            projectTaskActivityDetailId: projectTaskActivityDetailIdRef.current,
-            ...activityDifference,
-          },
-          true
-        )
-      );
+      const currentActivityDetailId =
+        projectTaskActivityDetailIdRef.current ||
+        localStorage.getItem('projectTaskActivityDetailId');
 
-      if (endActivityDetail?.success) {
-        setProjectTaskActivityDetailId(null);
-        localStorage.removeItem('projectTaskActivityDetailId');
-        lastStatsRef.current = initialLastStats;
-        intervalStartTimeRef.current = null;
-
-        const endMainActivity = await dispatch(
-          activityActions(authToken, 'end', {
-            ownerId,
-            trackerVersion: TRACKER_VERSION,
-            ipAddress,
-            projectTaskActivityId,
-          })
+      if (currentActivityDetailId) {
+        const endActivityDetail = await dispatch(
+          activityActions(
+            authToken,
+            'end',
+            {
+              ...payload,
+              projectTaskActivityDetailId: currentActivityDetailId,
+              ...activityDifference,
+            },
+            true
+          )
         );
 
-        if (endMainActivity?.success) {
-          if (socket) {
-            socket.emit('/project/task/activity/end', {
-              employeeRealtimeProjectTaskActivityId,
-            });
-
-            socket.on('/project/task/activity/end', () => {
-              setEmployeeRealtimeProjectTaskActivityId(null);
-            });
-          } else {
-            console.error('Socket is not connected!');
-          }
-
-          clearInterval(activityIntervalRef.current);
-          activityIntervalRef.current = null;
-
-          setProjectId('');
-          setProjectTaskId('');
-          setProjectTaskActivityId(null);
-          setDescription('');
-          setActiveSession(null);
-
-          localStorage.removeItem('activeSession');
-          localStorage.removeItem('projectTaskId');
-          localStorage.removeItem('projectTaskActivityId');
-          localStorage.removeItem('screenshotType');
-
-          window.electronAPI.sendScreenshotType?.(DEFAULT_SCREENSHOT_TYPE);
-
-          stopLogging();
-
-          const userData = {
-            ownerId: null,
-          };
-          window.electronAPI.sendActivityData(userData);
+        if (endActivityDetail?.success) {
+          setProjectTaskActivityDetailId(null);
+          localStorage.removeItem('projectTaskActivityDetailId');
+          lastStatsRef.current = initialLastStats;
+          intervalStartTimeRef.current = null;
         } else {
           setApiError({
-            message: endMainActivity?.error?.data?.error,
-            code: endMainActivity?.error?.status,
+            message: endActivityDetail?.error?.data?.error,
+            code: endActivityDetail?.error?.status,
           });
+          setIsLoading(false);
+          return;
         }
+      }
+
+      const endMainActivity = await dispatch(
+        activityActions(authToken, 'end', {
+          ownerId,
+          trackerVersion: TRACKER_VERSION,
+          ipAddress,
+          projectTaskActivityId,
+        })
+      );
+
+      if (endMainActivity?.success) {
+        if (socket) {
+          socket.emit('/project/task/activity/end', {
+            employeeRealtimeProjectTaskActivityId,
+          });
+
+          socket.on('/project/task/activity/end', () => {
+            setEmployeeRealtimeProjectTaskActivityId(null);
+          });
+        } else {
+          console.error('Socket is not connected!');
+        }
+
+        clearInterval(activityIntervalRef.current);
+        activityIntervalRef.current = null;
+
+        setProjectId('');
+        setProjectTaskId('');
+        setProjectTaskActivityId(null);
+        setDescription('');
+        setActiveSession(null);
+
+        localStorage.removeItem('activeSession');
+        localStorage.removeItem('projectTaskId');
+        localStorage.removeItem('projectTaskActivityId');
+        localStorage.removeItem('screenshotType');
+
+        window.electronAPI.sendScreenshotType?.(DEFAULT_SCREENSHOT_TYPE);
+
+        stopLogging();
+
+        const userData = {
+          ownerId: null,
+        };
+        window.electronAPI.sendActivityData(userData);
       } else {
         setApiError({
-          message: endActivityDetail?.error?.data?.error,
-          code: endActivityDetail?.error?.status,
+          message: endMainActivity?.error?.data?.error,
+          code: endMainActivity?.error?.status,
         });
       }
     } catch (error) {
@@ -517,19 +528,15 @@ const useTaskLogic = (
       );
 
       if (storedIsLogging) {
-        if (
-          storedOwnerId &&
-          storedProjectTaskActivityId &&
-          storedProjectTaskActivityDetailId
-        ) {
+        if (storedOwnerId && storedProjectTaskActivityId) {
           const fetchData = async () => {
             if (isOnline) {
               setIsLoading(true);
             }
 
-            setProjectTaskActivityId(storedProjectTaskActivityId);
-            projectTaskActivityDetailIdRef.current =
-              storedProjectTaskActivityDetailId;
+            if (storedProjectTaskActivityDetailId) {
+              setProjectTaskActivityDetailId(storedProjectTaskActivityDetailId);
+            }
 
             const updatedStats = statsRef.current;
             lastStatsRef.current = {
