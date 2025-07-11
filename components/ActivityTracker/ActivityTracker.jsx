@@ -12,8 +12,9 @@ import Loader from '../../components/Loader';
 import { API_BASE_URL, TRACKER_VERSION } from '../../utils/constants';
 import { DOMAIN_TYPE } from '../../utils/constants';
 import AppUpdater from '../../components/AppUpdater';
-import { Download } from 'lucide-react';
+import { Download, RefreshCcw } from 'lucide-react';
 import { DEFAULT_SCREENSHOT_TYPE } from '../../utils/constants';
+import ApiSuccessLogger from '../SuccessToast';
 
 function ActivityTracker({ isOnline }) {
   const dispatch = useDispatch();
@@ -32,6 +33,7 @@ function ActivityTracker({ isOnline }) {
   const [activityLocationInterval, setActivityLocationInterval] = useState(1);
   const authToken = useSelector((state) => state?.auth?.authToken);
   const [endedActivityRestart, setEndedActivityRestart] = useState(false);
+  const [showNoUpdatesRequired, setShowNoUpdatesRequired] = useState(false);
 
   useEffect(() => {
     if (authToken !== null) {
@@ -226,6 +228,10 @@ function ActivityTracker({ isOnline }) {
     }
   }, [authToken]);
 
+  // Update Checker
+  const UPDATE_CHECKER_TIME = 5000;
+  const [canCheckUpdate, setCanCheckUpdate] = useState(true);
+
   useEffect(() => {
     if (domainId) {
       dispatch(appUpdateChecker({ domainId })).then((data) => {
@@ -241,6 +247,46 @@ function ActivityTracker({ isOnline }) {
     }
   }, [domainId]);
 
+  useEffect(() => {
+    const lastChecked = localStorage.getItem('lastUpdateCheck');
+    if (lastChecked) {
+      const diff = Date.now() - parseInt(lastChecked, 10);
+      if (diff < UPDATE_CHECKER_TIME) {
+        setCanCheckUpdate(false);
+        const timeout = setTimeout(
+          () => setCanCheckUpdate(true),
+          UPDATE_CHECKER_TIME - diff
+        );
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, []);
+
+  function updateCheckHandler() {
+    if (!canCheckUpdate) return;
+
+    if (domainId) {
+      dispatch(appUpdateChecker({ domainId })).then((data) => {
+        if (data?.success) {
+          const isUpdateRequirement = data?.data?.version !== TRACKER_VERSION;
+
+          if (isUpdateRequirement) {
+            setIsUpdateRequired(true);
+          } else {
+            setShowNoUpdatesRequired(true);
+          }
+
+          localStorage.setItem('lastUpdateCheck', Date.now().toString());
+
+          setCanCheckUpdate(false);
+          setTimeout(() => {
+            setCanCheckUpdate(true);
+          }, UPDATE_CHECKER_TIME);
+        }
+      });
+    }
+  }
+
   return (
     <>
       {isUpdateRequired ? (
@@ -254,7 +300,20 @@ function ActivityTracker({ isOnline }) {
             <Download className="!w-4 !h-4" />
           </button>
         </div>
-      ) : null}
+      ) : (
+        canCheckUpdate && (
+          <div
+            title="Check for updates"
+            className="cursor-pointer fixed z-50 top-2 right-2 flex items-center gap-2 bg-gray-100 text-gray-800 border border-gray-300 px-4 py-2 rounded-lg shadow-md"
+            onClick={updateCheckHandler}
+          >
+            <span className="font-medium">Check for Update</span>
+            <button className="inline-flex items-center gap-1 font-medium rounded transition">
+              <RefreshCcw className="!w-4 !h-4" />
+            </button>
+          </div>
+        )
+      )}
 
       {updateRequiredModal ? (
         <AppUpdater
@@ -262,6 +321,14 @@ function ActivityTracker({ isOnline }) {
           isLoggedIn={isLoggedIn}
           updateData={updateData}
           onClose={() => setUpdateRequiredModal(false)}
+        />
+      ) : null}
+
+      {showNoUpdatesRequired ? (
+        <ApiSuccessLogger
+          title="No Updates Available!"
+          message="No Updates Available. The installed version is already the latest version."
+          onClose={() => setShowNoUpdatesRequired(false)}
         />
       ) : null}
 
