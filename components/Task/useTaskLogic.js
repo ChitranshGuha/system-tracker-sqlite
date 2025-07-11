@@ -448,12 +448,15 @@ const useTaskLogic = (
         }
       }
 
+      const currentProjectActivityId =
+        projectTaskActivityId || localStorage.getItem('projectTaskActivityId');
+
       const endMainActivity = await dispatch(
         activityActions(authToken, 'end', {
           ownerId,
           trackerVersion: TRACKER_VERSION,
           ipAddress,
-          projectTaskActivityId,
+          projectTaskActivityId: currentProjectActivityId,
         })
       );
 
