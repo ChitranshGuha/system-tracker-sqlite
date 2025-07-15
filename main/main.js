@@ -136,7 +136,7 @@ async function syncOfflineData() {
     shouldNotRemoveTimer = true;
 
     const filteredProjectTaskActivityDetails = statsRows?.filter(
-      (row) => !row?.mouseClick < 0 && !row?.keystroke < 0 && !row?.scroll < 0
+      (row) => row?.mouseClick >= 0 && row?.keystroke >= 0 && row?.scroll >= 0
     );
 
     const projectTaskActivityDetails = filteredProjectTaskActivityDetails.map(
@@ -164,38 +164,40 @@ async function syncOfflineData() {
       projectTaskActivityDetails,
     };
 
-    try {
-      await axios.post(
-        `${API_BASE_URL}/employee/v2/project/project/task/activity/detail/add/bulk`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
+    if (projectTaskActivityDetails && projectTaskActivityDetails?.length > 0) {
+      try {
+        await axios.post(
+          `${API_BASE_URL}/employee/v2/project/project/task/activity/detail/add/bulk`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        // Remove synced row
+        statsRows.forEach((row) =>
+          db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id)
+        );
+
+        // Reset sequence if table is empty
+        const statsCount = db
+          .prepare('SELECT COUNT(*) as count FROM offlineStats')
+          .get().count;
+        if (statsCount === 0) {
+          db.prepare(
+            "DELETE FROM sqlite_sequence WHERE name='offlineStats'"
+          ).run();
         }
-      );
-
-      // Remove synced row
-      statsRows.forEach((row) =>
-        db.prepare('DELETE FROM offlineStats WHERE id = ?').run(row.id)
-      );
-
-      // Reset sequence if table is empty
-      const statsCount = db
-        .prepare('SELECT COUNT(*) as count FROM offlineStats')
-        .get().count;
-      if (statsCount === 0) {
-        db.prepare(
-          "DELETE FROM sqlite_sequence WHERE name='offlineStats'"
-        ).run();
+      } catch (err) {
+        // Remove synced row
+        console.error('Failed to sync stats row:', err);
       }
-    } catch (err) {
-      // Remove synced row
-      console.error('Failed to sync stats row:', err);
-    } finally {
-      mainWindow.webContents.send('sync-processing', false);
     }
+
+    mainWindow.webContents.send('sync-processing', false);
   }
 
   // Sync offline screenshots
