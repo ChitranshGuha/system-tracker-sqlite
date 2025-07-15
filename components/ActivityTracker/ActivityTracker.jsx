@@ -333,7 +333,12 @@ function ActivityTracker({ isOnline }) {
       ) : null}
 
       {!isLoggedIn ? (
-        <Login onLogin={handleLogin} domainId={domainId} />
+        <Login
+          onLogin={handleLogin}
+          domainId={domainId}
+          setDomainId={setDomainId}
+          fetchDomainId={fetchDomainId}
+        />
       ) : (
         <Loader isLoading={isLoading}>
           <Dashboard

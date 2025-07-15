@@ -151,10 +151,25 @@ const useTaskLogic = (
     const dispatchStartStop = () => {
       const updatedStats = statsRef.current;
       const lastStats = lastStatsRef.current;
+
+      const getPositiveDifference = (current = 0, previous = 0) => {
+        const diff = +current - +previous;
+        return diff > 0 ? diff : 0;
+      };
+
       const activityDifference = {
-        mouseClick: +updatedStats?.clickCount - +lastStats.clickCount,
-        scroll: +updatedStats?.scrollCount - +lastStats.scrollCount,
-        keystroke: +updatedStats?.keyCount - +lastStats.keyCount,
+        mouseClick: getPositiveDifference(
+          updatedStats?.clickCount,
+          lastStats.clickCount
+        ),
+        scroll: getPositiveDifference(
+          updatedStats?.scrollCount,
+          lastStats.scrollCount
+        ),
+        keystroke: getPositiveDifference(
+          updatedStats?.keyCount,
+          lastStats.keyCount
+        ),
         keyPressed: updatedStats?.accumulatedText?.slice(
           lastStats?.accumulatedText?.length
         ),

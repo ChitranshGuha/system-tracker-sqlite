@@ -135,22 +135,28 @@ async function syncOfflineData() {
     mainWindow.webContents.send('sync-processing', true);
     shouldNotRemoveTimer = true;
 
-    const projectTaskActivityDetails = statsRows.map((row) => ({
-      projectTaskActivityId: row.projectTaskActivityId,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      mouseClick: row.mouseClick ?? 0,
-      keystroke: row.keystroke ?? 0,
-      keyPressed: row.keyPressed ?? '',
-      scroll: row.scroll ?? 0,
-      appWebsites: row.appWebsites ? JSON.parse(row.appWebsites) : [],
-      appWebsiteDetails: row.appWebsiteDetails
-        ? JSON.parse(row.appWebsiteDetails)
-        : [],
-      trackerVersion: row.trackerVersion,
-      ipAddress: row.ipAddress ?? 'offline',
-      startTime: row.intervalStartTime ?? '',
-      endTime: row.intervalEndTime ?? '',
-    }));
+    const filteredProjectTaskActivityDetails = statsRows?.filter(
+      (row) => !row?.mouseClick < 0 && !row?.keystroke < 0 && !row?.scroll < 0
+    );
+
+    const projectTaskActivityDetails = filteredProjectTaskActivityDetails.map(
+      (row) => ({
+        projectTaskActivityId: row.projectTaskActivityId,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        mouseClick: row.mouseClick ?? 0,
+        keystroke: row.keystroke ?? 0,
+        keyPressed: row.keyPressed ?? '',
+        scroll: row.scroll ?? 0,
+        appWebsites: row.appWebsites ? JSON.parse(row.appWebsites) : [],
+        appWebsiteDetails: row.appWebsiteDetails
+          ? JSON.parse(row.appWebsiteDetails)
+          : [],
+        trackerVersion: row.trackerVersion,
+        ipAddress: row.ipAddress ?? 'offline',
+        startTime: row.intervalStartTime ?? '',
+        endTime: row.intervalEndTime ?? '',
+      })
+    );
 
     const payload = {
       ownerId:
