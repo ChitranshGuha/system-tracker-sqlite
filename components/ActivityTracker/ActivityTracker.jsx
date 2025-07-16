@@ -223,10 +223,10 @@ function ActivityTracker({ isOnline }) {
   }
 
   useEffect(() => {
-    if (!authToken) {
+    if (!authToken && isOnline) {
       fetchDomainId();
     }
-  }, [authToken]);
+  }, [authToken, isOnline]);
 
   // Update Checker
   const UPDATE_CHECKER_TIME = 60 * 60 * 1000;

@@ -503,6 +503,9 @@ async function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
+    skipTaskbar: false,
+    minimizable: true,
+    closable: true,
   });
 
   mainWindow.loadURL(
@@ -528,8 +531,33 @@ async function createWindow() {
     if (!app.isQuiting) {
       event.preventDefault();
       mainWindow.hide();
+
+      if (tray) {
+        tray.displayBalloon({
+          iconType: 'info',
+          title: 'Activity Tracker',
+          content:
+            'App is still running in the background. Right-click the tray icon to access options.',
+        });
+      }
+
       return false;
     }
+  });
+
+  mainWindow.webContents.on('crashed', () => {
+    console.error('Window crashed, attempting to reload...');
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.reload();
+    }
+  });
+
+  mainWindow.webContents.on('unresponsive', () => {
+    console.warn('Window became unresponsive');
+  });
+
+  mainWindow.webContents.on('responsive', () => {
+    console.log('Window became responsive again');
   });
 
   if (isDev) {
@@ -612,6 +640,8 @@ if (!gotTheLock) {
         mainWindow.showInactive();
         mainWindow.show();
       }
+    } else {
+      createWindow();
     }
   });
 
@@ -625,9 +655,14 @@ if (!gotTheLock) {
 
     powerMonitor.on('resume', () => {
       setTimeout(() => {
-        app.relaunch();
-        app.exit(0);
-      }, 1000);
+        try {
+          app.relaunch();
+        } catch (err) {
+          console.error('Failed to relaunch app after resume:', err);
+        } finally {
+          app.exit(0);
+        }
+      }, 500);
     });
   });
 

@@ -15,7 +15,7 @@ const AppWrapper = ({ children }) => {
 
   const checkRealInternet = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/test`, {
+      const response = await fetch('https://api.github.com', {
         method: 'HEAD',
         mode: 'cors',
         cache: 'no-store',
@@ -24,7 +24,7 @@ const AppWrapper = ({ children }) => {
     } catch {}
 
     try {
-      const response = await fetch('https://api.github.com', {
+      const response = await fetch(`${BASE_URL}/test`, {
         method: 'HEAD',
         mode: 'cors',
         cache: 'no-store',

@@ -397,6 +397,11 @@ const useTaskLogic = (
   const stopLoggingHandler = async () => {
     setIsLoading(true);
 
+    if (activityIntervalRef.current) {
+      clearInterval(activityIntervalRef.current);
+      activityIntervalRef.current = null;
+    }
+
     let ipAddress = 'offline';
     if (isOnline) {
       ipAddress = await getIpAddress();
@@ -487,9 +492,6 @@ const useTaskLogic = (
         } else {
           console.error('Socket is not connected!');
         }
-
-        clearInterval(activityIntervalRef.current);
-        activityIntervalRef.current = null;
 
         setProjectId('');
         setProjectTaskId('');
@@ -690,7 +692,10 @@ const useTaskLogic = (
         }
       }
     } else if (!endedActivityRestart) {
-      intervalStartTimeRef.current = Date.now();
+      const storedIsLogging = JSON.parse(localStorage.getItem('isLogging'));
+      if (storedIsLogging) {
+        intervalStartTimeRef.current = Date.now();
+      }
     }
   }, [endedActivityRestart, authToken, socket, isOnline]);
 

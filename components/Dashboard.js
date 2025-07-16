@@ -202,6 +202,44 @@ function ActivityLogger({
     };
   }, [authToken, ownerId, isOnline]);
 
+  function fetchActiveTime() {
+    let trackedHourTimeout;
+
+    if (authToken && ownerId && isOnline) {
+      const trackedHourDetailApiCall = () =>
+        dispatch(
+          fetchTrackingTimeDetails(authToken, {
+            ownerId,
+            timezone: getSystemTimezone(),
+          })
+        ).then((res) => {
+          const newSeconds =
+            res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.totalTime;
+          const idleTime =
+            res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.idleTime;
+          setTrackedHourDetails((prev) => {
+            if (prev.trackedHourInSeconds !== newSeconds) {
+              setAnimate(true);
+              setTimeout(() => setAnimate(false), 300);
+            }
+
+            return {
+              idleTime,
+              trackedHourInSeconds: newSeconds,
+            };
+          });
+        });
+
+      trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
+      trackedHourTimeout = setTimeout(
+        trackedHourDetailApiCall,
+        (activityInterval || 1) * 60 * 1000 + 1000
+      );
+    }
+
+    if (trackedHourTimeout) clearTimeout(trackedHourTimeout);
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
@@ -396,6 +434,7 @@ function ActivityLogger({
                       <SlidingTimeDisplay
                         seconds={trackedHourDetails.trackedHourInSeconds}
                         animate={animate}
+                        fetchActiveTime={fetchActiveTime}
                       />
                     </div>
                     <p className="text-sm text-emerald-700 font-semibold">
