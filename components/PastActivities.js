@@ -3,16 +3,11 @@ import dynamic from 'next/dynamic';
 import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
-import { MapPin } from 'lucide-react';
+import { MapPin, RefreshCcw } from 'lucide-react';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-export default function PastActivities({
-  authToken,
-  ownerId,
-  isLogging,
-  activeTab,
-}) {
+export default function PastActivities({ authToken, ownerId, isOnline }) {
   const dispatch = useDispatch();
 
   const [selectedMetric, setSelectedMetric] = useState('mouseClick');
@@ -21,30 +16,19 @@ export default function PastActivities({
   );
 
   useEffect(() => {
-    if (authToken) {
-      dispatch(
-        gettingEmployeeActionsList(
-          authToken,
-          'employee/project/project/task/activity/list',
-          'activities',
-          { ownerId }
-        )
-      );
+    if (authToken && isOnline) {
+      if (!pastActivities || pastActivities?.length === 0) {
+        dispatch(
+          gettingEmployeeActionsList(
+            authToken,
+            'employee/project/project/task/activity/list',
+            'activities',
+            { ownerId, offset: 0, limit: 10 }
+          )
+        );
+      }
     }
-  }, [authToken]);
-
-  useEffect(() => {
-    if (activeTab === 'past' && !isLogging) {
-      dispatch(
-        gettingEmployeeActionsList(
-          authToken,
-          'employee/project/project/task/activity/list',
-          'activities',
-          { ownerId }
-        )
-      );
-    }
-  }, [activeTab]);
+  }, [authToken, isOnline]);
 
   const getLineChartData = () => {
     return pastActivities
@@ -148,6 +132,17 @@ export default function PastActivities({
     setLocation(location);
   };
 
+  function reloadData() {
+    dispatch(
+      gettingEmployeeActionsList(
+        authToken,
+        'employee/project/project/task/activity/list',
+        'activities',
+        { ownerId, offset: 0, limit: 10 }
+      )
+    );
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -157,15 +152,22 @@ export default function PastActivities({
             <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">
               Last 5 Activities
             </h2>
-            <select
-              value={selectedMetric}
-              onChange={(e) => setSelectedMetric(e.target.value)}
-              className="block w-44 pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            >
-              <option value="mouseClick">Mouse Clicks</option>
-              <option value="keystroke">Keystroke</option>
-              <option value="idleTime">Idle Minutes</option>
-            </select>
+
+            {isOnline && (
+              <div className="flex items-center gap-3">
+                <RefreshCcw fontSize={25} onClick={reloadData} />
+
+                <select
+                  value={selectedMetric}
+                  onChange={(e) => setSelectedMetric(e.target.value)}
+                  className="block w-44 pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                >
+                  <option value="mouseClick">Mouse Clicks</option>
+                  <option value="keystroke">Keystroke</option>
+                  <option value="idleTime">Idle Minutes</option>
+                </select>
+              </div>
+            )}
           </div>
           <div className="border rounded-lg p-4 px-2 sm:px-4">
             <div className="w-full">
@@ -184,8 +186,9 @@ export default function PastActivities({
         {/* Project Activity Section */}
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">
-            Project Activities
+            Last 10 Project Activities
           </h2>
+
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden">
               <thead>

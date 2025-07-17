@@ -28,6 +28,7 @@ const Task = ({
   setEndedActivityRestart,
   setIsLoading,
   updateTrackedHourDetails,
+  initialSpeed,
 }) => {
   const dispatch = useDispatch();
   const isOnline = useSelector(
@@ -64,7 +65,9 @@ const Task = ({
     setEndedActivityRestart,
     setIsLoading,
     updateTrackedHourDetails,
-    setApiError
+    setApiError,
+    isLogging,
+    initialSpeed
   );
 
   useEffect(() => {

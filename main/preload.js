@@ -32,10 +32,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startLogging: () => ipcRenderer.invoke('start-logging'),
   clearStoreStats: () => ipcRenderer.invoke('clear-store-stats'),
   restartLogging: () => ipcRenderer.invoke('restart-logging'),
-  getGeoLocation: () => ipcRenderer.invoke('get-location'),
   stopLogging: () => ipcRenderer.send('stop-logging'),
   onUpdateStats: (callback) =>
     ipcRenderer.on('update-stats', (_, value) => callback(value)),
+
+  // Getting geographical data
+  getGeoLocation: () => ipcRenderer.invoke('get-location'),
+  getIpAddress: () => ipcRenderer.invoke('get-ip-address'),
 
   // Interval's data
   getCaptureInterval: (callback) => {

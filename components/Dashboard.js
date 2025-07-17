@@ -240,6 +240,10 @@ function ActivityLogger({
     if (trackedHourTimeout) clearTimeout(trackedHourTimeout);
   }
 
+  // Initial Speed
+
+  const [initialSpeed, setInitialSpeed] = useState(null);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
@@ -358,6 +362,7 @@ function ActivityLogger({
                 setEndedActivityRestart={setEndedActivityRestart}
                 setIsLoading={setIsLoading}
                 updateTrackedHourDetails={updateTrackedHourDetails}
+                initialSpeed={initialSpeed}
               />
 
               {/* Stats Grid */}
@@ -419,6 +424,8 @@ function ActivityLogger({
                         interval={activityLocationInterval}
                         isOnline={isOnline}
                         key={isOnline}
+                        isLogging={isLogging}
+                        setInitialSpeed={setInitialSpeed}
                       />
                     </p>
                   </div>
@@ -485,25 +492,21 @@ function ActivityLogger({
               )}
             </div>
 
-            <div className={`${activeTab === 'past' ? 'visible' : 'hidden'}`}>
+            {activeTab === 'past' && (
               <PastActivities
                 authToken={authToken}
                 ownerId={ownerId}
-                isLogging={isLogging}
-                activeTab={activeTab}
+                isOnline={isOnline}
               />
-            </div>
+            )}
 
-            <div
-              className={`${activeTab === 'app-usage' ? 'visible' : 'hidden'}`}
-            >
+            {activeTab === 'app-usage' && (
               <AppUsage
                 authToken={authToken}
                 ownerId={ownerId}
-                isLogging={isLogging}
-                activeTab={activeTab}
+                isOnline={isOnline}
               />
-            </div>
+            )}
           </>
         ) : (
           <div className="flex justify-center items-center h-64">

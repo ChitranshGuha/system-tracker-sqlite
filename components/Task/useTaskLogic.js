@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
 import { activityActions } from '../../redux/activity/activityActions';
@@ -25,7 +25,9 @@ const useTaskLogic = (
   setEndedActivityRestart,
   setIsLoading,
   updateTrackedHourDetails,
-  setApiError
+  setApiError,
+  isLogging,
+  initialSpeed
 ) => {
   const dispatch = useDispatch();
   const isOnline = useSelector(
@@ -66,17 +68,18 @@ const useTaskLogic = (
   useEffect(() => {
     setProjectId('');
     setProjectTaskId('');
-    if (authToken) {
-      dispatch(
-        gettingEmployeeActionsList(
-          authToken,
-          'employee/project/project/list',
-          'projects',
-          { ownerId }
-        )
-      );
+    if (authToken && !isLogging) {
+      if (!projects || projects?.length === 0)
+        dispatch(
+          gettingEmployeeActionsList(
+            authToken,
+            'employee/project/project/list',
+            'projects',
+            { ownerId }
+          )
+        );
     }
-  }, [ownerId, authToken, dispatch]);
+  }, [ownerId, authToken, dispatch, isLogging]);
 
   useEffect(() => {
     setProjectTaskId('');
@@ -130,22 +133,24 @@ const useTaskLogic = (
     activityLength,
   ]);
 
-  const getIpAddress = async () => {
-    try {
-      const response = await fetch('https://api.ipify.org?format=json');
-      const data = await response.json();
-      return data.ip;
-    } catch (error) {
-      console.error('Failed to get IP address', error);
-      return 'unknown';
+  const fetchSpeed = useCallback(async () => {
+    if (socket && isLogging && authToken && isOnline) {
+      const speed = await getSpeed();
+      return speed || 'offline';
     }
-  };
+  }, [socket, isLogging, authToken, isOnline]);
+
+  const getIpAddress = useCallback(async () => {
+    if (socket && authToken && isOnline) {
+      const ipAddress = window.electronAPI.getIpAddress();
+      return ipAddress || 'unknown';
+    }
+  }, [socket, isLogging, authToken, isOnline]);
 
   const startStopActivityDetailHandler = async (startUserData) => {
     let ipAddress = 'offline';
     if (isOnline) {
       ipAddress = await getIpAddress();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     const dispatchStartStop = () => {
@@ -190,8 +195,8 @@ const useTaskLogic = (
 
       if (isOnline) {
         const currentActivityDetailId =
-          projectTaskActivityDetailIdRef.current ||
-          localStorage.getItem('projectTaskActivityDetailId');
+          localStorage.getItem('projectTaskActivityDetailId') ||
+          projectTaskActivityDetailIdRef.current;
 
         const endActivityPromise = currentActivityDetailId
           ? dispatch(
@@ -334,7 +339,7 @@ const useTaskLogic = (
       setIsLoading(true);
 
       const geoLocation = await window.electronAPI.getGeoLocation();
-      const speed = await getSpeed();
+      const speed = await fetchSpeed();
 
       const payload = {
         ownerId,
@@ -404,7 +409,7 @@ const useTaskLogic = (
 
     let ipAddress = 'offline';
     if (isOnline) {
-      ipAddress = await getIpAddress();
+      ipAddress = await window.electronAPI.getIpAddress();
     }
 
     const lastStats = lastStatsRef.current;
@@ -436,9 +441,8 @@ const useTaskLogic = (
 
     try {
       const currentActivityDetailId =
-        projectTaskActivityDetailIdRef.current ||
-        localStorage.getItem('projectTaskActivityDetailId');
-
+        localStorage.getItem('projectTaskActivityDetailId') ||
+        projectTaskActivityDetailIdRef.current;
       if (currentActivityDetailId) {
         const endActivityDetail = await dispatch(
           activityActions(
@@ -630,7 +634,7 @@ const useTaskLogic = (
 
               try {
                 const geoLocation = await window.electronAPI.getGeoLocation();
-                const speed = await getSpeed();
+                const speed = initialSpeed || (await fetchSpeed());
 
                 const payload = {
                   ownerId: storedOwnerId,
@@ -654,6 +658,8 @@ const useTaskLogic = (
                       startLogging();
 
                       if (socket) {
+                        projectDetailActions();
+
                         let payload = {
                           projectTaskId,
                           description,
@@ -673,8 +679,6 @@ const useTaskLogic = (
                       } else {
                         console.error('Socket is not connected!');
                       }
-
-                      projectDetailActions();
                     } else {
                       console.log(status?.error);
                     }
