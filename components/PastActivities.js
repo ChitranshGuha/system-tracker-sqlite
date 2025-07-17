@@ -155,7 +155,11 @@ export default function PastActivities({ authToken, ownerId, isOnline }) {
 
             {isOnline && (
               <div className="flex items-center gap-3">
-                <RefreshCcw fontSize={25} onClick={reloadData} />
+                <RefreshCcw
+                  fontSize={25}
+                  onClick={reloadData}
+                  className="cursor-pointer"
+                />
 
                 <select
                   value={selectedMetric}

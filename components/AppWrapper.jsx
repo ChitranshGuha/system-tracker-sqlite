@@ -39,6 +39,12 @@ const AppWrapper = ({ children }) => {
     let isOnline = state?.toLowerCase() === 'online';
 
     if (isOnline) {
+      const manual = localStorage.getItem('manualOfflineState');
+      if (manual) {
+        const { manualOffline } = JSON.parse(manual);
+        if (manualOffline) return;
+      }
+
       if (pollingInterval.current) return;
 
       const checkUntilOnline = async () => {

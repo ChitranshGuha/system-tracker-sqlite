@@ -1043,7 +1043,6 @@ ipcMain.handle('get-ip-address', async () => {
   try {
     const response = await axios.get('https://api.ipify.org?format=json');
     ipAddress = response.data.ip;
-    console.log('ip address from main', ipAddress);
   } catch (error) {
     console.error('Failed to fetch ip address:', error.message);
   }

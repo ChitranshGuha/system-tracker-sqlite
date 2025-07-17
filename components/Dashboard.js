@@ -20,6 +20,7 @@ import { BASE_URL, IS_PRODUCTION, TRACKER_VERSION } from '../utils/constants';
 import { fetchTrackingTimeDetails } from '../redux/activity/activityActions';
 import { getSystemTimezone } from '../utils/helpers';
 import SlidingTimeDisplay from './SlidingTimeDisplay';
+import ManualOffline from './ManualOffline';
 
 function ActivityLogger({
   onLogout,
@@ -247,7 +248,6 @@ function ActivityLogger({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div>
             <div className="flex items-center space-x-3">
@@ -306,38 +306,41 @@ function ActivityLogger({
 
         {ownerId ? (
           <>
-            {/* Tabs */}
-            <div className="flex mb-6">
-              <button
-                className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === 'current'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}
-                onClick={() => setActiveTab('current')}
-              >
-                Active Tab Session
-              </button>
-              <button
-                className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === 'past'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}
-                onClick={() => setActiveTab('past')}
-              >
-                Past Activities
-              </button>
-              <button
-                className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === 'app-usage'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}
-                onClick={() => setActiveTab('app-usage')}
-              >
-                App Usage
-              </button>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex">
+                <button
+                  className={`px-4 py-2 font-medium text-sm ${
+                    activeTab === 'current'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab('current')}
+                >
+                  Active Tab Session
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium text-sm ${
+                    activeTab === 'past'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab('past')}
+                >
+                  Past Activities
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium text-sm ${
+                    activeTab === 'app-usage'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab('app-usage')}
+                >
+                  App Usage
+                </button>
+              </div>
+
+              {isLogging && <ManualOffline />}
             </div>
 
             <div
