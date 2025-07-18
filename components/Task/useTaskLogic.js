@@ -203,7 +203,7 @@ const useTaskLogic = (
           ? dispatch(
               activityActions(
                 authToken,
-                'enda',
+                'end',
                 {
                   ownerId,
                   projectTaskActivityDetailId: currentActivityDetailId,
