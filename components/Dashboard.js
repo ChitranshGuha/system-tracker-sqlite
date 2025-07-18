@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   Hourglass,
@@ -245,6 +245,13 @@ function ActivityLogger({
 
   const [initialSpeed, setInitialSpeed] = useState(null);
 
+  // Offline triggering handler
+  const manualOfflineRef = useRef(null);
+
+  function manualOfflineTriggerHandler() {
+    manualOfflineRef?.current?.onManualOfflineTrigger?.();
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
@@ -340,7 +347,7 @@ function ActivityLogger({
                 </button>
               </div>
 
-              {isLogging && <ManualOffline />}
+              {isLogging && <ManualOffline ref={manualOfflineRef} />}
             </div>
 
             <div
@@ -366,6 +373,7 @@ function ActivityLogger({
                 setIsLoading={setIsLoading}
                 updateTrackedHourDetails={updateTrackedHourDetails}
                 initialSpeed={initialSpeed}
+                onManualOfflineTrigger={manualOfflineTriggerHandler}
               />
 
               {/* Stats Grid */}

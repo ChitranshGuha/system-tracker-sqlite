@@ -27,7 +27,8 @@ const useTaskLogic = (
   updateTrackedHourDetails,
   setApiError,
   isLogging,
-  initialSpeed
+  initialSpeed,
+  onManualOfflineTrigger
 ) => {
   const dispatch = useDispatch();
   const isOnline = useSelector(
@@ -202,7 +203,7 @@ const useTaskLogic = (
           ? dispatch(
               activityActions(
                 authToken,
-                'end',
+                'enda',
                 {
                   ownerId,
                   projectTaskActivityDetailId: currentActivityDetailId,
@@ -221,10 +222,16 @@ const useTaskLogic = (
                   localStorage.removeItem('projectTaskActivityDetailId');
                 } else {
                   console.log('End activity error:', status?.error);
+                  if (String(status?.error?.status)?.startsWith('5')) {
+                    onManualOfflineTrigger?.();
+                    return;
+                  }
                 }
               })
               .catch((error) => {
                 console.log('End failed:', error);
+                onManualOfflineTrigger?.();
+                return;
               })
           : Promise.resolve();
 
@@ -237,10 +244,16 @@ const useTaskLogic = (
                 localStorage.setItem('projectTaskActivityDetailId', status?.id);
               } else {
                 console.log('Start activity error:', status?.error);
+                if (String(status?.error?.status)?.startsWith('5')) {
+                  onManualOfflineTrigger?.();
+                  return;
+                }
               }
             })
             .catch((error) => {
               console.log('Start failed:', error);
+              onManualOfflineTrigger?.();
+              return;
             });
         });
       } else {

@@ -29,6 +29,7 @@ const Task = ({
   setIsLoading,
   updateTrackedHourDetails,
   initialSpeed,
+  onManualOfflineTrigger,
 }) => {
   const dispatch = useDispatch();
   const isOnline = useSelector(
@@ -67,7 +68,8 @@ const Task = ({
     updateTrackedHourDetails,
     setApiError,
     isLogging,
-    initialSpeed
+    initialSpeed,
+    onManualOfflineTrigger
   );
 
   useEffect(() => {

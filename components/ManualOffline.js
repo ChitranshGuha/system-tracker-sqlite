@@ -1,11 +1,37 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { WifiOff, Wifi } from 'lucide-react';
 import { getInternetConnectionStatus } from '../redux/employee/employeeActions';
 import InstructionModal from './InstructionsModal';
+import { APP_OFFLINE_SWITCH_INTERVAL } from '../utils/constants';
 
-const ManualOffline = () => {
-  const APP_OFFLINE_SWITCH_INTERVAL = 15 * 60 * 1000;
+const serverErrorModalMessage = `
+  <div class="flex items-start space-x-2 bg-amber-50 border border-amber-200 p-4 rounded-md">
+    <div class="pt-1">
+      <svg xmlns="http://www.w3.org/2000/svg" class="text-amber-500 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path d="M10.29 3.86L1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0zM12 9v4m0 4h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="text-sm text-gray-800">
+      <p class="font-semibold mb-1">You're being switched to offline mode.</p>
+      <p class="mb-2">
+        Due to <strong class="text-amber-700">periodic server maintenance</strong>, our servers are temporarily unavailable. 
+        To ensure uninterrupted tracking, we are switching you to <strong>offline mode</strong>.
+      </p>
+      <p class="mb-2">
+        You can continue working normally. If you experience <em>low or unstable internet speed</em>, staying offline is recommended.
+      </p>
+      <p class="mb-2 text-blue-600">
+        You will be able to switch back to online mode after <strong>${APP_OFFLINE_SWITCH_INTERVAL / (60 * 1000)} minutes</strong>.
+      </p>
+      <p class="text-gray-600">
+        Make sure the app has time to <strong>sync your data</strong> when you're back online.
+      </p>
+    </div>
+  </div>
+`;
+
+const ManualOffline = forwardRef((_, ref) => {
   const dispatch = useDispatch();
   const isElectron = typeof window !== 'undefined' && window.electronAPI;
 
@@ -18,13 +44,15 @@ const ManualOffline = () => {
   const [isActuallyOnline, setIsActuallyOnline] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [showButtonsInModal, setShowButtonsInModal] = useState(false);
 
   const handleConfirmOffline = () => {
     setShowModal(false);
     triggerManualOffline(true);
   };
 
-  const handleCancelOffline = () => {
+  const handleCloseModal = () => {
     setShowModal(false);
   };
 
@@ -59,11 +87,24 @@ const ManualOffline = () => {
 
   const manualOfflineHandler = (mode) => {
     if (mode && !manualOffline) {
+      setModalMessage(
+        'This option is preferable if you are facing technical glitches and low or unstable internet speed frequently.'
+      );
+      setShowButtonsInModal(true);
       setShowModal(true);
     } else {
       triggerManualOffline(mode);
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    onManualOfflineTrigger() {
+      setShowModal(true);
+      triggerManualOffline(true);
+      setModalMessage(serverErrorModalMessage);
+      setShowButtonsInModal(false);
+    },
+  }));
 
   useEffect(() => {
     const stored = localStorage.getItem('manualOfflineState');
@@ -107,24 +148,23 @@ const ManualOffline = () => {
   return (
     <>
       {showModal && (
-        <InstructionModal
-          message={`This option is preferable if you are facing <b>low or unstable internet speed</b> frequently. You can <b>renable</b> the offline mode only after <b>${
-            APP_OFFLINE_SWITCH_INTERVAL / (60 * 1000)
-          } minutes</b>.`}
-          onClose={handleCancelOffline}
-        >
-          <button
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
-            onClick={handleConfirmOffline}
-          >
-            Confirm
-          </button>
-          <button
-            className="px-3 py-1 bg-gray-300 text-gray-800 rounded text-sm"
-            onClick={handleCancelOffline}
-          >
-            Cancel
-          </button>
+        <InstructionModal message={modalMessage} onClose={handleCloseModal}>
+          {showButtonsInModal && (
+            <>
+              <button
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                onClick={handleConfirmOffline}
+              >
+                Confirm
+              </button>
+              <button
+                className="px-3 py-1 bg-gray-300 text-gray-800 rounded text-sm"
+                onClick={handleCloseModal}
+              >
+                Cancel
+              </button>
+            </>
+          )}
         </InstructionModal>
       )}
 
@@ -190,6 +230,6 @@ const ManualOffline = () => {
       </div>
     </>
   );
-};
+});
 
 export default ManualOffline;
