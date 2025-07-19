@@ -24,6 +24,7 @@ const useTaskLogic = (
   endedActivityRestart,
   setEndedActivityRestart,
   setIsLoading,
+  trackedHourDetails,
   updateTrackedHourDetails,
   setApiError,
   isLogging,
@@ -148,6 +149,34 @@ const useTaskLogic = (
     }
   }, [socket, isLogging, authToken, isOnline]);
 
+  // ----- Offline tracked time start -------
+
+  const idleTimeIntervalRef = useRef(10);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window?.electronAPI) {
+      window.electronAPI.getIdleTimeInterval((interval) => {
+        idleTimeIntervalRef.current = interval;
+      });
+    }
+  }, [authToken]);
+
+  const inactivityCountRef = useRef(0);
+  const trackedHourDetailsRef = useRef({
+    totalTime: 0,
+    idleTime: 0,
+  });
+
+  useEffect(() => {
+    if (!isOnline && trackedHourDetails?.trackedHourInSeconds >= 0) {
+      trackedHourDetailsRef.current = {
+        ...trackedHourDetails,
+      };
+    }
+  }, [isOnline]);
+
+  // ----- Offline tracked time end -------
+
   const startStopActivityDetailHandler = async (startUserData) => {
     let ipAddress = 'offline';
     if (isOnline) {
@@ -257,6 +286,11 @@ const useTaskLogic = (
             });
         });
       } else {
+        const now = Date.now();
+        const durationInSec = Math.floor(
+          (now - intervalStartTimeRef.current) / 1000
+        );
+
         const offlineActivityData = {
           ownerId,
           projectTaskActivityId:
@@ -271,7 +305,40 @@ const useTaskLogic = (
           endTime: new Date().toISOString(),
         };
 
+        const hasActivity =
+          activityDifference.mouseClick > 0 ||
+          activityDifference.scroll > 0 ||
+          activityDifference.keystroke > 0;
+
+        if (hasActivity) {
+          inactivityCountRef.current = 0;
+          trackedHourDetailsRef.current.trackedHourInSeconds += durationInSec;
+        } else {
+          inactivityCountRef.current += 1;
+
+          if (inactivityCountRef.current <= idleTimeIntervalRef.current) {
+            trackedHourDetailsRef.current.trackedHourInSeconds += durationInSec;
+          } else {
+            trackedHourDetailsRef.current.idleTime += durationInSec;
+          }
+        }
+
         window.electronAPI.sendOfflineActivityData?.(offlineActivityData);
+
+        updateTrackedHourDetails(
+          trackedHourDetailsRef.current.trackedHourInSeconds,
+          trackedHourDetailsRef.current.idleTime
+        );
+
+        localStorage.setItem(
+          'offlineTrackedHours',
+          JSON.stringify({
+            trackedHourInSeconds:
+              trackedHourDetailsRef.current.trackedHourInSeconds,
+            idleTime: trackedHourDetailsRef.current.idleTime,
+          })
+        );
+
         intervalStartTimeRef.current = Date.now();
       }
     };

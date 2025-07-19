@@ -123,45 +123,67 @@ function ActivityLogger({
     localStorage.setItem('ownerId', value);
   };
 
-  // Tracked hours details
-
   const [animate, setAnimate] = useState(false);
   const [trackedHourDetails, setTrackedHourDetails] = useState({
     trackedHourInSeconds: 0,
     idleTime: 0,
   });
 
-  const [updatedDetailsFromApi, setUpdatedDetailsFromApi] = useState(null);
+  const [updatedDetailsFromActivity, setUpdatedDetailsFromActivity] =
+    useState(null);
 
   const updateTrackedHourDetails = useCallback(
     (newSeconds, idleTimeInSeconds) => {
-      setUpdatedDetailsFromApi({ newSeconds, idleTimeInSeconds });
+      setUpdatedDetailsFromActivity({ newSeconds, idleTimeInSeconds });
     },
     [trackedHourDetails]
   );
 
   useEffect(() => {
-    if (updatedDetailsFromApi && isOnline) {
-      setTrackedHourDetails((prev) => {
+    if (updatedDetailsFromActivity) {
+      if (isOnline) {
+        setTrackedHourDetails((prev) => {
+          setAnimate(true);
+          setTimeout(() => setAnimate(false), 300);
+
+          const shouldUpdateTrackedTime =
+            updatedDetailsFromActivity.idleTimeInSeconds === 0;
+
+          localStorage.setItem(
+            'offlineTrackedHours',
+            JSON.stringify({
+              trackedHourInSeconds: shouldUpdateTrackedTime
+                ? +prev?.trackedHourInSeconds +
+                  (+updatedDetailsFromActivity?.newSeconds ?? 0)
+                : +prev?.trackedHourInSeconds,
+              idleTime:
+                +prev?.idleTime +
+                (+updatedDetailsFromActivity?.idleTimeInSeconds ?? 0),
+            })
+          );
+
+          return {
+            trackedHourInSeconds: shouldUpdateTrackedTime
+              ? +prev?.trackedHourInSeconds +
+                (+updatedDetailsFromActivity?.newSeconds ?? 0)
+              : +prev?.trackedHourInSeconds,
+            idleTime:
+              +prev?.idleTime +
+              (+updatedDetailsFromActivity?.idleTimeInSeconds ?? 0),
+          };
+        });
+      } else {
         setAnimate(true);
+        setTrackedHourDetails({
+          trackedHourInSeconds: updatedDetailsFromActivity?.newSeconds,
+          idleTime: updatedDetailsFromActivity?.idleTimeInSeconds,
+        });
         setTimeout(() => setAnimate(false), 300);
-
-        const shouldUpdateTrackedTime =
-          updatedDetailsFromApi.idleTimeInSeconds === 0;
-
-        return {
-          trackedHourInSeconds: shouldUpdateTrackedTime
-            ? +prev?.trackedHourInSeconds +
-              (+updatedDetailsFromApi?.newSeconds ?? 0)
-            : +prev?.trackedHourInSeconds,
-          idleTime:
-            +prev?.idleTime + (+updatedDetailsFromApi?.idleTimeInSeconds ?? 0),
-        };
-      });
+      }
     }
 
-    setUpdatedDetailsFromApi(null);
-  }, [updatedDetailsFromApi, isOnline]);
+    setUpdatedDetailsFromActivity(null);
+  }, [updatedDetailsFromActivity, isOnline]);
 
   useEffect(() => {
     let trackedHourTimeout;
@@ -183,6 +205,14 @@ function ActivityLogger({
               setAnimate(true);
               setTimeout(() => setAnimate(false), 300);
             }
+
+            localStorage.setItem(
+              'offlineTrackedHours',
+              JSON.stringify({
+                idleTime,
+                trackedHourInSeconds: newSeconds,
+              })
+            );
 
             return {
               idleTime,
@@ -203,46 +233,67 @@ function ActivityLogger({
     };
   }, [authToken, ownerId, isOnline]);
 
+  useEffect(() => {
+    if (isOnline && typeof window !== undefined)
+      localStorage.removeItem('offlineTrackedHours');
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const offlineTrackedHours = JSON.parse(
+        localStorage.getItem('offlineTrackedHours')
+      );
+      if (offlineTrackedHours) {
+        setTrackedHourDetails(offlineTrackedHours);
+      }
+    }
+  }, []);
+
   function fetchActiveTime() {
     let trackedHourTimeout;
 
-    if (authToken && ownerId && isOnline) {
-      const trackedHourDetailApiCall = () =>
-        dispatch(
-          fetchTrackingTimeDetails(authToken, {
-            ownerId,
-            timezone: getSystemTimezone(),
-          })
-        ).then((res) => {
-          const newSeconds =
-            res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.totalTime;
-          const idleTime =
-            res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.idleTime;
-          setTrackedHourDetails((prev) => {
-            if (prev.trackedHourInSeconds !== newSeconds) {
-              setAnimate(true);
-              setTimeout(() => setAnimate(false), 300);
-            }
+    if (authToken && ownerId) {
+      if (isOnline) {
+        const trackedHourDetailApiCall = () =>
+          dispatch(
+            fetchTrackingTimeDetails(authToken, {
+              ownerId,
+              timezone: getSystemTimezone(),
+            })
+          ).then((res) => {
+            const newSeconds =
+              res?.data?.data?.length === 0
+                ? 0
+                : res?.data?.data?.[0]?.totalTime;
+            const idleTime =
+              res?.data?.data?.length === 0
+                ? 0
+                : res?.data?.data?.[0]?.idleTime;
+            setTrackedHourDetails((prev) => {
+              if (prev.trackedHourInSeconds !== newSeconds) {
+                setAnimate(true);
+                setTimeout(() => setAnimate(false), 300);
+              }
 
-            return {
-              idleTime,
-              trackedHourInSeconds: newSeconds,
-            };
+              return {
+                idleTime,
+                trackedHourInSeconds: newSeconds,
+              };
+            });
           });
-        });
 
-      trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
-      trackedHourTimeout = setTimeout(
-        trackedHourDetailApiCall,
-        (activityInterval || 1) * 60 * 1000 + 1000
-      );
+        trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
+        trackedHourTimeout = setTimeout(
+          trackedHourDetailApiCall,
+          (activityInterval || 1) * 60 * 1000 + 1000
+        );
+      }
     }
 
     if (trackedHourTimeout) clearTimeout(trackedHourTimeout);
   }
 
   // Initial Speed
-
   const [initialSpeed, setInitialSpeed] = useState(null);
 
   // Offline triggering handler
@@ -371,6 +422,7 @@ function ActivityLogger({
                 endedActivityRestart={endedActivityRestart}
                 setEndedActivityRestart={setEndedActivityRestart}
                 setIsLoading={setIsLoading}
+                trackedHourDetails={trackedHourDetails}
                 updateTrackedHourDetails={updateTrackedHourDetails}
                 initialSpeed={initialSpeed}
                 onManualOfflineTrigger={manualOfflineTriggerHandler}
@@ -445,21 +497,20 @@ function ActivityLogger({
                   </p>
                 </div>
 
-                {isOnline ? (
-                  <div className="bg-gradient-to-br from-emerald-100 to-green-200 p-4 sm:p-6 rounded-xl shadow shadow-emerald-200 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-2">
-                      <Hourglass className="text-emerald-600 !h-6 !w-6" />
-                      <SlidingTimeDisplay
-                        seconds={trackedHourDetails.trackedHourInSeconds}
-                        animate={animate}
-                        fetchActiveTime={fetchActiveTime}
-                      />
-                    </div>
-                    <p className="text-sm text-emerald-700 font-semibold">
-                      Active Time
-                    </p>
+                <div className="bg-gradient-to-br from-emerald-100 to-green-200 p-4 sm:p-6 rounded-xl shadow shadow-emerald-200 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <Hourglass className="text-emerald-600 !h-6 !w-6" />
+                    <SlidingTimeDisplay
+                      seconds={trackedHourDetails.trackedHourInSeconds}
+                      animate={animate}
+                      fetchActiveTime={fetchActiveTime}
+                      isOnline={isOnline}
+                    />
                   </div>
-                ) : null}
+                  <p className="text-sm text-emerald-700 font-semibold">
+                    Active Time
+                  </p>
+                </div>
 
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">

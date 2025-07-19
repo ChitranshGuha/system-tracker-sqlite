@@ -10,4 +10,7 @@ export const TRACKER_VERSION = '1.1.5';
 
 export const DEFAULT_SCREENSHOT_TYPE = 'SCREENSHOT';
 
+// Reload time spans
+
+export const REFRESH_CALL_TIME = 30 * 60 * 1000;
 export const APP_OFFLINE_SWITCH_INTERVAL = 15 * 60 * 1000;

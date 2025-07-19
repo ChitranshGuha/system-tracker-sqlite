@@ -55,4 +55,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback(value)
     );
   },
+  getIdleTimeInterval: (callback) => {
+    ipcRenderer.send('fetch-idle-time-interval');
+    ipcRenderer.on('idle-time-interval', (_, value) => callback(value));
+  },
 });

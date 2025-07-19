@@ -44,11 +44,14 @@ const DEFAULT_SCREENSHOT_TYPE = 'SCREENSHOT';
 const DEFAULT_CAPTURE_INTERVAL = 10;
 const DEFAULT_ACTIVITY_INTERVAL = 1;
 const DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL = 1800;
+const DEFAULT_IDLE_TIME_INTERVAL = 10;
+
 let screenshotType = DEFAULT_SCREENSHOT_TYPE;
 
 let captureIntervalMinutes;
 let activityIntervalMinutes;
 let activitySpeedLocationInterval;
+let idleTimeInterval;
 
 // Activities
 let clickCount = 0;
@@ -317,10 +320,19 @@ ipcMain.on('fetch-activity-interval', async (event) => {
   );
 });
 
+// Function to fetch speed activity interval from API
 ipcMain.on('fetch-activity-speed-location-interval', async (event) => {
   event.sender.send(
     'activity-speed-location-interval',
     activitySpeedLocationInterval || DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL
+  );
+});
+
+// Function to fetch idle time interval from API
+ipcMain.on('fetch-idle-time-interval', async (event) => {
+  event.sender.send(
+    'idle-time-interval',
+    idleTimeInterval || DEFAULT_IDLE_TIME_INTERVAL
   );
 });
 
@@ -412,6 +424,9 @@ async function fetchCaptureInterval() {
     // 3) Speed location interval
     activitySpeedLocationInterval = +intervals.activitySpeedLocationInterval;
 
+    // 4) Idle time interval
+    idleTimeInterval = +intervals.idleTimeInterval;
+
     if (mainWindow) {
       mainWindow.webContents.send(
         'capture-interval',
@@ -424,6 +439,10 @@ async function fetchCaptureInterval() {
       mainWindow.webContents.send(
         'activity-speed-location-interval',
         +intervals.activitySpeedLocationInterval
+      );
+      mainWindow.webContents.send(
+        'idle-time-interval',
+        +intervals.idleTimeInterval
       );
     }
   } else {
@@ -451,6 +470,9 @@ async function fetchCaptureInterval() {
       activitySpeedLocationInterval =
         response?.data?.data?.internetSpeedIntervalInSeconds;
 
+      // 4) Idle time interval
+      idleTimeInterval = response?.data?.data?.idleTimeInSeconds / 60;
+
       if (mainWindow) {
         mainWindow.webContents.send(
           'capture-interval',
@@ -465,6 +487,10 @@ async function fetchCaptureInterval() {
           +activitySpeedLocationInterval ||
             DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL
         );
+        mainWindow.webContents.send(
+          'idle-time-interval',
+          +idleTimeInterval || DEFAULT_IDLE_TIME_INTERVAL
+        );
       }
 
       store.set('intervals', {
@@ -475,6 +501,7 @@ async function fetchCaptureInterval() {
         activitySpeedLocationInterval:
           +activitySpeedLocationInterval ||
           DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL,
+        idleTimeInterval: +idleTimeInterval || DEFAULT_IDLE_TIME_INTERVAL,
       });
 
       return captureIntervalMinutes;

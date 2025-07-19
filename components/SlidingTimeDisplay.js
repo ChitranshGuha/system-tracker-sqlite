@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { REFRESH_CALL_TIME } from '../utils/constants';
 
 export default function SlidingTimeDisplay({
   seconds,
   animate,
   fetchActiveTime,
+  isOnline,
 }) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -32,7 +34,6 @@ export default function SlidingTimeDisplay({
 
   // Refresh call
   const [disabled, setDisabled] = useState(false);
-  const REFRESH_CALL_TIME = 30 * 60 * 1000;
 
   useEffect(() => {
     const lastClicked = localStorage.getItem('refreshLastClicked');
@@ -47,15 +48,17 @@ export default function SlidingTimeDisplay({
   }, []);
 
   const handleRefresh = () => {
-    fetchActiveTime();
-    setDisabled(true);
-    localStorage.setItem('refreshLastClicked', Date.now().toString());
-    setTimeout(() => setDisabled(false), REFRESH_CALL_TIME);
+    if (isOnline) {
+      fetchActiveTime();
+      setDisabled(true);
+      localStorage.setItem('refreshLastClicked', Date.now().toString());
+      setTimeout(() => setDisabled(false), REFRESH_CALL_TIME);
+    }
   };
 
   return (
     <div className="relative">
-      {!disabled && (
+      {!disabled && isOnline && (
         <button
           onClick={handleRefresh}
           className="absolute -top-5 -right-4 p-1 text-green-800 hover:text-green-600"
