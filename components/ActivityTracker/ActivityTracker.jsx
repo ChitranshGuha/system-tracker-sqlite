@@ -9,7 +9,11 @@ import {
   removeActivityDetailTimeout,
 } from '../../redux/activity/activityActions';
 import Loader from '../../components/Loader';
-import { API_BASE_URL, TRACKER_VERSION } from '../../utils/constants';
+import {
+  API_BASE_URL,
+  TRACKER_VERSION,
+  UPDATE_CHECKER_TIME,
+} from '../../utils/constants';
 import { DOMAIN_TYPE } from '../../utils/constants';
 import AppUpdater from '../../components/AppUpdater';
 import { Download, RefreshCcw } from 'lucide-react';
@@ -228,8 +232,20 @@ function ActivityTracker({ isOnline }) {
     }
   }, [authToken, isOnline]);
 
+  useEffect(() => {
+    if (typeof window !== undefined) {
+      const defaultDomain = JSON.parse(
+        localStorage.getItem('employeeDetails')
+      )?.domainId;
+
+      if (defaultDomain) {
+        setDomainId(defaultDomain);
+      }
+    }
+  }, []);
+
   // Update Checker
-  const UPDATE_CHECKER_TIME = 60 * 60 * 1000;
+
   const [canCheckUpdate, setCanCheckUpdate] = useState(true);
 
   useEffect(() => {
@@ -249,6 +265,7 @@ function ActivityTracker({ isOnline }) {
 
   useEffect(() => {
     const lastChecked = localStorage.getItem('lastUpdateCheck');
+
     if (lastChecked) {
       const diff = Date.now() - parseInt(lastChecked, 10);
       if (diff < UPDATE_CHECKER_TIME) {
@@ -264,7 +281,6 @@ function ActivityTracker({ isOnline }) {
 
   function updateCheckHandler() {
     if (!canCheckUpdate) return;
-
     if (domainId) {
       dispatch(appUpdateChecker({ domainId })).then((data) => {
         if (data?.success) {

@@ -1,39 +1,61 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { WifiOff, Wifi } from 'lucide-react';
+import { WifiOff, Wifi, Info } from 'lucide-react';
 import { getInternetConnectionStatus } from '../redux/employee/employeeActions';
 import InstructionModal from './InstructionsModal';
 import { APP_OFFLINE_SWITCH_INTERVAL } from '../utils/constants';
 
-const serverErrorModalMessage = `
-  <div class="flex items-start space-x-2 bg-amber-50 border border-amber-200 p-4 rounded-md">
-    <div class="pt-1">
-      <svg xmlns="http://www.w3.org/2000/svg" class="text-amber-500 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path d="M10.29 3.86L1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0zM12 9v4m0 4h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+const modalMessageHandler = (minutes, isError) => {
+  const canGoOnline = minutes <= 0;
+
+  const iconSvg = isError
+    ? `<svg xmlns="http://www.w3.org/2000/svg" class="text-amber-500 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path d="M10.29 3.86L1.82 18a1 1 0 0 0 .86 1.5h18.64a1 1 0 0 0 .86-1.5L13.71 3.86a1 1 0 0 0-1.72 0zM12 9v4m0 4h.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="green">
+        <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2l4-4" />
+        <circle cx="12" cy="12" r="10" stroke-width="2" />
+      </svg>`;
+
+  const heading = isError
+    ? "You're being switched to offline mode"
+    : 'Offline Mode';
+
+  const reason = isError
+    ? 'You can continue working normally and your activity will be tracked in offline mode.'
+    : 'Your activity will be tracked in offline mode. This option is preferable if you are facing <b>technical glitches and low or unstable internet speed</b> frequently.';
+
+  const switchInfo = canGoOnline
+    ? `<p class="mb-2 text-green-600 font-medium">You can now switch back to online mode at any time.</p>`
+    : `<p class="mb-2 text-blue-600">You will be able to switch back to online mode after <strong>${minutes} minute${minutes > 1 ? 's' : ''}</strong>.</p>`;
+
+  const syncMessage = `<p class="mb-2">When you go online after ${canGoOnline ? 'this period' : `${minutes} minute${minutes > 1 ? 's' : ''}`} or any time you want to, your activity will be synced to the server.</p>`;
+
+  return `
+    <div class="flex items-start space-x-2 bg-amber-50 border border-amber-200 p-4 rounded-md">
+      <div class="pt-1">${iconSvg}</div>
+      <div class="text-sm">
+        <p class="${isError ? 'font-semibold' : 'font-bold text-lg'} mb-3">${heading}</p>
+        <ul class="list-disc">
+          <li><p class="mb-2">${reason}</p></li>
+          <li>${switchInfo}</li>
+          <li>${syncMessage}</li>
+          <li>
+            <p>
+              Make sure to wait for loading screen to disappear on the app to <strong>sync your data</strong> when you're back online.
+            </p>
+          </li>
+        </ul>
+      </div>
     </div>
-    <div class="text-sm text-gray-800">
-      <p class="font-semibold mb-1">You're being switched to offline mode.</p>
-      <p class="mb-2">
-        Due to <strong class="text-amber-700">periodic server maintenance</strong>, our servers are temporarily unavailable. 
-        To ensure uninterrupted tracking, we are switching you to <strong>offline mode</strong>.
-      </p>
-      <p class="mb-2">
-        You can continue working normally. If you experience <em>low or unstable internet speed</em>, staying offline is recommended.
-      </p>
-      <p class="mb-2 text-blue-600">
-        You will be able to switch back to online mode after <strong>${APP_OFFLINE_SWITCH_INTERVAL / (60 * 1000)} minutes</strong>.
-      </p>
-      <p class="text-gray-600">
-        Make sure the app has time to <strong>sync your data</strong> when you're back online.
-      </p>
-    </div>
-  </div>
-`;
+  `;
+};
 
 const ManualOffline = forwardRef((_, ref) => {
+  const defaultMinutes = Math.ceil(APP_OFFLINE_SWITCH_INTERVAL / (60 * 1000));
   const dispatch = useDispatch();
   const isElectron = typeof window !== 'undefined' && window.electronAPI;
+  const [isTriggered, setIsTriggered] = useState(false);
 
   const isOnline = useSelector(
     (state) => state.employee.internetConnectionStatus
@@ -87,10 +109,9 @@ const ManualOffline = forwardRef((_, ref) => {
 
   const manualOfflineHandler = (mode) => {
     if (mode && !manualOffline) {
-      setModalMessage(
-        'This option is preferable if you are facing technical glitches and low or unstable internet speed frequently.'
-      );
+      setModalMessage(modalMessageHandler(defaultMinutes));
       setShowButtonsInModal(true);
+      setIsTriggered(false);
       setShowModal(true);
     } else {
       triggerManualOffline(mode);
@@ -100,8 +121,9 @@ const ManualOffline = forwardRef((_, ref) => {
   useImperativeHandle(ref, () => ({
     onManualOfflineTrigger() {
       setShowModal(true);
+      setIsTriggered(true);
       triggerManualOffline(true);
-      setModalMessage(serverErrorModalMessage);
+      setModalMessage(modalMessageHandler(defaultMinutes, true));
       setShowButtonsInModal(false);
     },
   }));
@@ -143,6 +165,33 @@ const ManualOffline = forwardRef((_, ref) => {
     };
   }, []);
 
+  function infoModalHandler() {
+    let minutesLeft = defaultMinutes;
+
+    const stored = localStorage.getItem('manualOfflineState');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.manualOffline && parsed.expiresAt) {
+          const now = Date.now();
+          const remainingMs = parsed.expiresAt - now;
+
+          if (remainingMs <= 0) {
+            minutesLeft = 0;
+          } else {
+            minutesLeft = Math.ceil(remainingMs / (60 * 1000));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse manualOfflineState:', e);
+      }
+    }
+
+    setModalMessage(modalMessageHandler(minutesLeft, isTriggered));
+    setShowButtonsInModal(false);
+    setShowModal(true);
+  }
+
   if (!isActuallyOnline) return null;
 
   return (
@@ -169,6 +218,13 @@ const ManualOffline = forwardRef((_, ref) => {
       )}
 
       <div className="bg-white px-2 py-1 rounded-full shadow-md flex items-center space-x-2 text-sm">
+        {!isOnline && (
+          <Info
+            className="cursor-pointer text-blue-500 hover:text-blue-700"
+            onClick={infoModalHandler}
+          />
+        )}
+
         <label className="flex items-center space-x-1 cursor-pointer">
           <input
             type="radio"

@@ -6,7 +6,7 @@ const InstructionModal = ({ message, onClose, children }) => {
     if (!children) {
       const timer = setTimeout(() => {
         onClose();
-      }, 20000);
+      }, 10000);
       return () => clearTimeout(timer);
     }
   }, [children, onClose]);
@@ -16,7 +16,7 @@ const InstructionModal = ({ message, onClose, children }) => {
       <div className=" bg-white max-w-md w-full p-4 rounded-xl shadow-lg">
         {!children && (
           <div className="flex justify-between items-center mb-4">
-            <h2 className="!m-0">Entered Offline Mode</h2>
+            <h2 className="!m-0 font-bold">Entered Offline Mode</h2>
 
             <button
               onClick={onClose}

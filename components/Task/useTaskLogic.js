@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
 import { activityActions } from '../../redux/activity/activityActions';
-import { TRACKER_VERSION } from '../../utils/constants';
+import { BASE_URL, TRACKER_VERSION } from '../../utils/constants';
 import { getSpeed, getSystemTimezone } from '../../utils/helpers';
 import { DEFAULT_SCREENSHOT_TYPE } from '../../utils/constants';
 
@@ -177,6 +177,26 @@ const useTaskLogic = (
 
   // ----- Offline tracked time end -------
 
+  async function serverOfflineTriggerHandler(status) {
+    if (String(status?.error?.status)?.startsWith('5')) {
+      const response = await fetch(`${BASE_URL}/test`, {
+        method: 'HEAD',
+        mode: 'cors',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        if (
+          status?.error?.data?.error?.toLowerCase() !== 'socket hang up' &&
+          !status?.error?.includes('hang up')
+        ) {
+          onManualOfflineTrigger?.();
+          return;
+        }
+      }
+    }
+  }
+
   const startStopActivityDetailHandler = async (startUserData) => {
     let ipAddress = 'offline';
     if (isOnline) {
@@ -244,45 +264,40 @@ const useTaskLogic = (
                 true
               )
             )
-              .then((status) => {
+              .then(async (status) => {
                 if (status?.success) {
                   updateTrackedHourDetails(status?.totalTime, status?.idleTime);
                   setProjectTaskActivityDetailId(null);
                   localStorage.removeItem('projectTaskActivityDetailId');
                 } else {
-                  console.log('End activity error:', status?.error);
-                  if (String(status?.error?.status)?.startsWith('5')) {
-                    onManualOfflineTrigger?.();
-                    return;
-                  }
+                  console.log(
+                    'End activity error:',
+                    status?.error?.data?.error
+                  );
+                  await serverOfflineTriggerHandler(status);
                 }
               })
-              .catch((error) => {
+              .catch(async (error) => {
                 console.log('End failed:', error);
-                onManualOfflineTrigger?.();
-                return;
+                await serverOfflineTriggerHandler(status);
               })
           : Promise.resolve();
 
         endActivityPromise.finally(() => {
           dispatch(activityActions(authToken, 'start', startUserData, true))
-            .then((status) => {
+            .then(async (status) => {
               if (status?.success) {
                 setProjectTaskActivityDetailId(status?.id);
                 intervalStartTimeRef.current = Date.now();
                 localStorage.setItem('projectTaskActivityDetailId', status?.id);
               } else {
                 console.log('Start activity error:', status?.error);
-                if (String(status?.error?.status)?.startsWith('5')) {
-                  onManualOfflineTrigger?.();
-                  return;
-                }
+                await serverOfflineTriggerHandler(status);
               }
             })
-            .catch((error) => {
+            .catch(async (error) => {
               console.log('Start failed:', error);
-              onManualOfflineTrigger?.();
-              return;
+              await serverOfflineTriggerHandler(status);
             });
         });
       } else {

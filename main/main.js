@@ -45,6 +45,7 @@ const DEFAULT_CAPTURE_INTERVAL = 10;
 const DEFAULT_ACTIVITY_INTERVAL = 1;
 const DEFAULT_ACTIVITY_SPEED_LOCATION_INTERVAL = 1800;
 const DEFAULT_IDLE_TIME_INTERVAL = 10;
+const CACHE_CLEAR_INTERVAL = 30 * 60 * 1000;
 
 let screenshotType = DEFAULT_SCREENSHOT_TYPE;
 
@@ -540,6 +541,14 @@ async function createWindow() {
       ? 'http://localhost:3000'
       : `file://${path.join(__dirname, '../out/index.html')}`
   );
+
+  setInterval(() => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.session.clearCache().then(() => {
+        console.log('Cache cleared at:: ', new Date().toLocaleTimeString());
+      });
+    }
+  }, CACHE_CLEAR_INTERVAL);
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
