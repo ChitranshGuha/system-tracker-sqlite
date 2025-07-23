@@ -32,6 +32,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startLogging: () => ipcRenderer.invoke('start-logging'),
   clearStoreStats: () => ipcRenderer.invoke('clear-store-stats'),
   restartLogging: () => ipcRenderer.invoke('restart-logging'),
+<<<<<<< HEAD
+=======
+  sendSessionDetails: (data) => ipcRenderer.send('send-session-details', data),
+  getGeoLocation: () => ipcRenderer.invoke('get-location'),
+>>>>>>> 61335b8d8f361ff98756c8fe2fc1764d75502eaa
   stopLogging: () => ipcRenderer.send('stop-logging'),
   onUpdateStats: (callback) =>
     ipcRenderer.on('update-stats', (_, value) => callback(value)),

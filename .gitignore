@@ -1,8 +1,14 @@
+# Database file
+main/data.sqlite
+main/screenshots
+
 # Dependencies
 /node_modules
 /.pnp
 .pnp.js
 
+main/db.sqlite
+main/screenshots/
 # Testing
 /coverage
 

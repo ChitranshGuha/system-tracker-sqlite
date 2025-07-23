@@ -13,7 +13,7 @@ const store = require('electron-settings');
 const path = require('path');
 const { GlobalKeyboardListener } = require('node-global-key-listener');
 const moment = require('moment');
-
+const fs = require('fs');
 const { spawn } = require('child_process');
 
 // API
@@ -84,7 +84,30 @@ let initialStats = {
 };
 
 let stats = initialStats;
+let currentSessionId = null;
+const {db,setCurrentSessionId,createSession, getLastSession, updateSessionEndTime, updateSessionDetails, retainLastNSessions, saveGeoLocation, saveScreenshotRecord, saveStatsDb} = require('./db')
+function setAuth(value) {
+  const stmt = db.prepare(`
+    INSERT INTO auth (authToken)
+    VALUES (?)
+    ON CONFLICT(authToken) DO UPDATE SET authToken = excluded.authToken
+  `);
+  const storedValue = typeof value === 'string' ? value : JSON.stringify(value);
+  stmt.run(storedValue);
+}
+function setOwnerProject(ownerId) {
+  if (ownerId == null) {
+    return;
+  }
+  const stmt = db.prepare(`
+    INSERT INTO Owner (ownerId)
+    VALUES (?)
+    ON CONFLICT(ownerId) DO UPDATE SET ownerId = excluded.ownerId
+  `);
+  stmt.run(ownerId);
+}
 
+<<<<<<< HEAD
 // Offline Database and syncing
 
 const Database = require('better-sqlite3');
@@ -277,11 +300,22 @@ async function syncOfflineData() {
   }
 }
 
+=======
+ipcMain.on('send-session-details', async (event, data) => {
+  try {
+    await updateSessionDetails(data);
+  } catch (err) {
+    console.error('Error updating session details:', err);
+  }
+});
+>>>>>>> 61335b8d8f361ff98756c8fe2fc1764d75502eaa
 ipcMain.on('set-user-data', async (event, data) => {
   try {
     authToken = data.authToken;
     if (authToken) {
       await store.set('authToken', authToken);
+      console.log("setting authToken to:",authToken);
+      setAuth(authToken);
       await fetchCaptureInterval();
     }
   } catch (error) {
@@ -297,7 +331,12 @@ ipcMain.handle('set-activity-data', async (event, data) => {
   try {
     ownerId = data.ownerId;
     await store.set('ownerId', ownerId);
+<<<<<<< HEAD
 
+=======
+    console.log("setting ownerId to:",ownerId);
+    setOwnerProject(ownerId);
+>>>>>>> 61335b8d8f361ff98756c8fe2fc1764d75502eaa
     return { success: true };
   } catch (error) {
     console.error('Failed to set activity data:', error);
@@ -786,6 +825,16 @@ async function updateStats(isActivity = false) {
 
   mainWindow.webContents.send('update-stats', stats);
   saveStats(stats);
+  if (currentSessionId) {
+    saveStatsDb(
+      clickCount,
+      scrollCount,
+      keyCount,
+      accumulatedText,
+      appWebsites,
+      appWebsiteDetails
+    );
+  }
 }
 
 // Set up global keyboard listener
@@ -903,6 +952,7 @@ async function captureAndSaveScreenshot() {
     }
 
     if (primaryDisplay) {
+<<<<<<< HEAD
       let screenshotBuffer = primaryDisplay.thumbnail.toPNG();
 
       if (screenshotType === 'BLURRED-SCREENSHOT') {
@@ -930,11 +980,27 @@ async function captureAndSaveScreenshot() {
         default:
           fileName = `Screenshot_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
       }
+=======
+      const screenshotBuffer = primaryDisplay.thumbnail.toPNG();
+      const fileName = `Screenshot_${moment().format('YYYY-MM-DD_HH-mm-ss')}.png`;
+>>>>>>> 61335b8d8f361ff98756c8fe2fc1764d75502eaa
 
-      const screenshotBlob = new Blob([screenshotBuffer], {
-        type: 'image/png',
-      });
+      // Save locally
+      const screenshotsDir = path.join(__dirname, 'screenshots');
+      if (!fs.existsSync(screenshotsDir)) {
+        fs.mkdirSync(screenshotsDir);
+      }
 
+      const filePath = path.join(screenshotsDir, fileName);
+      fs.writeFileSync(filePath, screenshotBuffer);
+
+      // Save record to DB
+      if (currentSessionId) {
+        saveScreenshotRecord(fileName, filePath);
+      }
+
+      // Upload logic (your existing code)
+      const screenshotBlob = new Blob([screenshotBuffer], { type: 'image/png' });
       const file = new File([screenshotBlob], fileName, { type: 'image/png' });
 
       const formData = new FormData();
@@ -946,6 +1012,7 @@ async function captureAndSaveScreenshot() {
       if (!ownerId || !authToken) {
         throw new Error('ownerId or authToken not set');
       }
+
       formData.append('ownerId', ownerId);
 
       if (isOffline) {
@@ -984,6 +1051,7 @@ async function captureAndSaveScreenshot() {
 
         const mediaId = await response?.data?.data?.[0]?.id;
 
+<<<<<<< HEAD
         const payload = {
           ownerId,
           mediaId,
@@ -1000,6 +1068,23 @@ async function captureAndSaveScreenshot() {
           }
         );
       }
+=======
+      const payload = {
+        ownerId,
+        mediaId,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      };
+
+      await axios.post(
+        `${API_BASE_URL}/employee/v2/project/project/task/activity/screenshot/add`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+>>>>>>> 61335b8d8f361ff98756c8fe2fc1764d75502eaa
     }
   } catch (error) {
     console.error('Error capturing or uploading screenshot:', error);
@@ -1034,6 +1119,12 @@ ipcMain.handle('start-logging', async () => {
   lastActiveWindow = null;
   appWebsites = [];
   appWebsiteDetails = [];
+
+  const sessionId = createSession();
+  currentSessionId=sessionId;
+  console.log('aagai value main me, ab dalenge set me [sessionId]:', sessionId);
+  console.log('currentSessionId:',currentSessionId);
+  setCurrentSessionId(sessionId);
   await startScreenshotCapture();
 });
 
@@ -1051,6 +1142,12 @@ ipcMain.handle('restart-logging', async () => {
   lastActiveWindow = await getActiveWindowInfo();
   appWebsites = savedStats.appWebsites;
   appWebsiteDetails = savedStats.appWebsiteDetails;
+
+  // const sessionId = getLastSession(); // <- use local var
+  // currentSessionId=sessionId;
+  // console.log('RESTART->aagai value main me, ab dalenge set me [sessionId]:', sessionId);
+  console.log('RESTART->currentSessionId:',currentSessionId);
+  setCurrentSessionId(currentSessionId);     // <- update db.js
   await startScreenshotCapture();
 });
 
@@ -1067,6 +1164,7 @@ ipcMain.handle('get-location', async () => {
       longitude: response.data.lon,
       city: `${response.data.city}, ${response.data.country}`,
     };
+    saveGeoLocation(location);
   } catch (error) {
     console.error('Failed to fetch location:', error.message);
   }
@@ -1088,7 +1186,11 @@ ipcMain.handle('get-ip-address', async () => {
 
 ipcMain.on('stop-logging', () => {
   isLogging = false;
+  updateSessionEndTime(currentSessionId);
+  currentSessionId=null;
+  retainLastNSessions(5);
   stopScreenshotCapture();
+  saveStatsDb(clickCount,scrollCount,keyCount,accumulatedText,appWebsites,appWebsiteDetails);
   stats = initialStats;
   store.reset('stats');
 });
