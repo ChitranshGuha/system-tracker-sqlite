@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import TaskForm from './TaskForm';
 import ActiveSession from './ActiveSession';
 import ActionButtons from './ActionButtons';
 import useTaskLogic from './useTaskLogic';
 import HardReset from '../HardReset';
 import ApiErrorLogger from '../ApiErrorLogger';
+import { gettingEmployeeActionsList } from '../../redux/employee/employeeActions';
+import { FolderSync } from 'lucide-react';
 
 const Task = ({
   startLogging,
@@ -17,7 +19,6 @@ const Task = ({
   authToken,
   stats,
   activityInterval,
-  // activityReportInterval,
   socket,
   projectTaskId,
   setProjectTaskId,
@@ -26,7 +27,16 @@ const Task = ({
   endedActivityRestart,
   setEndedActivityRestart,
   setIsLoading,
+  trackedHourDetails,
+  updateTrackedHourDetails,
+  initialSpeed,
+  onManualOfflineTrigger,
 }) => {
+  const dispatch = useDispatch();
+  const isOnline = useSelector(
+    (state) => state.employee.internetConnectionStatus
+  );
+
   const projects = useSelector((state) => state?.employee?.projects?.list);
   const tasks = useSelector((state) => state?.employee?.tasks?.list);
   const [apiError, setApiError] = useState(null);
@@ -43,7 +53,6 @@ const Task = ({
     authToken,
     stats,
     activityInterval,
-    // activityReportInterval,
     socket,
     setActiveSession,
     stopLogging,
@@ -57,8 +66,33 @@ const Task = ({
     endedActivityRestart,
     setEndedActivityRestart,
     setIsLoading,
-    setApiError
+    trackedHourDetails,
+    updateTrackedHourDetails,
+    setApiError,
+    isLogging,
+    initialSpeed,
+    onManualOfflineTrigger
   );
+
+  useEffect(() => {
+    if (projectId) {
+      const screenshotType = projects?.find((prj) => prj?.id === projectId)
+        ?.projectMember?.screenshotMode;
+      localStorage.setItem('screenshotType', screenshotType);
+      window.electronAPI.sendScreenshotType?.(screenshotType);
+    }
+  }, [projectId]);
+
+  const onSyncProject = () => {
+    dispatch(
+      gettingEmployeeActionsList(
+        authToken,
+        'employee/project/project/list',
+        'projects',
+        { ownerId }
+      )
+    );
+  };
 
   return (
     <>
@@ -67,13 +101,26 @@ const Task = ({
       ) : null}
 
       <div className="mb-6 sm:mb-8 relative">
-        <HardReset
-          stopLoggingHandler={stopLoggingHandler}
-          isLogging={isLogging}
-          setIsLoading={setIsLoading}
-          ownerId={ownerId}
-          authToken={authToken}
-        />
+        {isOnline && (
+          <HardReset
+            stopLoggingHandler={stopLoggingHandler}
+            isLogging={isLogging}
+            setIsLoading={setIsLoading}
+            ownerId={ownerId}
+            authToken={authToken}
+          />
+        )}
+
+        {!isLogging && isOnline && (
+          <button
+            onClick={onSyncProject}
+            className="absolute top-6 right-20 flex items-center justify-center p-3 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg transition-all duration-800 hover:scale-105"
+            aria-label="Sync Projects"
+            title="Sync Projects"
+          >
+            <FolderSync className="size-6" />
+          </button>
+        )}
 
         <form
           onSubmit={handleFormSubmit}
@@ -103,6 +150,7 @@ const Task = ({
             />
           )}
           <ActionButtons
+            isOnline={isOnline}
             isLogging={isLogging}
             handleFormSubmit={handleFormSubmit}
             stopLoggingHandler={stopLoggingHandler}

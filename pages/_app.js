@@ -5,11 +5,11 @@ import AppWrapper from '../components/AppWrapper';
 
 function MyApp({ Component, pageProps }) {
   return (
-    <AppWrapper>
-      <Provider store={store}>
+    <Provider store={store}>
+      <AppWrapper>
         <Component {...pageProps} />
-      </Provider>
-    </AppWrapper>
+      </AppWrapper>
+    </Provider>
   );
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "logger",
-  "version": "1.0.7",
+  "version": "1.1.6",
   "description": "This app basically logs the activity of logged in user and also display its idle times. Moreover it also takes entire desktop screenshot after every n interval of time which would be decided by the admin.",
   "main": "main/main.js",
   "scripts": {
@@ -8,10 +8,14 @@
     "start": "next start && electron .",
     "electron-dev": "electron .",
     "format": "prettier --write .",
-    "build": "pyinstaller --onefile --name scroll_tracker main/scroll_tracker.py && next build && electron-builder"
+    "build": "npm run rebuild && pyinstaller --onefile --name scroll_tracker main/scroll_tracker.py && next build && electron-builder",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "build": {
     "appId": "com.infoware-logger.123",
+    "asarUnpack": [
+      "**/better-sqlite3/**"
+    ],
     "productName": "Activity Tracker - Digital Links",
     "directories": {
       "output": "dist",
@@ -21,7 +25,8 @@
       "target": "nsis",
       "icon": "build/icon.ico",
       "signAndEditExecutable": false,
-      "sign": false
+      "sign": false,
+      "compression": "maximum"
     },
     "nsis": {
       "oneClick": false,
@@ -40,8 +45,19 @@
       "target": "AppImage"
     },
     "files": [
-      "**/*",
-      "build/**/*"
+      "main/**/*",
+      "pages/**/*",
+      "components/**/*",
+      "out/**/*",
+      "build/**/*",
+      "next.config.js",
+      "package.json",
+      "!**/*.md",
+      "!**/test{,s}/**",
+      "!**/*.test.*",
+      "!**/__mocks__/**",
+      "!**/.env*",
+      "!**/node_modules/*/{test,__tests__,tests}/**"
     ],
     "extraResources": [
       {
@@ -61,7 +77,8 @@
     "cross-env": "^7.0.3",
     "electron": "^33.0.2",
     "electron-builder": "^25.1.8",
-    "next": "^15.0.2",
+    "electron-rebuild": "^3.2.9",
+    "next": "^15.3.3",
     "postcss": "^8.4.47",
     "prettier": "^3.4.2",
     "react": "^18.3.1",
@@ -79,10 +96,10 @@
     "moment": "^2.30.1",
     "node-global-key-listener": "^0.3.0",
     "react-apexcharts": "^1.5.0",
-    "react-icons": "^5.3.0",
     "react-redux": "^9.1.2",
     "redux": "^5.0.1",
     "redux-thunk": "^3.1.0",
+    "sharp": "^0.34.2",
     "socket.io-client": "^4.8.1"
   }
 }

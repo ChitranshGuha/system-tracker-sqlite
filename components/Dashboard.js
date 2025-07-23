@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  FiMousePointer,
-  FiClock,
-  FiMove,
-  FiActivity,
-  FiPackage,
-} from 'react-icons/fi';
-import { IoSpeedometerOutline } from 'react-icons/io5';
-import { BsKeyboard } from 'react-icons/bs';
-import { ClockAlert, Hourglass, X } from 'lucide-react';
+  Hourglass,
+  X,
+  MousePointer,
+  Move,
+  Activity,
+  Package,
+  Keyboard,
+  Gauge,
+} from 'lucide-react';
 import Task from './Task/Task';
 import PastActivities from './PastActivities';
 import { gettingEmployeeActionsList } from '../redux/employee/employeeActions';
@@ -20,6 +20,7 @@ import { BASE_URL, IS_PRODUCTION, TRACKER_VERSION } from '../utils/constants';
 import { fetchTrackingTimeDetails } from '../redux/activity/activityActions';
 import { getSystemTimezone } from '../utils/helpers';
 import SlidingTimeDisplay from './SlidingTimeDisplay';
+import ManualOffline from './ManualOffline';
 
 function ActivityLogger({
   onLogout,
@@ -30,29 +31,33 @@ function ActivityLogger({
   captureInterval,
   authToken,
   activityInterval,
-  // activityReportInterval,
   activityLocationInterval,
   endedActivityRestart,
   setEndedActivityRestart,
   setIsLoading,
 }) {
   const dispatch = useDispatch();
+  const isOnline = useSelector(
+    (state) => state.employee.internetConnectionStatus
+  );
 
   const [ownerId, setOwnerId] = useState(null);
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    dispatch(
-      gettingEmployeeActionsList(
-        authToken,
-        'employee/auth/workspace/list',
-        'workspaces'
-      )
-    );
-  }, []);
+    if (!isLogging) {
+      dispatch(
+        gettingEmployeeActionsList(
+          authToken,
+          'employee/auth/workspace/list',
+          'workspaces'
+        )
+      );
+    }
+  }, [isLogging]);
 
   useEffect(() => {
-    if (ownerId && authToken) {
+    if (ownerId && authToken && isOnline) {
       const socketInstance = io(
         `${BASE_URL}/employee?token=${authToken}&ownerId=${ownerId}`
       );
@@ -71,7 +76,7 @@ function ActivityLogger({
         socketInstance.disconnect();
       };
     }
-  }, [ownerId, authToken]);
+  }, [ownerId, authToken, isOnline]);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showCannotLogoutModal, setShowCannotLogoutModal] = useState(false);
@@ -118,19 +123,72 @@ function ActivityLogger({
     localStorage.setItem('ownerId', value);
   };
 
-  // Tracked hours details
-
   const [animate, setAnimate] = useState(false);
   const [trackedHourDetails, setTrackedHourDetails] = useState({
     trackedHourInSeconds: 0,
     idleTime: 0,
   });
 
+  const [updatedDetailsFromActivity, setUpdatedDetailsFromActivity] =
+    useState(null);
+
+  const updateTrackedHourDetails = useCallback(
+    (newSeconds, idleTimeInSeconds) => {
+      setUpdatedDetailsFromActivity({ newSeconds, idleTimeInSeconds });
+    },
+    [trackedHourDetails]
+  );
+
+  useEffect(() => {
+    if (updatedDetailsFromActivity) {
+      if (isOnline) {
+        setTrackedHourDetails((prev) => {
+          setAnimate(true);
+          setTimeout(() => setAnimate(false), 300);
+
+          const shouldUpdateTrackedTime =
+            updatedDetailsFromActivity.idleTimeInSeconds === 0;
+
+          localStorage.setItem(
+            'offlineTrackedHours',
+            JSON.stringify({
+              trackedHourInSeconds: shouldUpdateTrackedTime
+                ? +prev?.trackedHourInSeconds +
+                  (+updatedDetailsFromActivity?.newSeconds ?? 0)
+                : +prev?.trackedHourInSeconds,
+              idleTime:
+                +prev?.idleTime +
+                (+updatedDetailsFromActivity?.idleTimeInSeconds ?? 0),
+            })
+          );
+
+          return {
+            trackedHourInSeconds: shouldUpdateTrackedTime
+              ? +prev?.trackedHourInSeconds +
+                (+updatedDetailsFromActivity?.newSeconds ?? 0)
+              : +prev?.trackedHourInSeconds,
+            idleTime:
+              +prev?.idleTime +
+              (+updatedDetailsFromActivity?.idleTimeInSeconds ?? 0),
+          };
+        });
+      } else {
+        setAnimate(true);
+        setTrackedHourDetails({
+          trackedHourInSeconds: updatedDetailsFromActivity?.newSeconds,
+          idleTime: updatedDetailsFromActivity?.idleTimeInSeconds,
+        });
+        setTimeout(() => setAnimate(false), 300);
+      }
+    }
+
+    setUpdatedDetailsFromActivity(null);
+  }, [updatedDetailsFromActivity, isOnline]);
+
   useEffect(() => {
     let trackedHourTimeout;
-    let trackedHourInterval;
 
-    if (authToken && ownerId) {
+    if (authToken && ownerId && isOnline) {
       const trackedHourDetailApiCall = () =>
         dispatch(
           fetchTrackingTimeDetails(authToken, {
@@ -140,17 +198,21 @@ function ActivityLogger({
         ).then((res) => {
           const newSeconds =
             res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.totalTime;
-          const idleTime = Math.floor(
-            (res?.data?.data?.length === 0
-              ? 0
-              : res?.data?.data?.[0]?.idleTime || 0) / 60
-          );
-
+          const idleTime =
+            res?.data?.data?.length === 0 ? 0 : res?.data?.data?.[0]?.idleTime;
           setTrackedHourDetails((prev) => {
             if (prev.trackedHourInSeconds !== newSeconds) {
               setAnimate(true);
               setTimeout(() => setAnimate(false), 300);
             }
+
+            localStorage.setItem(
+              'offlineTrackedHours',
+              JSON.stringify({
+                idleTime,
+                trackedHourInSeconds: newSeconds,
+              })
+            );
 
             return {
               idleTime,
@@ -160,53 +222,124 @@ function ActivityLogger({
         });
 
       trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
+      trackedHourTimeout = setTimeout(
+        trackedHourDetailApiCall,
+        (activityInterval || 1) * 60 * 1000 + 1000
+      );
+    }
 
-      if (isLogging && activityInterval) {
-        trackedHourInterval = setInterval(
+    return () => {
+      if (trackedHourTimeout) clearTimeout(trackedHourTimeout);
+    };
+  }, [authToken, ownerId, isOnline]);
+
+  useEffect(() => {
+    if (isOnline && typeof window !== undefined)
+      localStorage.removeItem('offlineTrackedHours');
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const offlineTrackedHours = JSON.parse(
+        localStorage.getItem('offlineTrackedHours')
+      );
+      if (offlineTrackedHours) {
+        setTrackedHourDetails(offlineTrackedHours);
+      }
+    }
+  }, []);
+
+  function fetchActiveTime() {
+    let trackedHourTimeout;
+
+    if (authToken && ownerId) {
+      if (isOnline) {
+        const trackedHourDetailApiCall = () =>
+          dispatch(
+            fetchTrackingTimeDetails(authToken, {
+              ownerId,
+              timezone: getSystemTimezone(),
+            })
+          ).then((res) => {
+            const newSeconds =
+              res?.data?.data?.length === 0
+                ? 0
+                : res?.data?.data?.[0]?.totalTime;
+            const idleTime =
+              res?.data?.data?.length === 0
+                ? 0
+                : res?.data?.data?.[0]?.idleTime;
+            setTrackedHourDetails((prev) => {
+              if (prev.trackedHourInSeconds !== newSeconds) {
+                setAnimate(true);
+                setTimeout(() => setAnimate(false), 300);
+              }
+
+              return {
+                idleTime,
+                trackedHourInSeconds: newSeconds,
+              };
+            });
+          });
+
+        trackedHourTimeout = setTimeout(trackedHourDetailApiCall, 0);
+        trackedHourTimeout = setTimeout(
           trackedHourDetailApiCall,
-          (activityInterval || 1) * 1000 * 60
+          (activityInterval || 1) * 60 * 1000 + 1000
         );
       }
     }
 
-    return () => {
-      clearTimeout(trackedHourTimeout);
-      clearInterval(trackedHourInterval);
-    };
-  }, [authToken, ownerId, activityInterval, isLogging]);
+    if (trackedHourTimeout) clearTimeout(trackedHourTimeout);
+  }
+
+  // Initial Speed
+  const [initialSpeed, setInitialSpeed] = useState(null);
+
+  // Offline triggering handler
+  const manualOfflineRef = useRef(null);
+
+  function manualOfflineTriggerHandler() {
+    manualOfflineRef?.current?.onManualOfflineTrigger?.();
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div>
             <div className="flex items-center space-x-3">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
                 Activity Logger
               </h1>
-              <FiActivity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
+              <Activity className="text-indigo-600 text-xl sm:text-3xl ml-2" />
             </div>
             <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 shadow-sm">
-              <FiPackage className="h-4 w-4" />
+              <Package className="h-4 w-4" />
               <span>Current Version: {TRACKER_VERSION}</span>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             {ownerId ? (
-              <select
-                value={ownerId}
-                disabled={isLogging}
-                onChange={handleWorkspaceSelection}
-                className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
-              >
-                {workspaces.map((workspace) => (
-                  <option key={workspace.ownerId} value={workspace.ownerId}>
-                    {workspace.workspaceName}
-                  </option>
-                ))}
-              </select>
+              isLogging ? (
+                <div className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg  block p-2.5">
+                  {activeSession?.workspaceName}
+                </div>
+              ) : (
+                <select
+                  value={ownerId}
+                  disabled={isLogging}
+                  onChange={handleWorkspaceSelection}
+                  className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                >
+                  {workspaces.map((workspace) => (
+                    <option key={workspace.ownerId} value={workspace.ownerId}>
+                      {workspace.workspaceName}
+                    </option>
+                  ))}
+                </select>
+              )
             ) : null}
             <div
               className="relative w-10 h-10 rounded-full flex items-center justify-center text-white text-xl font-semibold cursor-pointer"
@@ -231,38 +364,41 @@ function ActivityLogger({
 
         {ownerId ? (
           <>
-            {/* Tabs */}
-            <div className="flex mb-6">
-              <button
-                className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === 'current'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}
-                onClick={() => setActiveTab('current')}
-              >
-                Active Tab Session
-              </button>
-              <button
-                className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === 'past'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}
-                onClick={() => setActiveTab('past')}
-              >
-                Past Activities
-              </button>
-              <button
-                className={`px-4 py-2 font-medium text-sm ${
-                  activeTab === 'app-usage'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}
-                onClick={() => setActiveTab('app-usage')}
-              >
-                App Usage
-              </button>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex">
+                <button
+                  className={`px-4 py-2 font-medium text-sm ${
+                    activeTab === 'current'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab('current')}
+                >
+                  Active Tab Session
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium text-sm ${
+                    activeTab === 'past'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab('past')}
+                >
+                  Past Activities
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium text-sm ${
+                    activeTab === 'app-usage'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab('app-usage')}
+                >
+                  App Usage
+                </button>
+              </div>
+
+              {isLogging && <ManualOffline ref={manualOfflineRef} />}
             </div>
 
             <div
@@ -278,7 +414,6 @@ function ActivityLogger({
                 authToken={authToken}
                 stats={stats}
                 activityInterval={activityInterval}
-                // activityReportInterval={activityReportInterval}
                 socket={socket}
                 projectTaskId={projectTaskId}
                 setProjectTaskId={setProjectTaskId}
@@ -287,13 +422,17 @@ function ActivityLogger({
                 endedActivityRestart={endedActivityRestart}
                 setEndedActivityRestart={setEndedActivityRestart}
                 setIsLoading={setIsLoading}
+                trackedHourDetails={trackedHourDetails}
+                updateTrackedHourDetails={updateTrackedHourDetails}
+                initialSpeed={initialSpeed}
+                onManualOfflineTrigger={manualOfflineTriggerHandler}
               />
 
               {/* Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xxl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <FiMousePointer className="text-blue-600 text-xl sm:text-2xl" />
+                    <MousePointer className="text-blue-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-blue-800">
                       {stats.clickCount}
                     </p>
@@ -305,7 +444,7 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <BsKeyboard className="text-green-600 text-xl sm:text-2xl" />
+                    <Keyboard className="text-green-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-green-800">
                       {stats.keyCount}
                     </p>
@@ -317,7 +456,7 @@ function ActivityLogger({
 
                 <div className="bg-gradient-to-br from-purple-100 to-pink-200 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <FiMove className="text-purple-700 text-xl sm:text-2xl" />
+                    <Move className="text-purple-700 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold text-pink-800">
                       {stats.scrollCount}
                     </p>
@@ -325,25 +464,31 @@ function ActivityLogger({
                   <p className="text-sm text-purple-700 font-medium">Scrolls</p>
                 </div>
 
-                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-2">
-                    <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
-                    <p className="text-2xl sm:text-3xl font-bold text-red-800">
-                      {trackedHourDetails.idleTime}
+                {/* {isOnline ? (
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <ClockAlert className="text-red-600 text-xl sm:text-2xl" />
+                      <p className="text-2xl sm:text-3xl font-bold text-red-800">
+                        {Math.floor((+trackedHourDetails.idleTime ?? 0) / 60)}
+                      </p>
+                    </div>
+                    <p className="text-sm text-red-600 font-medium">
+                      Idle Time (min)
                     </p>
                   </div>
-                  <p className="text-sm text-red-600 font-medium">
-                    Idle Time (min)
-                  </p>
-                </div>
+                ) : null} */}
 
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <IoSpeedometerOutline className="text-purple-600 text-xl sm:text-2xl" />
+                    <Gauge className="text-purple-600 text-xl sm:text-2xl" />
                     <p className="text-2xl sm:text-3xl font-bold">
                       <InternetSpeedTracker
                         socket={socket}
                         interval={activityLocationInterval}
+                        isOnline={isOnline}
+                        key={isOnline}
+                        isLogging={isLogging}
+                        setInitialSpeed={setInitialSpeed}
                       />
                     </p>
                   </div>
@@ -358,51 +503,46 @@ function ActivityLogger({
                     <SlidingTimeDisplay
                       seconds={trackedHourDetails.trackedHourInSeconds}
                       animate={animate}
+                      fetchActiveTime={fetchActiveTime}
+                      isOnline={isOnline}
                     />
                   </div>
                   <p className="text-sm text-emerald-700 font-semibold">
                     Active Time
                   </p>
                 </div>
-              </div>
 
-              {/* Status Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                    <div className="flex items-center">
-                      <FiActivity className="text-purple-600 text-lg sm:text-xl mr-2" />
-                      <p className="text-base sm:text-lg font-medium text-gray-700">
-                        Last Active
-                      </p>
-                    </div>
-                    <p className="text-base sm:text-lg font-bold text-indigo-600">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <Activity className="text-purple-600 text-xl sm:text-2xl" />
+                    <p className="text-indigo-600 text-2xl sm:text-3xl font-bold">
                       {stats.lastActive || '--'}
                     </p>
                   </div>
+                  <p className="text-sm text-purple-600 font-medium">
+                    Last Active
+                  </p>
                 </div>
 
-                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 sm:p-6 rounded-xl shadow-sm">
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0">
-                    <div className="flex items-center">
-                      <FiClock className="text-indigo-600 text-lg sm:text-xl mr-2" />
-                      <p className="text-base sm:text-lg font-medium text-gray-700">
-                        Capture Interval
-                      </p>
-                    </div>
-                    <p className="text-base sm:text-lg font-bold text-indigo-600">
+                {/* <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <FiClock className="text-orange-600 text-xl sm:text-2xl" />
+                    <p className="text-orange-800 text-2xl sm:text-3xl font-bold">
                       {captureInterval}{' '}
                       {captureInterval <= 1 ? 'minute' : 'minutes'}
                     </p>
                   </div>
-                </div>
+                  <p className="text-sm text-orange-600 font-medium">
+                    Capture Interval
+                  </p>
+                </div> */}
               </div>
 
               {/* Keys Pressed Section */}
               {IS_PRODUCTION ? null : (
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-xl shadow-sm mb-6 min-h-[300px] sm:min-h-[400px] overflow-y-auto">
                   <div className="flex items-center mb-3">
-                    <BsKeyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
+                    <Keyboard className="text-gray-600 text-lg sm:text-xl mr-2" />
                     <h2 className="font-semibold text-gray-700 text-base sm:text-lg">
                       Keys pressed:
                     </h2>
@@ -414,25 +554,21 @@ function ActivityLogger({
               )}
             </div>
 
-            <div className={`${activeTab === 'past' ? 'visible' : 'hidden'}`}>
+            {activeTab === 'past' && (
               <PastActivities
                 authToken={authToken}
                 ownerId={ownerId}
-                isLogging={isLogging}
-                activeTab={activeTab}
+                isOnline={isOnline}
               />
-            </div>
+            )}
 
-            <div
-              className={`${activeTab === 'app-usage' ? 'visible' : 'hidden'}`}
-            >
+            {activeTab === 'app-usage' && (
               <AppUsage
                 authToken={authToken}
                 ownerId={ownerId}
-                isLogging={isLogging}
-                activeTab={activeTab}
+                isOnline={isOnline}
               />
-            </div>
+            )}
           </>
         ) : (
           <div className="flex justify-center items-center h-64">

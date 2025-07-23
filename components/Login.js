@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { loginOrRegisterEmployee } from '../redux/auth/authActions';
-import { TRACKER_VERSION } from '../utils/constants';
+import { API_BASE_URL, DOMAIN_TYPE, TRACKER_VERSION } from '../utils/constants';
 import ApiErrorLogger from './ApiErrorLogger';
 
-export default function LoginForm({ onLogin, domainId }) {
+export default function LoginForm({ onLogin, domainId, fetchDomainId }) {
   const dispatch = useDispatch();
 
   const [email, setEmail] = useState('');
@@ -28,7 +28,7 @@ export default function LoginForm({ onLogin, domainId }) {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors)?.length === 0;
   };
 
   function getOperatingSystem() {
@@ -85,7 +85,7 @@ export default function LoginForm({ onLogin, domainId }) {
 
       <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-md bg-white shadow-md rounded-lg">
-          <div className="p-6 sm:p-8">
+          <div className="p-6 pb-4 sm:p-8 sm:pb-4">
             <div className="text-center">
               <img
                 src="assets/images/icon.png"
@@ -204,6 +204,22 @@ export default function LoginForm({ onLogin, domainId }) {
               </button>
             </form>
           </div>
+
+          <div className="px-6 pb-4 border-gray-200 sm:px-8">
+            <p className="text-center text-sm text-gray-600 mb-3">
+              Please click on below button in case you are getting{' '}
+              <span className="text-red-600">invalid domain id error</span>{' '}
+              after waiting for at least 10 seconds.
+            </p>
+
+            <button
+              onClick={fetchDomainId}
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-800 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 transition duration-150"
+            >
+              Fetch Domain
+            </button>
+          </div>
+
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 sm:px-8">
             <p className="text-center text-sm text-gray-600">
               v{TRACKER_VERSION} {/* Don't have an account?{' '} */}

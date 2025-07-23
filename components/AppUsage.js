@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ChevronLeft,
   PieChart,
-  Info,
   Filter,
   BarChart3,
 } from 'lucide-react';
@@ -21,7 +20,7 @@ import dynamic from 'next/dynamic';
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
+const AppUsage = ({ authToken, ownerId, isOnline }) => {
   const dispatch = useDispatch();
   const [dateFilter, setDateFilter] = useState('today');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -61,37 +60,23 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
   };
 
   useEffect(() => {
-    if (authToken) {
-      const { startDate, endDate } = getDateRange(dateFilter);
-
-      dispatch(
-        gettingAppUsages(authToken, {
-          ownerId,
-          startDate,
-          endDate,
-          timezone: getSystemTimezone(),
-        })
-      );
+    if (authToken && ownerId && isOnline) {
+      if (!appUsages || appUsages?.length === 0) {
+        const { startDate, endDate } = getDateRange(dateFilter);
+        dispatch(
+          gettingAppUsages(authToken, {
+            ownerId,
+            startDate,
+            endDate,
+            timezone: getSystemTimezone(),
+          })
+        );
+      }
     }
-  }, [dateFilter, dispatch, authToken, ownerId]);
+  }, [authToken, ownerId, appUsages]);
 
   useEffect(() => {
-    if (activeTab === 'app-usage' && !isLogging) {
-      const { startDate, endDate } = getDateRange(dateFilter);
-
-      dispatch(
-        gettingAppUsages(authToken, {
-          ownerId,
-          startDate,
-          endDate,
-          timezone: getSystemTimezone(),
-        })
-      );
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (appUsages && appUsages.length > 0) {
+    if (appUsages && appUsages?.length > 0) {
       setAppUsagesData(appUsages);
     }
   }, [appUsages]);
@@ -144,8 +129,8 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = sortedData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const currentItems = sortedData?.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedData?.length / itemsPerPage);
 
   const chartData = {
     options: {
@@ -156,7 +141,7 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
         },
       },
       xaxis: {
-        categories: sortedData.slice(0, 5).map((app) => app.name),
+        categories: sortedData?.slice(0, 5).map((app) => app.name),
       },
       colors: ['#6366F1'],
       plotOptions: {
@@ -177,13 +162,13 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
     series: [
       {
         name: 'Duration',
-        data: sortedData.slice(0, 5).map((app) => app.duration),
+        data: sortedData?.slice(0, 5).map((app) => app.duration),
       },
     ],
   };
 
   const calculateSummary = () => {
-    if (!sortedData.length)
+    if (!sortedData?.length)
       return {
         totalApps: 0,
         totalDuration: 0,
@@ -191,25 +176,25 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
         mostUsed: null,
       };
 
-    const totalDuration = sortedData.reduce(
+    const totalDuration = sortedData?.reduce(
       (sum, app) => sum + (app.duration || 0),
       0
     );
-    const totalSessions = sortedData.reduce(
+    const totalSessions = sortedData?.reduce(
       (sum, app) => sum + (app.sessions || 0),
       0
     );
 
     let mostUsed = null;
-    if (sortedData.length > 0) {
-      mostUsed = sortedData.reduce(
+    if (sortedData?.length > 0) {
+      mostUsed = sortedData?.reduce(
         (max, app) => (!max || app.duration > max.duration ? app : max),
         null
       );
     }
 
     return {
-      totalApps: sortedData.length,
+      totalApps: sortedData?.length,
       totalDuration,
       totalSessions,
       mostUsed,
@@ -217,6 +202,19 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
   };
 
   const summary = calculateSummary();
+
+  function fetchAppUsageData(dateFilter) {
+    const { startDate, endDate } = getDateRange(dateFilter);
+
+    dispatch(
+      gettingAppUsages(authToken, {
+        ownerId,
+        startDate,
+        endDate,
+        timezone: getSystemTimezone(),
+      })
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
@@ -238,67 +236,73 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
             <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
           </div>
 
-          <div className="relative">
-            <button
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg flex items-center justify-between w-full sm:w-40"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-            >
-              <span className="flex items-center">
-                <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                {dateFilter === 'today'
-                  ? 'Today'
-                  : dateFilter === '7days'
-                    ? 'Last 7 days'
-                    : dateFilter === '30days'
-                      ? 'Last 30 days'
-                      : 'Last 90 days'}
-              </span>
-              <ChevronDown className="h-4 w-4 text-gray-500" />
-            </button>
+          {isOnline && (
+            <div className="relative">
+              <button
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg flex items-center justify-between w-full sm:w-40"
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+              >
+                <span className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+                  {dateFilter === 'today'
+                    ? 'Today'
+                    : dateFilter === '7days'
+                      ? 'Last 7 days'
+                      : dateFilter === '30days'
+                        ? 'Last 30 days'
+                        : 'Last 90 days'}
+                </span>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              </button>
 
-            {isFilterOpen && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                <ul className="py-1">
-                  <li
-                    className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === 'today' ? 'bg-indigo-50 text-indigo-600' : ''}`}
-                    onClick={() => {
-                      setDateFilter('today');
-                      setIsFilterOpen(false);
-                    }}
-                  >
-                    Today
-                  </li>
-                  <li
-                    className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === '7days' ? 'bg-indigo-50 text-indigo-600' : ''}`}
-                    onClick={() => {
-                      setDateFilter('7days');
-                      setIsFilterOpen(false);
-                    }}
-                  >
-                    Last 7 days
-                  </li>
-                  <li
-                    className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === '30days' ? 'bg-indigo-50 text-indigo-600' : ''}`}
-                    onClick={() => {
-                      setDateFilter('30days');
-                      setIsFilterOpen(false);
-                    }}
-                  >
-                    Last 30 days
-                  </li>
-                  <li
-                    className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === '90days' ? 'bg-indigo-50 text-indigo-600' : ''}`}
-                    onClick={() => {
-                      setDateFilter('90days');
-                      setIsFilterOpen(false);
-                    }}
-                  >
-                    Last 90 days
-                  </li>
-                </ul>
-              </div>
-            )}
-          </div>
+              {isFilterOpen && (
+                <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                  <ul className="py-1">
+                    <li
+                      className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === 'today' ? 'bg-indigo-50 text-indigo-600' : ''}`}
+                      onClick={() => {
+                        setDateFilter('today');
+                        setIsFilterOpen(false);
+                        fetchAppUsageData('today');
+                      }}
+                    >
+                      Today
+                    </li>
+                    <li
+                      className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === '7days' ? 'bg-indigo-50 text-indigo-600' : ''}`}
+                      onClick={() => {
+                        setDateFilter('7days');
+                        setIsFilterOpen(false);
+                        fetchAppUsageData('7days');
+                      }}
+                    >
+                      Last 7 days
+                    </li>
+                    <li
+                      className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === '30days' ? 'bg-indigo-50 text-indigo-600' : ''}`}
+                      onClick={() => {
+                        setDateFilter('30days');
+                        setIsFilterOpen(false);
+                        fetchAppUsageData('30days');
+                      }}
+                    >
+                      Last 30 days
+                    </li>
+                    <li
+                      className={`px-4 py-2 hover:bg-indigo-50 cursor-pointer ${dateFilter === '90days' ? 'bg-indigo-50 text-indigo-600' : ''}`}
+                      onClick={() => {
+                        setDateFilter('90days');
+                        setIsFilterOpen(false);
+                        fetchAppUsageData('90days');
+                      }}
+                    >
+                      Last 90 days
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -467,7 +471,7 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
               </tr>
             ))}
 
-            {currentItems.length === 0 && (
+            {currentItems?.length === 0 && (
               <tr>
                 <td
                   colSpan={5}
@@ -482,7 +486,7 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
       </div>
 
       {/* Pagination */}
-      {sortedData.length > itemsPerPage && (
+      {sortedData?.length > itemsPerPage && (
         <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 mt-4">
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
@@ -490,11 +494,11 @@ const AppUsage = ({ authToken, ownerId, isLogging, activeTab }) => {
                 Showing{' '}
                 <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
                 <span className="font-medium">
-                  {indexOfLastItem > sortedData.length
-                    ? sortedData.length
+                  {indexOfLastItem > sortedData?.length
+                    ? sortedData?.length
                     : indexOfLastItem}
                 </span>{' '}
-                of <span className="font-medium">{sortedData.length}</span>{' '}
+                of <span className="font-medium">{sortedData?.length}</span>{' '}
                 results
               </p>
             </div>
